@@ -1,0 +1,2645 @@
+<!--
+  =============================================================================
+  PROJECT: Berliner Schule Sequencer (BSS)
+  VERSION: 0.9
+  AUTHOR: Reiner Prokein
+  COPYRIGHT: (c) 2026 Reiner Prokein
+  LICENSE: MIT License
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+  =============================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Berliner Schule Sequencer - Evolutionary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0f172a;
+  --panel:     #1e293b;
+  --raised:    #334155;
+  --border:    #475569;
+  --border2:   #64748b;
+  --text:      #e2e8f0;
+  --muted:     #94a3b8;
+  --dim:       #475569;
+  --amber:     #fbbf24;
+  --amber-dim: #92400e;
+  --cyan:      #0ea5e9;
+  --cyan-dim:  #0c4a6e;
+  --green:     #10b981;
+  --red:       #ef4444;
+  --anchor:    #ec4899;
+  --anchor-dim:#701a4d;
+  --text-bright: #f8fafc;
+  --r: 3px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--bg); color: var(--text); overflow-y: auto; }
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+.mono { font-family: 'Share Tech Mono', monospace; }
+
+/* ── Layout ── */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px 16px 14px;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+.logo {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+.logo span { color: var(--muted); }
+.mode-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 2px;
+}
+.mode-tab {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 5px 14px;
+  border-radius: 2px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mode-tab.active {
+  background: var(--raised);
+  color: var(--amber);
+  border: 1px solid var(--border2);
+}
+
+/* ── Controls grid ── */
+.controls {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ctrl {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 8px 10px 9px;
+  min-width: 0;
+}
+.ctrl-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+.ctrl-label.live { color: var(--green); }
+.ctrl-label .val {
+  color: var(--amber);
+  font-size: 10px;
+}
+.ctrl select, .ctrl input[type="number"] {
+  width: 100%;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 5px 7px;
+  border-radius: 2px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.ctrl select:focus, .ctrl input:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
+.ctrl input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  accent-color: var(--amber);
+  cursor: pointer;
+  margin-top: 2px;
+}
+.ctrl input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--amber);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--amber-dim);
+}
+
+/* span 2 cols */
+.ctrl.w2 { grid-column: span 2; }
+
+/* ── Anchor panel ── */
+.anchor-panel {
+  background: var(--panel);
+  border: 1px solid var(--anchor-dim);
+  border-radius: var(--r);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  display: none;
+}
+.anchor-panel.visible { display: flex; }
+.anchor-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--anchor);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.anchor-desc {
+  font-size: 12px;
+  color: var(--muted);
+  flex: 1;
+}
+.anchor-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.anchor-controls select {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--anchor-dim);
+  color: var(--text);
+  padding: 5px 9px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.anchor-controls select:focus { outline: 1px solid var(--anchor); }
+
+/* ── Export Tab System ── */
+.export-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 2px;
+  margin-bottom: 8px;
+}
+.export-tab {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 4px 12px;
+  border-radius: 2px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.export-tab.active {
+  background: var(--raised);
+  color: var(--amber);
+  border: 1px solid var(--border2);
+}
+.export-panel {
+  display: none; /* Hidden by default */
+}
+.export-panel.active {
+  display: block;
+}
+
+/* ── Sequencer display ── */
+/* Limit the sequencer container height */
+.seq-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 0;
+  max-height: 65vh;
+}
+.seq-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.seq-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.stat-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pill {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.pill strong { color: var(--text); }
+
+/* Enable scrolling inside the canvas */
+.seq-canvas {
+  flex: 1;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  height: 0;
+}
+
+/* Step rows */
+.step-row {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  min-height: 0;
+}
+.step {
+  flex: 1;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.08s, background 0.08s;
+  min-width: 0;
+}
+.step-note {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(8px, 1vw, 11px);
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+  line-height: 1;
+  z-index: 1;
+}
+/* active note */
+.step.on {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+}
+/* anchor note */
+.step.anchor {
+  background: var(--anchor-dim);
+  border-color: var(--anchor);
+}
+.step.anchor .step-note { color: var(--anchor); }
+/* rest */
+.step.rest {
+  background: var(--bg);
+  border-color: var(--border);
+}
+.step.rest::after {
+  content: '';
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0.3;
+}
+/* tie */
+.step.tie {
+  background: var(--cyan-dim);
+  border-color: var(--border2);
+  opacity: 0.5;
+}
+/* pitchbend dot */
+.step.bend::before {
+  content: '';
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--amber);
+  opacity: 0.9;
+}
+/* playing cursor */
+.step.playing {
+  box-shadow: inset 0 0 0 2px var(--green);
+}
+.step.playing.on, .step.playing.anchor {
+  box-shadow: inset 0 0 0 2px var(--green);
+}
+
+/* pitch height bar inside step */
+.step .pitch-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(14, 165, 233, 0.15);
+  pointer-events: none;
+}
+.step.anchor .pitch-bar {
+  background: rgba(236, 72, 153, 0.2);
+}
+
+/* row labels */
+.row-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  width: 44px;
+}
+.row-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  padding-right: 4px;
+  justify-content: flex-end;
+}
+
+.seq-inner {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+.seq-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+
+/* ── control bar ── */
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 9px 18px;
+  border-radius: var(--r);
+  border: 1px solid var(--border2);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.12s;
+  text-transform: uppercase;
+}
+.btn:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn.primary { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+.btn.primary:hover:not(:disabled) { background: #0c4a6e; }
+.btn.stop-btn { border-color: var(--red); color: var(--red); }
+.btn.evo-btn { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+
+.status-area {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.2s;
+}
+.status-area.playing .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.status-area.playing { color: var(--green); }
+
+/* ── Details extras ── */
+summary {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+  text-transform: uppercase;
+  padding: 2px 0;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before { content: '+ '; }
+details[open] summary::before { content: '− '; }
+.extras-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/*seed*/
+.seed-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.seed-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.seed-bar input[type="number"] {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--amber);
+  padding: 5px 9px;
+  border-radius: 2px;
+  width: 110px;
+}
+.seed-bar select {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.preset-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.preset-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* New Preset Dropdown Style */
+#presetSelect {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--amber);
+  padding: 5px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  min-width: 160px;
+}
+#presetSelect:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
+
+/* Composition Panel */
+.composition-panel {
+  background: var(--panel);
+  border: 1px solid var(--amber-dim);
+  border-radius: var(--r);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.composition-panel .ctrl { background: transparent; border: none; padding: 0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div class="logo mono">BSS<span>/</span>0.9</div>
+      <div class="mode-tabs">
+        <button class="mode-tab active" data-mode="classic">Classic</button>
+        <button class="mode-tab" data-mode="schulze">Klaus Schulze</button>
+        <button class="mode-tab" data-mode="offbeat">Offbeat Anchor</button>
+        <button class="mode-tab" data-mode="arp">Arpeggiator</button>
+        <button class="mode-tab" data-mode="motivic">Motivic</button>
+      </div>
+    </div>
+
+    <!-- Presets moved here to the top right -->
+    <div class="preset-bar" style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+      <span class="preset-label">Preset:</span>
+      <select id="presetSelect" style="font-family: 'Share Tech Mono', monospace; font-size: 11px; background: var(--bg); border: 1px solid var(--border2); color: var(--amber); padding: 5px 8px; border-radius: 2px; cursor: pointer; min-width: 160px;">
+        <option value="" disabled selected>-- Select Preset --</option>
+        <optgroup label="Classic Mode">
+          <option value="phaedra">Phaedra</option>
+          <option value="rubycon">Rubycon</option>
+          <option value="timewind">Timewind</option>
+          <option value="ricochet">Ricochet</option>
+          <option value="mirage">Mirage</option>
+          <option value="irrlicht">Irrlicht</option>
+        </optgroup>
+        <optgroup label="Klaus Schulze Mode">
+          <option value="xenoglossia">Xenoglossia</option>
+          <option value="crystals">Crystals of Time</option>
+          <option value="dune">Dune (Atmosphere)</option>
+        </optgroup>
+        <optgroup label="Offbeat Anchor Mode">
+          <option value="moog_sequencer">Moog Sequence</option>
+          <option value="berlin_pulse">Berlin Pulse</option>
+          <option value="hypnosis">Hypnosis</option>
+        </optgroup>
+        <optgroup label="Arpeggiator Mode">
+          <option value="starlight">Starlight Arp</option>
+          <option value="cosmic_wind">Cosmic Wind</option>
+          <option value="nebula">Nebula Shift</option>
+        </optgroup>
+        <optgroup label="Motivic Mode">
+          <option value="dna_structure">DNA Structure</option>
+          <option value="recursive">Recursive Loop</option>
+          <option value="evolutionary">Evolutionary Theme</option>
+        </optgroup>
+      </select>
+    </div>
+  </div>
+
+<!-- Transport & MIDI/Evo Station -->
+<div class="transport-section" style="display: flex; flex-direction: column; gap: 10px;">
+
+  <!-- Row 1: Playback Controls + Seed Integration -->
+  <div class="transport" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+    <button class="btn primary" id="playBtn">▶ Play</button>
+    <button class="btn stop-btn" id="stopBtn" disabled>■ Stop</button>
+
+    <!-- Volume Control for Monitoring only -->
+    <div class="ctrl" style="border: none; background: transparent; padding: 0; display: flex; align-items: center; gap: 8px; min-width: 140px;">
+      <span class="seed-label" style="white-space: nowrap;">VOL</span>
+      <input type="range" id="masterVol" min="0" max="100" value="100" style="flex: 1; cursor: pointer;">
+      <span class="val mono" id="volVal" style="color: var(--amber); font-size: 10px; width: 30px;">100%</span>
+    </div>
+
+    <button class="btn" id="genBtn">↻ Generate</button>
+
+    <!-- Vertical Separator -->
+    <div style="width: 1px; height: 24px; background: var(--border); margin: 0 8px; flex-shrink: 0;"></div>
+
+    <!-- Seed Controls -->
+    <div class="seed-bar" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+      <span class="seed-label">SEED</span>
+      <input type="number" id="seedValue" value="0" min="0" max="9999999" style="font-family:'Share Tech Mono',monospace;font-size:12px;background:var(--bg);border:1px solid var(--border2);color:var(--amber);padding:5px 9px;border-radius:2px;width:100px;">
+      <select id="seedMode" style="font-family:'Share Tech Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:2px;cursor:pointer;">
+        <option value="random">Random</option>
+        <option value="fixed">Fixed</option>
+      </select>
+    </div>
+
+    <div class="status-area" id="statusArea" style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+      <div class="dot"></div>
+      <span id="statusText">ready</span>
+    </div>
+  </div> <!-- End of Row 1 / transport -->
+
+  <!-- Row 2: MIDI & Evolution Station -->
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <!-- Export Mode Tabs -->
+    <div class="export-tabs">
+      <button class="export-tab active" data-target="midiPanel">MIDI Export</button>
+      <button class="export-tab" data-target="evoPanel">Evolution Export</button>
+    </div>
+
+    <!-- Panel 1: Standard MIDI Export -->
+    <div id="midiPanel" class="export-panel active">
+      <div style="display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px;">
+        <span class="seed-label" style="white-space: nowrap;">STEPS PER BAR</span>
+        <select id="exportStretch" style="font-family:'Share Tech Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:2px;cursor:pointer;">
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="8">8</option>
+          <option value="16" selected>16</option>
+          <option value="32">32</option>
+        </select>
+        <button class="btn" id="exportBtn" style="white-space: nowrap; margin-right: auto;">↓ EXPORT MIDI</button>
+      </div>
+    </div>
+
+    <!-- Panel 2: Evolution Export -->
+    <div id="evoPanel" class="export-panel">
+      <!-- Evo Row 1: Core Mutation Settings -->
+      <div style="display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px; margin-bottom: 6px;">
+        <span class="seed-label" style="white-space: nowrap;">STEPS PER BAR</span>
+        <select id="exportStretchEvo" style="font-family:'Share Tech Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:2px;cursor:pointer;">
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="8">8</option>
+          <option value="16" selected>16</option>
+          <option value="32">32</option>
+        </select>
+        <button class="btn evo-btn" id="exportEvoBtn" style="white-space: nowrap; margin-right: auto;">🧬 EXPORT EVOLUTION</button>
+        <!-- Visual Separator -->
+        <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+        <div class="ctrl" style="min-width:70px; flex:1;">
+          <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">8</span></div>
+          <input type="range" id="evoIterations" min="1" max="64" value="8" style="width:100%;">
+        </div>
+        <!-- Visual Separator -->
+        <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+        <div class="ctrl" style="min-width:70px; flex:1;">
+          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">25%</span></div>
+          <input type="range" id="evoMutation" min="0" max="100" value="25" style="width:100%;">
+        </div>
+        <div class="ctrl" style="min-width:70px; flex:1;">
+          <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">30%</span></div>
+          <input type="range" id="evoDrift" min="0" max="100" value="30" style="width:100%;">
+        </div>
+        <div class="ctrl" style="min-width:70px; flex:1;">
+          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">30%</span></div>
+          <input type="range" id="evoGrip" min="0" max="100" value="30" style="width:100%;">
+        </div>
+      </div>
+
+      <!-- Evo Row 2: Root & Octave Drift -->
+      <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px;">
+
+        <!-- Octave Drift: Fixed width to prevent jumping -->
+        <div class="ctrl" style="width: 120px; flex-shrink: 0;">
+          <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
+          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0" style="width:100%;">
+        </div>
+
+        <!-- Visual Separator -->
+        <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+
+        <!-- Root Mode Dropdown: Fixed width -->
+        <select id="evoRootMode" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 300px; flex-shrink: 0;">
+          <option value="none" selected>Root: None (Static)</option>
+          <option value="free">Root: Free (Random)</option>
+          <option value="thirds">Root: Thirds (3rd/4th)</option>
+          <option value="fourths">Root: 4ths/5ths</option>
+          <option value="fifths">Root: Cycle of 5ths</option>
+          <option value="alt_whole">Root: Alt. Whole Tones (+2/-2)</option>
+          <option value="alt_semi">Root: Alt. Semitones (+1/-1)</option>
+          <optgroup label="Berliner Schule / Ambient">
+            <option value="modal_iii">Root: Modal I → III</option>
+            <option value="modal_iv">Root: Modal I → IV</option>
+            <option value="circulating">Root: Circulating Fifths/Fourths</option>
+            <option value="slow_osc">Root: Slow Oscillation (I-IV-I-V)</option>
+          </optgroup>
+          <optgroup label="Pop / Rock / Standards">
+            <option value="pop_standard">Root: Pop Standard (I-V-vi-IV)</option>
+            <option value="fifties">Root: 50s Progression (vi-IV-I-V)</option>
+            <option value="andalusian">Root: Andalusian / Hollywood (i-bVII-bVI-bV)</option>
+            <option value="minor_common">Root: Minor Common (vi-III-IV-V)</option>
+            <option value="jazz_standard">Root: Jazz Standard (ii-V-I-IV-III-VI-II-V)</option>
+            <option value="pachelbel">Root: Pachelbel's Canon</option>
+            <option value="chromatic">Root: Chromatic Descent</option>
+            <option value="pentatonic">Root: Minor Pentatonic</option>
+          </optgroup>
+        </select>
+
+        <!-- Interval Container: Now it just appears next to the mode without pushing everything -->
+        <div id="evoIntervalContainer" style="display: none; align-items: center; gap: 8px; flex-shrink: 0;">
+          <select id="evoRootInterval" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 130px;">
+            <option value="1">Every Block</option>
+            <option value="2" selected>Every 2 Blocks</option>
+            <option value="4">Every 4 Blocks</option>
+            <option value="8">Every 8 Blocks</option>
+          </select>
+        </div>
+
+        <!-- Visual Separator -->
+        <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+
+        <!-- Seed Mode Dropdown: Fixed width -->
+        <select id="evoSeedMode" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 130px; flex-shrink: 0;">
+          <option value="random">Evo Seed: Random</option>
+          <option value="fixed">Evo Seed: Fixed</option>
+        </select>
+      </div>
+    </div> <!-- End of evoPanel -->
+  </div> <!-- End of Row 2 / Export Station -->
+</div> <!-- End of transport-section -->
+
+<!-- SECTION SEPARATOR: Between MIDI Export and Settings -->
+<div style="display: flex; align-items: center; gap: 12px; margin: 20px 0 10px;">
+  <div style="flex: 1; height: 1px; background: var(--muted); opacity: 0.5;"></div>
+  <span style="font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; white-space: nowrap;">
+    Sequencer Parameters
+  </span>
+  <div style="flex: 1; height: 1px; background: var(--muted); opacity: 0.5;"></div>
+</div>
+
+<!-- GROUP 1: TIMING & RHYTHM + EXPRESSION -->
+<div class="controls-group" style="margin-bottom: 15px;">
+  <div style="display: flex; align-items: center; margin-bottom: 8px;">
+    <div class="group-label live-text" style="font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--green); letter-spacing:0.1em; text-transform:uppercase; border-left: 2px solid var(--green); padding-left: 8px;">Timing & Rhythm</div>
+    <!-- Label shifted to align with the Variation slider (approx 62.5% of width) -->
+    <div class="group-label" style="font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; border-left: 2px solid var(--border); padding-left: 8px; margin-left: auto; margin-right: 30%; width: fit-content;">Expression</div>
+  </div>
+  <div class="controls">
+    <div class="ctrl">
+      <div class="ctrl-label live">BPM <span class="val" id="bpmVal">108</span></div>
+      <input type="range" id="bpm" min="60" max="180" value="108">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label live">Swing <span class="val" id="swingVal">0%</span></div>
+      <input type="range" id="swing" min="0" max="66" value="0">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label live">Steps/Beat <span class="val" id="spbVal">4</span></div>
+      <input type="range" id="stepsPerBeat" min="2" max="8" value="4">
+    </div>
+    <div class="ctrl" id="minNoteLenCtrl">
+      <div class="ctrl-label">Min Length <span class="val" id="minLenVal">1</span></div>
+      <input type="range" id="minNoteLen" min="1" max="24" value="2">
+    </div>
+    <div class="ctrl" id="maxNoteLenCtrl">
+      <div class="ctrl-label">Max Length <span class="val" id="maxNoteLenVal">2</span></div>
+      <input type="range" id="maxNoteLen" min="1" max="32" value="4">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label">Variation <span class="val" id="varVal">25%</span></div>
+      <input type="range" id="variation" min="0" max="60" value="25">
+    </div>
+  </div>
+</div>
+
+
+<!-- GROUP 2: PHRASE & NOTES (Structural) -->
+<div class="controls-group" style="margin-bottom: 15px;">
+  <div class="group-label" style="font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; border-left: 2px solid var(--border); padding-left: 8px;">Phrase & Notes</div>
+  <div class="controls">
+    <div class="ctrl w2">
+      <div class="ctrl-label">Scale</div>
+      <select id="scale">
+        <option value="dorian">Dorian</option>
+        <option value="phrygian">Phrygian</option>
+        <option value="aeolian">Aeolian (Nat. Minor)</option>
+        <option value="mixolydian">Mixolydian</option>
+        <option value="minorPent">Minor Pentatonic</option>
+        <option value="majorPent">Major Pentatonic</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label">Root Note</div>
+      <select id="root">
+        <option value="48">C3</option>
+        <option value="50">D3</option>
+        <option value="52">E3</option>
+        <option value="53">F3</option>
+        <option value="55">G3</option>
+        <option value="57">A3</option>
+        <option value="59">B3</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label">Steps <span class="val" id="phraseVal">16</span></div>
+      <input type="range" id="phraseLen" min="4" max="32" value="16">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label">Repeats <span class="val" id="repsVal">4</span></div>
+      <input type="range" id="repeats" min="2" max="16" value="4">
+    </div>
+    <div class="ctrl" id="densityCtrl">
+      <div class="ctrl-label">Density <span class="val" id="densityVal">72%</span></div>
+      <input type="range" id="density" min="30" max="100" value="72">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label">Intervall <span class="val" id="intervalVal">3</span></div>
+      <input type="range" id="maxInterval" min="1" max="5" value="3">
+    </div>
+    <!-- NoteCount remains hidden/visible via JS -->
+    <div class="ctrl hidden" id="noteCountCtrl">
+      <div class="ctrl-label">Notes <span class="val" id="noteCountVal">2</span></div>
+      <input type="range" id="noteCount" min="1" max="3" value="2">
+    </div>
+  </div>
+</div>
+
+  <!-- Offbeat anchor panel -->
+  <div class="anchor-panel" id="anchorPanel">
+    <div class="anchor-label">▸ Anchor</div>
+    <div class="anchor-desc">Every offbeat plays the same fixed note — all main beats form the melody</div>
+    <div class="anchor-controls">
+      <label style="font-family:monospace;font-size:10px;color:var(--muted)">ANCHOR NOTE</label>
+      <select id="anchorNote">
+        <option value="36">C2</option>
+        <option value="38">D2</option>
+        <option value="40">E2</option>
+        <option value="41">F2</option>
+        <option value="43">G2</option>
+        <option value="45">A2</option>
+        <option value="48">C3</option>
+        <option value="50">D3</option>
+        <option value="52">E3</option>
+        <option value="55" selected>G3</option>
+        <option value="57">A3</option>
+        <option value="60">C4</option>
+      </select>
+      <label style="font-family:monospace;font-size:10px;color:var(--muted)">PATTERN</label>
+      <select id="anchorPattern">
+        <option value="offbeat">Every 2nd Step (Classic)</option>
+        <option value="every3">Every 3rd Step</option>
+        <option value="every4">Every 4th Step</option>
+        <option value="offbeat16">16th-Note Offbeats</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Arpeggiator panel -->
+  <div class="anchor-panel" id="arpPanel">
+    <div class="anchor-label">▸ Arp</div>
+    <div class="anchor-controls">
+      <label style="font-family:monospace;font-size:10px;color:var(--muted)">ROOT NOTE</label>
+      <select id="arpRoot">
+        <option value="0">C</option>
+        <option value="1">C#</option>
+        <option value="2">D</option>
+        <option value="3">D#</option>
+        <option value="4">E</option>
+        <option value="5">F</option>
+        <option value="6">F#</option>
+        <option value="7">G</option>
+        <option value="8">G#</option>
+        <option value="9">A</option>
+        <option value="10">A#</option>
+        <option value="11">B</option>
+      </select>
+      <label style="font-family:monospace;font-size:10px;color:var(--muted)">CHORD</label>
+      <select id="arpChord">
+        <optgroup label="Triads">
+          <option value="maj">Major</option>
+          <option value="min">Minor</option>
+          <option value="dim">Diminished</option>
+          <option value="aug">Augmented</option>
+          <option value="sus2">Sus2</option>
+          <option value="sus4">Sus4</option>
+        </optgroup>
+        <optgroup label="Seventh Chords">
+          <option value="maj7">Maj7</option>
+          <option value="dom7">Dom7</option>
+          <option value="min7">Minor7</option>
+          <option value="minmaj7">Minor Maj7</option>
+          <option value="hdim7">Half-Dim7</option>
+          <option value="dim7">Dim7</option>
+        </optgroup>
+        <optgroup label="Extensions">
+          <option value="add9">Add9</option>
+          <option value="maj9">Maj9</option>
+          <option value="dom9">Dom9</option>
+          <option value="min9">Minor9</option>
+          <option value="maj6">6</option>
+          <option value="min6">Minor6</option>
+          <option value="dom11">11</option>
+          <option value="dom13">13</option>
+        </optgroup>
+      </select>
+      <label style="font-family:monospace;font-size:10px;color:var(--muted)">PATTERN</label>
+      <select id="arpPattern">
+        <option value="up">Ascending</option>
+        <option value="down">Descending</option>
+        <option value="updown">Up/Down</option>
+        <option value="random">Random</option>
+      </select>
+      <label style="font-family:monospace;font-size:10px;color:var(--muted)">OCTAVES</label>
+      <select id="arpOctaves">
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Howto -->
+  <details>
+      <summary style="color: var(--amber); font-weight: bold; cursor: pointer;">Howto & Technical Logic</summary>
+      <div style="padding: 15px 0; color: var(--text-bright); font-size: 12px; line-height: 1.6; max-width: 800px;">
+
+        <!-- MAIN TITLE -->
+        <div style="margin-bottom: 20px; text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+          <h2 style="color: var(--amber); font-family: 'Share Tech Mono', monospace; font-size: 18px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">Berliner Schule Sequencer</h2>
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom: 20px; color: var(--text-bright); font-size: 12px; line-height: 1.7;">
+          The Berliner Schule Sequencer generates melodic MIDI sequences in the style of the German electronic music pioneers of the 1970s — Tangerine Dream, Ash Ra Tempel, Klaus Schulze, and others. It uses algorithmic composition to create hypnotic, slowly evolving patterns that balance repetition with subtle organic change.
+        </div>
+
+        <!-- SECTION 1: MODES & PRESETS -->
+        <div style="margin-bottom: 25px;">
+          <strong style="color: var(--anchor); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">1. Modes & Presets</strong><br>
+          Choose the compositional approach and starting point:
+          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
+            <li><span style="color: var(--amber);">Presets:</span> <span style="color: var(--text-bright);">Quickly load curated settings. Use these as a baseline and then tweak the parameters to find your own sound.</span></li>
+            <li><span style="color: var(--amber);">Classic:</span> <span style="color: var(--text-bright);">A "Random Walk" within the scale. It creates fluid, unpredictable melodies that still feel harmonically grounded. Perfect for classic cosmic background textures.</span></li>
+            <li><span style="color: var(--amber);">Klaus Schulze:</span> <span style="color: var(--text-bright);">Focuses on sparse, long-held notes and drones. Instead of rhythmic density, it uses "Note Count" to define how many melodic events occur per phrase, creating a meditative, atmospheric feel.</span></li>
+            <li><span style="color: var(--amber);">Offbeat Anchor:</span> <span style="color: var(--text-bright);">Creates a rhythmic tension by locking specific steps (usually the offbeats) to one fixed note. This acts as a "pedal point," allowing the other notes to dance around it without losing the pulse.</span></li>
+            <li><span style="color: var(--amber);">Arpeggiator:</span> <span style="color: var(--text-bright);">Strictly cycles through chord tones. Unlike a standard synth arp, this can be mutated and evolved over time, turning a simple chord into a complex rhythmic pattern.</span></li>
+            <li><span style="color: var(--amber);">Motivic:</span> <span style="color: var(--text-bright);">The most "musical" mode. It generates a short 4-note DNA motif and then applies classical transformations (Inversion, Retrograde). This results in patterns that feel like they have a conscious theme or melody.</span></li>
+          </ul>
+        </div>
+
+        <!-- SECTION 2: TRANSPORT & SEED -->
+        <div style="margin-bottom: 25px;">
+          <strong style="color: var(--cyan); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">2. Transport & Seed System</strong><br>
+          The primary playback controls and the PRNG (Pseudo-Random Number Generator) for reproducible results:
+          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
+            <li><span style="color: var(--amber);">Play/Stop/Generate:</span> <span style="color: var(--text-bright);">Basic transport controls. <span style="color:#fff; font-weight:bold;">Spacebar</span> toggles playback. Use "Generate" whenever you change a generative parameter to apply the changes.</span></li>
+            <li><span style="color: var(--amber);">VOL:</span> <span style="color: var(--text-bright);">Controls only the internal monitoring synth volume. It does not affect your external MIDI hardware or DAW.</span></li>
+            <li><span style="color: var(--amber);">Fixed Seed:</span> <span style="color: var(--text-bright);">If you find a sequence you love, note the seed number. Entering it again will recreate that exact same pattern perfectly.</span></li>
+            <li><span style="color: var(--amber);">Random Seed:</span> <span style="color: var(--text-bright);">Every time you click "Generate", a new random seed is used, giving you an infinite variety of patterns.</span></li>
+          </ul>
+        </div>
+
+        <!-- SECTION 3: MIDI EXPORT & EVOLUTION -->
+        <div style="margin-bottom: 25px;">
+          <strong style="color: var(--amber); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">3. MIDI Export & Evolutionary Chain (🧬)</strong><br>
+          Switch between the two export tabs to choose your output method:
+          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
+            <li><span style="color: var(--amber);">Standard MIDI Export:</span> <span style="color: var(--text-bright);">Exports the current loop exactly as you hear it in the sequencer. Ideal for short loops in your DAW.</span></li>
+            <li><span style="color: var(--amber);">🧬 Evolution Export:</span> <span style="color: var(--text-bright);">Instead of a loop, this creates a long-form composition. It takes your current sequence and "mutates" it over several blocks. This mimics how old modular sequencers would slowly drift and change over 20 minutes.</span>
+              <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
+                <li><span style="color: var(--amber);">Iterations:</span> <span style="color: var(--text-bright);">How many blocks are generated. More iterations = a longer MIDI file.</span></li>
+                <li><span style="color: var(--amber);">Mutation:</span> <span style="color: var(--text-bright);">The "chaos" factor. High values mean each block will differ significantly from the previous one. Low values create a very subtle, slow evolution.</span></li>
+                <li><span style="color: var(--amber);">Drift:</span> <span style="color: var(--text-bright);">Adds sudden octave jumps between blocks, creating dramatic shifts in energy and register.</span></li>
+                <li><span style="color: var(--amber);">Grip:</span> <span style="color: var(--text-bright);">The "anchor" to the original theme. High grip prevents the evolution from wandering too far away from your starting phrase.</span></li>
+                <li><span style="color: var(--amber);">Octave Drift:</span> <span style="color: var(--text-bright);">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
+                <li><span style="color: var(--amber);">Root Shift:</span> <span style="color: var(--text-bright);">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).</span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- WARNING BOX -->
+        <div style="margin-bottom: 20px; border-left: 3px solid var(--amber); padding-left: 15px; background: rgba(251, 191, 36, 0.15); padding-top: 10px; padding-bottom: 10px;">
+          <strong style="color: #fff; font-size: 13px;">⚠️ IMPORTANT: Live vs. Generation</strong><br>
+          Not every control changes the sound immediately:
+          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
+            <li><strong style="color: var(--green);">Live Parameters</strong> <span style="color: var(--text-bright);"> (green labels): These affect the playback engine in real-time. You will hear the change immediately without stopping the music.</span></li>
+            <li><strong style="color: var(--amber);">Generative Parameters:</strong> <span style="color: var(--text-bright);"> These define the "blueprint" of the sequence. To apply these changes, you must click <span style="color: #fff; font-weight: bold;">"↻ Generate"</span> to rebuild the pattern.</span></li>
+          </ul>
+        </div>
+
+        <!-- SECTION 4: SEQUENCER PARAMETERS -->
+        <div style="margin-bottom: 25px;">
+          <strong style="color: var(--green); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">4. Sequencer Parameters</strong><br>
+
+          <div style="margin-top: 10px; padding-left: 15px; border-left: 1px solid var(--border);">
+            <!-- PART A: Timing & Rhythm -->
+            <p><strong style="color:var(--text-bright)">A. Timing & Rhythm:</strong>
+            <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
+              <li><span style="color: var(--green);">BPM:</span> <span style="color: var(--text-bright);">The overall speed. Higher = faster pulse.</span></li>
+              <li><span style="color: var(--green);">Swing:</span> <span style="color: var(--text-bright);">Delays every second step. 0% is a robotic, straight grid; higher values create a "shuffle" or humanized feel common in electronic music.</span></li>
+              <li><span style="color: var(--green);">Steps/Beat:</span> <span style="color: var(--text-bright);">Defines the rhythmic resolution. 4 = standard 16th notes (most common). 2 = 8th notes (slower, more spacious). 8 = 32nd notes (very fast, glitchy bursts). Changing this changes how "dense" the timing feels relative to the BPM.</span></li>
+              <li><span style="color: var(--amber);">Min/Max Length:</span> <span style="color: var(--text-bright);">Controls note duration. If Min is high, you get long, legato notes (smooth). If Max is low, you get short, staccato plucks (percussive).</span></li>
+            </ul></p>
+
+            <!-- PART B: Expression -->
+            <p><strong style="color:var(--text-bright)">B. Expression:</strong>
+            <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
+              <li><span style="color: var(--amber);">Variation:</span> <span style="color: var(--text-bright);">The "organic" factor within a loop. A Sequence consists of several repeats of a Phrase. Variation determines how much each repeat differs from the first one. 0% = perfect repetition (robotic); High % = the pattern evolves slightly every time it loops, preventing listener fatigue.</span></li>
+            </ul></p>
+
+            <!-- PART C: Phrase & Notes -->
+            <p><strong style="color:var(--text-bright)">C. Phrase & Notes (Structural):</strong></p>
+            <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
+              <li><span style="color: var(--amber);">Root Note:</span> <span style="color: var(--text-bright);">The root defines the key.</span></li>
+              <li><span style="color: var(--amber);">Scale:</span> The harmonic palette. It defines the emotional character and tension of the sequence:
+                <ul style="margin-left: 15px; margin-top: 5px; font-size: 11px; color: var(--text-bright); list-style: none;">
+                  <li><strong style="color:var(--amber)">Dorian:</strong> Mystical and soulful. It has a "cool" jazz-like tension, perfect for mid-tempo cosmic journeys.</li>
+                  <li><strong style="color:var(--amber)">Phrygian:</strong> Dark, heavy, and unsettling. Its characteristic minor second creates an intense, cinematic atmosphere.</li>
+                  <li><strong style="color:var(--amber)">Aeolian:</strong> Deeply melancholic and classic. It provides a sense of gravity and emotional weight.</li>
+                  <li><strong style="color:var(--amber)">Mixolydian:</strong> Bright yet slightly unstable. It offers an open, driving energy with a touch of psychedelic flair.</li>
+                  <li><strong style="color:var(--amber)">Pentatonic:</strong> Pure and rhythmic. It avoids heavy tension, focusing on fluid, effortless melodic movement.</li>
+                </ul>
+              </li>
+              <li><span style="color: var(--amber);">Steps:</span> <span style="color: var(--text-bright);">Length of one musical idea before it repeats.</span></li>
+              <li><span style="color: var(--amber);">Steps:</span> <span style="color: var(--text-bright);">The length of one musical "idea" before it repeats. 16 is standard; shorter values feel like tight loops, longer values feel like evolving melodies.</span></li>
+              <li><span style="color: var(--amber);">Repeats:</span> <span style="color: var(--text-bright);">How many times the phrase is played to form one full sequence loop. More repeats give the "Variation" slider more room to work.</span></li>
+              <li><span style="color: var(--amber);">Density:</span> <span style="color: var(--text-bright);">The probability of a note occurring on any given step. 100% = a constant stream of notes; 30% = many rests, creating a sparse, rhythmic pattern.</span></li>
+              <li><span style="color: var(--amber);">Intervall:</span> <span style="color: var(--text-bright);">Limits the "jump" between two consecutive notes. Low values (1-2) create smooth, step-wise melodies; high values allow wide leaps, creating more dramatic and erratic movements.</span></li>
+            </ul></p>
+
+            <!-- PART D: Mode-Specific Settings -->
+            <p><strong style="color:var(--text-bright)">D. Mode-Specific Settings:</strong>
+              <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
+                <li>
+                  <span style="color: var(--amber);">Offbeat Anchor Panel:</span>
+                  <span style="color: var(--text-bright);">
+                    <ul style="margin-left: 15px; margin-top: 5px; list-style: none; font-size: 12px; line-height: 1.6;">
+                      <li><span style="color: var(--amber);">Anchor Note:</span> The fixed pitch that "locks" the rhythm. This is usually a bass note.</li>
+                      <li><span style="color: var(--amber);">Pattern:</span> Defines where the anchor sits. <span style="color:var(--amber)">offbeat</span> creates the classic "push-pull" feel by placing the fixed note on every second step.</li>
+                    </ul>
+                  </span>
+                </li>
+                <li style="margin-top: 10px;">
+                  <span style="color: var(--amber);">Arpeggiator Panel:</span>
+                  <span style="color: var(--text-bright);">
+                    <ul style="margin-left: 15px; margin-top: 5px; list-style: none; font-size: 12px; line-height: 1.6;">
+                      <li><span style="color: var(--amber);">Root Note & Chord Type:</span> Defines the harmony. Changing from "Minor" to "Maj7" completely changes the emotional quality of the arp.</li>
+                      <li><span style="color: var(--amber);">Pattern:</span> <span style="color:var(--amber)">updown</span> (Ping-pong) is a staple of 70s synth music, creating a wave-like motion.</li>
+                      <li><span style="color: var(--amber);">Octaves:</span> Expands the vertical range. More octaves make the sequence feel more expansive and cinematic.</li>
+                    </ul>
+                  </span>
+                </li>
+              </ul>
+            </p>
+          </div>
+        </div>
+
+        <!-- SECTION 5: DISPLAY LEGEND -->
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--text-bright); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">🔍 Sequencer Display Legend</strong><br>
+          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
+            <li><span style="color: var(--cyan);">Blue cell:</span> <span style="color: var(--text-bright);">Standard generated note.</span></li>
+            <li><span style="color: var(--anchor);">Pink cell:</span> <span style="color: var(--text-bright);">Anchor note (fixed pitch).</span></li>
+            <li><span style="color: #fff;">Dark/empty cell:</span> <span style="color: var(--text-bright);">A rest.</span></li>
+            <li><span style="color: #fff;">Semi-transparent blue:</span> <span style="color: var(--text-bright);">A tie (the previous note is being held).</span></li>
+            <li><span style="color: #fff;">Blue height bar:</span> <span style="color: var(--text-bright);">Visual pitch indicator. Higher bar = higher note relative to the current sequence range.</span></li>
+          </ul>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 20px 0; font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--text-bright);">
+          COPYRIGHT &copy; 2026 BY REINER PROKEIN | LICENSED UNDER MIT
+        </div>
+
+      </div>
+  </details>
+
+  <!-- Sequencer display -->
+  <section class="seq-section">
+    <div class="seq-header">
+      <span class="seq-title">Sequence</span>
+      <div class="stat-pills" id="statPills"></div>
+    </div>
+    <div class="seq-canvas">
+      <div class="seq-inner">
+        <div class="row-labels" id="rowLabels"></div>
+        <div class="seq-rows" id="seqRows"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>.hidden { display: none !important; }</style>
+
+<script>
+/**
+ * Helper to update DOM text without blocking the UI thread (prevents stuttering)
+ */
+function fastUpdateText(id, value, isPercent = false) {
+  requestAnimationFrame(() => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = isPercent ? value + '%' : value;
+    }
+  });
+}
+/**
+ * Handles the switching between MIDI and Evolution export panels.
+ */
+function initExportTabs() {
+  const tabs = document.querySelectorAll('.export-tab');
+  const panels = document.querySelectorAll('.export-panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.target;
+
+      // Update active tab style
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Show corresponding panel
+      panels.forEach(p => {
+        p.classList.toggle('active', p.id === target);
+      });
+    });
+  });
+}
+
+// Call this in your init sequence
+initExportTabs();
+
+/**
+ * Toggles the visibility of the Root Interval dropdown based on the selected Root Mode.
+ */
+function updateEvoRootUI() {
+  const mode = document.getElementById('evoRootMode').value;
+  const container = document.getElementById('evoIntervalContainer');
+
+  // Hide if "none", show for everything else
+  if (mode === 'none') {
+    container.style.display = 'none';
+  } else {
+    container.style.display = 'flex';
+  }
+}
+
+// Attach the listener to the Root Mode dropdown
+document.getElementById('evoRootMode').addEventListener('change', updateEvoRootUI);
+
+// Initialize on load
+updateEvoRootUI();
+
+// ─── Scales ───
+const SCALES = {
+  dorian:     [0,2,3,5,7,9,10],
+  phrygian:   [0,1,3,5,7,8,10],
+  aeolian:    [0,2,3,5,7,8,10],
+  mixolydian: [0,2,4,5,7,9,10],
+  minorPent:  [0,3,5,7,10],
+  majorPent:  [0,2,4,7,9],
+};
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const SCHULZE_INTERVALS = [3,4,5,7,-3,-4,-5];
+
+function midiToName(m) {
+  return NOTE_NAMES[m % 12] + (Math.floor(m/12)-1);
+}
+function getWeights(len) {
+  const w = new Array(len).fill(1);
+  w[0] = 4;
+  const fi = len >= 5 ? (len===5?3:4) : Math.min(3,len-1);
+  w[fi] = 3;
+  if (len>3) w[2] = 1.5;
+  if (len>5) w[len-2] = 1.2;
+  return w;
+}
+
+// ─── PRNG ───
+class RNG {
+  constructor(seed) { this.s = seed>>>0 || (Date.now()&0xffffffff); }
+  next() { this.s=(this.s*1664525+1013904223)>>>0; return this.s/0xffffffff; }
+  int(a,b) { return a+Math.floor(this.next()*(b-a+1)); }
+  chance(p) { return this.next()<p; }
+  pickWeighted(w) {
+    const t=w.reduce((a,b)=>a+b,0); let r=this.next()*t;
+    for (let i=0;i<w.length;i++){r-=w[i];if(r<=0)return i;}
+    return w.length-1;
+  }
+}
+
+function scaleDegreeToMidi(root, scale, deg, oct) {
+  const len=scale.length;
+  const o=Math.floor(deg/len);
+  const d=((deg%len)+len)%len;
+  return root+scale[d]+(oct+o)*12;
+}
+
+function isNoteStep(s) { return s&&!s.rest&&!s.tie&&s.midi!=null; }
+
+// ─── Motivic Development Logic ───
+
+function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, density, maxNoteLen}) {
+  const motifLen = 4; // Fixed core motif length for stability
+  const motifEvents = [];
+  let degree = rng.int(0, scale.length - 1);
+  let octave = octaveStart;
+
+  // 1. Generate the Core Motif (The "DNA")
+  for (let i = 0; i < motifLen; i++) {
+    const midi = scaleDegreeToMidi(root, scale, degree, octave);
+    motifEvents.push({midi, degree, octave});
+    degree += rng.int(-2, 2); // Small jumps for the core theme
+    while(degree >= scale.length){degree -= scale.length; octave++;}
+    while(degree < 0){degree += scale.length; octave--;}
+  }
+
+  const fullEvents = [];
+  let currentStep = 0;
+
+  // 2. Fill the phrase by transforming the motif
+  while (currentStep < phraseLen) {
+    const transformType = rng.int(0, 3); // 0: Original, 1: Inversion, 2: Retrograde, 3: Transposition
+    const transOctave = rng.int(-1, 1);
+
+    for (let i = 0; i < motifLen && currentStep < phraseLen; i++) {
+      let event = {...motifEvents[i]};
+
+      if (transformType === 1) { // INVERSION: Mirror intervals around the first note
+        const diff = event.degree - motifEvents[0].degree;
+        event.degree = motifEvents[0].degree - diff;
+        event.midi = scaleDegreeToMidi(root, scale, event.degree, event.octave);
+      } else if (transformType === 2) { // RETROGRADE: Play motif backwards
+        const revEvent = motifEvents[motifLen - 1 - i];
+        event = {...revEvent};
+      } else if (transformType === 3) { // TRANSPOSITION: Shift the whole motif
+        event.octave += transOctave;
+        event.midi = scaleDegreeToMidi(root, scale, event.degree, event.octave);
+      }
+
+      if (rng.chance(density ?? 1)) {
+        const dur = rng.int(1, Math.min(maxNoteLen, phraseLen - currentStep));
+        fullEvents.push({start: currentStep, duration: dur, ...event});
+        currentStep += dur;
+      } else {
+        currentStep++;
+      }
+    }
+  }
+  return fullEvents;
+}
+
+function mutateMotivicPhrase(rng, events, variation, params) {
+  // For Motivic mode, mutation means slightly altering the core motif
+  // and then regenerating the phrase. To keep it simple and consistent:
+  const copy = events.map(e => ({...e}));
+  const n = Math.max(1, Math.floor(copy.length * variation));
+
+  for (let m = 0; m < n; m++) {
+    const idx = rng.int(0, copy.length - 1);
+    if (rng.chance(0.3)) {
+      // Instead of deleting, we shift the note to keep the motivic structure
+      const deg = rng.pickWeighted(params.weights);
+      copy[idx].degree = deg;
+      copy[idx].midi = scaleDegreeToMidi(params.root, params.scale, deg, copy[idx].octave);
+    } else {
+      copy[idx].octave += rng.chance(0.5) ? 1 : -1;
+      copy[idx].midi = scaleDegreeToMidi(params.root, params.scale, copy[idx].degree, copy[idx].octave);
+    }
+  }
+  return copy;
+}
+
+/**
+ * Generates a basic melodic phrase based on random walk logic.
+ * Respects minNoteLen and maxNoteLen to avoid unwanted short notes.
+ */
+function buildPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights, octaveStart, maxNoteLen, minNoteLen}) {
+  const events = [];
+  let degree = rng.int(0, scale.length - 1), octave = octaveStart;
+
+  for (let i = 0; i < phraseLen; i++) {
+    if (!rng.chance(density)) continue;
+
+    const midi = scaleDegreeToMidi(root, scale, degree, octave);
+
+    const min = minNoteLen || 1;
+    const max = maxNoteLen || phraseLen;
+    const availableSpace = phraseLen - i;
+
+    if (availableSpace < min) {
+      continue;
+    }
+
+    const dur = rng.int(min, Math.min(max, availableSpace));
+    events.push({start: i, duration: dur, midi, degree, octave});
+    i += dur - 1;
+
+    let step = rng.int(-maxInterval, maxInterval);
+    degree += step || (rng.chance(0.5) ? 1 : -1);
+    while(degree >= scale.length){ degree -= scale.length; octave++; }
+    while(degree < 0){ degree += scale.length; octave--; }
+    octave = Math.max(-1, Math.min(2, octave));
+  }
+  return events;
+}
+
+function mutatePhrase(rng, events, variation, params) {
+  const copy = events.map(e => ({...e}));
+  if (copy.length === 0) {
+    return [{start: rng.int(0, params.phraseLen - 1), duration: 1, midi: scaleDegreeToMidi(params.root, params.scale, 0, 0), degree: 0, octave: 0}];
+  }
+
+  const n = Math.max(1, Math.floor(copy.length * variation));
+
+  // --- DYNAMIC PROBABILITY CALCULATION ---
+  // We map the variation (0.0 to 1.0) to different weights.
+  // Low variation -> mostly modification. High variation -> more add/remove.
+
+  // Base probability for structural changes (add/remove) increases with variation
+  const structuralChance = Math.min(0.4, variation * 0.8); // Max 40% total for add/remove
+  const addChance = structuralChance / 2;
+  const removeChance = structuralChance / 2;
+  const modifyChance = 1 - structuralChance;
+
+  for (let m = 0; m < n; m++) {
+    const roll = rng.next();
+
+    if (roll < removeChance) {
+      // --- SUBTRACTION ---
+      if (copy.length > 1) {
+        const idx = rng.int(0, copy.length - 1);
+        copy.splice(idx, 1);
+      }
+    } else if (roll < removeChance + addChance) {
+      // --- ADDITION ---
+      const start = rng.int(0, params.phraseLen - 1);
+      if (!copy.find(e => e.start === start)) {
+        const deg = rng.pickWeighted(params.weights);
+        const oct = rng.int(-1, 1);
+        copy.push({
+          start: start,
+          duration: Math.max(params.minNoteLen || 1, rng.int(1, Math.min(params.maxNoteLen || 4, params.phraseLen - start))),
+          midi: scaleDegreeToMidi(params.root, params.scale, deg, oct),
+          degree: deg,
+          octave: oct
+        });
+      }
+    } else {
+      // --- MODIFICATION ---
+      const idx = rng.int(0, copy.length - 1);
+      const ev = copy[idx];
+      if (ev) {
+        const deg = rng.pickWeighted(params.weights);
+        const oct = rng.int(-1, 1);
+        ev.degree = deg;
+        ev.octave = oct;
+        ev.midi = scaleDegreeToMidi(params.root, params.scale, deg, oct);
+      }
+    }
+  }
+  return copy;
+}
+
+function expandEvents(events, len) {
+  const t=Array.from({length:len},()=>({rest:true}));
+  for (const ev of events) {
+    const s=Math.min(ev.start,len-1);
+    const d=Math.min(ev.duration,len-s);
+    t[s]={rest:false,midi:ev.midi,degree:ev.degree,octave:ev.octave,holdSteps:d,noteStart:true};
+    for (let j=1;j<d;j++) t[s+j]={rest:true,tie:true,tiedMidi:ev.midi};
+  }
+  return t;
+}
+
+function layoutLongNotes(rng,phraseLen,noteCount,minLen) {
+  if (noteCount===1) return [{start:0,duration:phraseLen}];
+  if (noteCount===2) {
+    const gap=rng.int(2,Math.min(8,Math.floor(phraseLen*0.2)));
+    const usable=phraseLen-gap;
+    let d1=Math.max(minLen,Math.floor(usable*(0.42+rng.next()*0.18)));
+    let d2=usable-d1;
+    if (d2<minLen){d2=minLen;d1=Math.max(minLen,usable-d2);}
+    return [{start:0,duration:d1},{start:d1+gap,duration:Math.min(d2,phraseLen-d1-gap)}];
+  }
+  const slots=[];let pos=0;
+  for (let n=0;n<noteCount;n++) {
+    const rem=phraseLen-pos;
+    if (rem<minLen) break;
+    const isLast=n===noteCount-1;
+    const dur=isLast?rem:rng.int(minLen,Math.max(minLen,Math.floor(rem/(noteCount-n))-2));
+    slots.push({start:pos,duration:dur});
+    pos+=dur;
+    if (!isLast) pos+=rng.int(1,4);
+  }
+  return slots;
+}
+
+function buildSchulzePhrase(rng,{scale,root,phraseLen,weights,octaveStart,noteCount,minNoteLen}) {
+  const d0=rng.pickWeighted(weights);
+  const intv=SCHULZE_INTERVALS[rng.int(0,SCHULZE_INTERVALS.length-1)];
+  let d1=d0+intv;
+  while(d1>=scale.length)d1-=scale.length;
+  while(d1<0)d1+=scale.length;
+  const degs=[d0,d1];
+  const octs=[octaveStart,octaveStart+(rng.chance(0.4)?1:0)];
+  const layout=layoutLongNotes(rng,phraseLen,noteCount,minNoteLen);
+  const events=layout.map((slot,i)=>{
+    const deg=degs[Math.min(i,degs.length-1)];
+    const oct=octs[Math.min(i,octs.length-1)];
+    return {start:slot.start,duration:slot.duration,midi:scaleDegreeToMidi(root,scale,deg,oct),degree:deg,octave:oct};
+  });
+  return expandEvents(events,phraseLen);
+}
+
+function mutateSchulzePhrase(rng,phrase,variation,params) {
+  const events=[];
+  for (let i=0;i<phrase.length;i++) {
+    const s=phrase[i];
+    if (s.noteStart) events.push({start:i,duration:s.holdSteps,midi:s.midi,degree:s.degree,octave:s.octave});
+  }
+
+  // Prevent crash if no notes are left in the phrase
+  if (events.length === 0) return phrase;
+
+  const n=Math.max(1,Math.floor(events.length*variation*2));
+  for (let m=0;m<n;m++) {
+    const ev=events[rng.int(0,events.length-1)];
+    if (rng.chance(0.5)){
+      ev.degree=(ev.degree+rng.int(-2,2)+params.scale.length)%params.scale.length;
+      ev.midi=scaleDegreeToMidi(params.root,params.scale,ev.degree,ev.octave);
+    } else {
+      ev.duration=Math.max(params.minNoteLen,ev.duration+rng.int(-2,2));
+    }
+  }
+  return expandEvents(events,phrase.length);
+}
+
+// ─── Offbeat anchor mode ───
+function buildOffbeatPhrase(rng, {scale,root,phraseLen,maxInterval,density,weights,octaveStart,maxNoteLen}, anchorMidi, anchorPattern) {
+  const events=[];
+  let degree=rng.int(0,scale.length-1), octave=octaveStart;
+
+  for (let i=0;i<phraseLen;i++) {
+    if (checkAnchorPos(i, anchorPattern, phraseLen)) {
+      events.push({start: i, duration: 1, midi: anchorMidi, degree: null, octave: null, isAnchor: true});
+    } else if (rng.chance(density)) {
+      const midi=scaleDegreeToMidi(root,scale,degree,octave);
+      const dur = rng.int(1, Math.min(maxNoteLen, phraseLen - i));
+      events.push({start: i, duration: dur, midi, degree, octave});
+      i += dur - 1;
+
+      let step=rng.int(-maxInterval,maxInterval);
+      degree+=step||( rng.chance(0.5)?1:-1);
+      while(degree>=scale.length){degree-=scale.length;octave++;}
+      while(degree<0){degree+=scale.length;octave--;}
+      octave=Math.max(-1,Math.min(2,octave));
+    }
+  }
+  return events;
+}
+
+function checkAnchorPos(i, pattern, len) {
+  if (pattern==='offbeat') return i%2===1;
+  if (pattern==='every3') return i%3===2;
+  if (pattern==='every4') return i%4===3;
+  if (pattern==='offbeat16') return i%4===2;
+  return false;
+}
+
+function mutateOffbeatPhrase(rng,events,variation,params,anchorMidi,anchorPattern) {
+  const copy = events.map(e => ({...e}));
+  const n = Math.max(1, Math.floor(copy.length * variation));
+
+  for (let m=0; m<n; m++) {
+    const idx = rng.int(0, copy.length - 1);
+    const ev = copy[idx];
+
+    // Do not mutate anchor notes
+    if (ev.isAnchor) continue;
+
+    if (rng.chance(0.3)) {
+      copy.splice(idx, 1);
+    } else {
+      const deg = rng.pickWeighted(params.weights);
+      const oct = rng.int(-1, 1);
+      ev.degree = deg;
+      ev.octave = oct;
+      ev.midi = scaleDegreeToMidi(params.root, params.scale, deg, oct);
+    }
+  }
+  return copy; // Returns mutated Event-Array
+}
+
+// ─── Arpeggiator Logic ───
+const CHORD_TYPES = {
+  maj:     [0,4,7],
+  min:     [0,3,7],
+  dim:     [0,3,6],
+  aug:     [0,4,8],
+  sus2:    [0,2,7],
+  sus4:    [0,5,7],
+  maj7:    [0,4,7,11],
+  dom7:    [0,4,7,10],
+  min7:    [0,3,7,10],
+  minmaj7: [0,3,7,11],
+  hdim7:   [0,3,6,10],
+  dim7:    [0,3,6,9],
+  add9:    [0,4,7,14],
+  maj9:    [0,4,7,11,14],
+  dom9:    [0,4,7,10,14],
+  min9:    [0,3,7,10,14],
+  maj6:    [0,4,7,9],
+  min6:    [0,3,7,9],
+  dom11:   [0,4,7,10,14,17],
+  dom13:   [0,4,7,10,14,17,21],
+};
+
+function buildArpPhrase(rng, {phraseLen, density, maxNoteLen}, arpRoot, arpChord, arpPattern, arpOctaves) {
+  const intervals = CHORD_TYPES[arpChord] || [0,4,7];
+  const octaves = parseInt(arpOctaves);
+  const baseOct = 4; // Starting octave C4
+
+  const tones = [];
+  for (let o = 0; o < octaves; o++) {
+    for (const iv of intervals) {
+      const midi = (baseOct + o) * 12 + arpRoot + iv;
+      if (midi <= 127) tones.push(midi);
+    }
+  }
+
+  let ordered;
+  if (arpPattern === 'down') {
+    ordered = [...tones].reverse();
+  } else if (arpPattern === 'updown') {
+    ordered = [...tones, ...[...tones].reverse().slice(1, -1)];
+  } else {
+    ordered = [...tones];
+  }
+
+const events = [];
+  let pos = 0;
+  for (let i = 0; i < phraseLen; i++) {
+    if (!rng.chance(density)) continue;
+    let midi;
+    if (arpPattern === 'random') {
+      midi = ordered[rng.int(0, ordered.length - 1)];
+    } else {
+      midi = ordered[pos % ordered.length];
+      pos++;
+    }
+    events.push({start: i, duration: 1, midi, degree: 0, octave: 0});
+  }
+  return events;
+}
+
+function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpPattern, arpOctaves) {
+  const copy = events.map(e => ({...e}));
+  const n = Math.max(1, Math.floor(copy.length * variation));
+  for (let m = 0; m < n; m++) {
+    if (copy.length === 0) break;
+    const idx = rng.int(0, copy.length - 1);
+    if (rng.chance(0.25)) {
+      copy.splice(idx, 1);
+    } else {
+      const fresh = buildArpPhrase(rng, {...params, phraseLen: params.phraseLen}, arpRoot, arpChord, arpPattern, arpOctaves);
+      if (fresh.length > 0) {
+        const ev = fresh[rng.int(0, fresh.length - 1)];
+        copy[idx] = {...ev, start: copy[idx].start};
+      }
+    }
+  }
+  return copy;
+}
+
+// ─── State ───
+let sequence=[];
+let playing=false;
+let playToken=0;
+let audioCtx=null;
+let currentMode='classic';
+
+// ─── NEW HELPER: The "Block Factory" ───
+// This function implements the EXACT logic of the main loop generation.
+// It takes a starting phrase and expands it by 'repeats' using the variation logic.
+function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams) {
+  const block = [];
+  let currentEvents = [...startEvents];
+
+  for (let r = 0; r < repeats; r++) {
+    // Expand the current event set into actual steps
+    block.push(...expandEvents(currentEvents, params.phraseLen));
+
+    // Apply variation for the next repeat within the block
+    const varRate = +document.getElementById('variation').value / 100;
+    if (mode === 'schulze') {
+      // Schulze mutation is special as it works on expanded steps
+      const expanded = expandEvents(currentEvents, params.phraseLen);
+      const mutated = mutateSchulzePhrase(rng, expanded, varRate, params);
+      currentEvents = [];
+      mutated.forEach((s, idx) => {
+        if(s.noteStart) currentEvents.push({start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave});
+      });
+    } else if (mode === 'offbeat') {
+      currentEvents = mutateOffbeatPhrase(rng, currentEvents, varRate, params, anchorMidi, anchorPattern);
+    } else if (mode === 'arp') {
+      currentEvents = mutateArpPhrase(rng, currentEvents, varRate, params, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
+    } else if (mode === 'motivic') {
+      currentEvents = mutateMotivicPhrase(rng, currentEvents, varRate, params);
+    } else {
+      currentEvents = mutatePhrase(rng, currentEvents, varRate, params);
+    }
+  }
+  return block;
+}
+
+// ─── Generate ───
+/**
+ * Main generation entry point.
+ * Orchestrates the creation of the sequence based on current UI settings.
+ */
+
+/**
+ * Main generation entry point.
+ * Orchestrates the creation of the sequence based on current UI settings.
+ */
+function generateSequence() {
+  const mode = currentMode;
+  const scaleKey = document.getElementById('scale').value;
+  const scale = SCALES[scaleKey];
+  const root = parseInt(document.getElementById('root').value);
+
+  // FIXED: Ensure all numeric values are parsed correctly from the DOM
+  const phraseLen = parseInt(document.getElementById('phraseLen').value) || 16;
+  const repeats = parseInt(document.getElementById('repeats').value) || 4;
+  const density = (parseFloat(document.getElementById('density').value) || 72) / 100;
+  const maxInterval = parseInt(document.getElementById('maxInterval').value) || 3;
+
+  const seedMode = document.getElementById('seedMode').value;
+  let seed = (seedMode === 'fixed') ? (parseInt(document.getElementById('seedValue').value) || 0) : Math.floor(Math.random() * 9999999);
+  if (seedMode !== 'fixed') document.getElementById('seedValue').value = seed;
+  const rng = new RNG(seed);
+
+  const anchorMidi = parseInt(document.getElementById('anchorNote').value) || 48;
+  const anchorPattern = document.getElementById('anchorPattern').value;
+
+  // FIXED: Ensure arpParams are grabbed correctly
+  const arpParams = {
+    root: parseInt(document.getElementById('arpRoot').value) || 0,
+    chord: document.getElementById('arpChord').value,
+    pattern: document.getElementById('arpPattern').value,
+    octaves: document.getElementById('arpOctaves').value
+  };
+
+  const noteCount  = parseInt(document.getElementById('noteCount').value) || 2;
+  const minNoteLen = parseInt(document.getElementById('minNoteLen').value) || 1;
+  const maxNoteLen = parseInt(document.getElementById('maxNoteLen').value) || 4;
+
+  // General params object used across different modes
+  const params = {
+    scale,
+    root,
+    phraseLen,
+    maxInterval,
+    density,
+    weights: getWeights(scale.length),
+    noteCount,
+    minNoteLen,
+    maxNoteLen
+  };
+
+  let octaveStart = 0;
+  let currentEvents = [];
+
+  // Initial Phrase Generation - Mode specific logic
+  try {
+    if (mode === 'schulze') {
+      const p = buildSchulzePhrase(rng, { ...params, octaveStart });
+      currentEvents = [];
+      p.forEach((s, idx) => {
+        if(s.noteStart) currentEvents.push({start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave});
+      });
+    } else if (mode === 'offbeat') {
+      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart }, anchorMidi, anchorPattern);
+    } else if (mode === 'arp') {
+      currentEvents = buildArpPhrase(rng, { phraseLen, density, maxNoteLen }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
+    } else if (mode === 'motivic') {
+      currentEvents = buildMotivicPhrase(rng, { ...params, octaveStart });
+    } else {
+      // Classic mode
+      currentEvents = buildPhrase(rng, { ...params, octaveStart });
+    }
+
+    const full = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
+
+    sequence = full;
+    renderSequence();
+    updatePills();
+    setStatus('ready', false);
+  } catch (err) {
+    console.error("Generation failed:", err);
+    setStatus('Error generating', false);
+    sequence = []; // Reset to prevent rendering old/broken data
+  }
+}
+
+// ─── Evolution Logic (New) ───
+
+// ─── Evolution Logic ───
+
+/**
+ * Generates a long evolutionary chain of phrases for MIDI export.
+ * FIXED: Octave Drift is now fully functional and integrated into the mutation cycle.
+ * FIXED: ROOT_SHIFTS moved outside the loop to prevent re-declaration and ensure correct harmonic progression.
+ * FIXED: Return statement moved outside the loop to complete the full evolution chain.
+ */
+function generateEvolutionaryChain() {
+  const mode = currentMode;
+  const scaleKey = document.getElementById('scale').value;
+  const scale = SCALES[scaleKey];
+  const root = parseInt(document.getElementById('root').value);
+  const phraseLen = +document.getElementById('phraseLen').value;
+  const repeats = +document.getElementById('repeats').value;
+  const iterations = +document.getElementById('evoIterations').value;
+  const mutationRate = +document.getElementById('evoMutation').value / 100;
+  const driftProb = +document.getElementById('evoDrift').value / 100;
+  const gripStrength = +document.getElementById('evoGrip').value / 100;
+
+  // Root Shift Settings - Now deterministic based on mode and interval
+  const rootShiftMode = document.getElementById('evoRootMode').value;
+  const rootShiftInterval = parseInt(document.getElementById('evoRootInterval')?.value || "2");
+
+  const evoSeedMode = document.getElementById('evoSeedMode').value;
+  const seed = (evoSeedMode === 'fixed') ? (parseInt(document.getElementById('seedValue').value) || 0) : Math.floor(Math.random() * 9999999);
+  const rng = new RNG(seed);
+
+  const noteCount  = +document.getElementById('noteCount').value;
+  const minNoteLen = +document.getElementById('minNoteLen').value;
+  const maxNoteLen = +document.getElementById('maxNoteLen').value;
+
+  const params = {
+    scale, root, phraseLen,
+    maxInterval: +document.getElementById('maxInterval').value,
+    density: +document.getElementById('density').value / 100,
+    weights: getWeights(scale.length),
+    noteCount,
+    minNoteLen,
+    maxNoteLen
+  };
+
+  const anchorMidi = parseInt(document.getElementById('anchorNote').value);
+  const anchorPattern = document.getElementById('anchorPattern').value;
+  const arpParams = {
+    root: parseInt(document.getElementById('arpRoot').value),
+    chord: document.getElementById('arpChord').value,
+    pattern: document.getElementById('arpPattern').value,
+    octaves: document.getElementById('arpOctaves').value
+  };
+
+  let fullCompositionSteps = [];
+  let currentEvents = [];
+  let originalEvents = [];
+  let currentRoot = root;
+
+  const clampMidi = (m) => Math.max(24, Math.min(84, m));
+
+  // Initialize starting point
+  if (sequence && sequence.length > 0) {
+    fullCompositionSteps = [...sequence];
+    const firstPhraseSteps = sequence.slice(0, phraseLen);
+    currentEvents = [];
+    firstPhraseSteps.forEach((s, idx) => {
+      if (s.noteStart && !s.rest) {
+        currentEvents.push({ start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave });
+      }
+    });
+    originalEvents = currentEvents.map(e => ({...e}));
+  } else {
+    if (mode === 'schulze') {
+      const expanded = buildSchulzePhrase(rng, { ...params, octaveStart: 0 });
+      currentEvents = [];
+      expanded.forEach((s, idx) => { if(s.noteStart) currentEvents.push({start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave}); });
+    } else if (mode === 'offbeat') {
+      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart: 0 }, anchorMidi, anchorPattern);
+    } else if (mode === 'arp') {
+      currentEvents = buildArpPhrase(rng, { phraseLen, density: params.density, maxNoteLen }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
+    } else if (mode === 'motivic') {
+      currentEvents = buildMotivicPhrase(rng, { ...params, octaveStart: 0 });
+    } else {
+      currentEvents = buildPhrase(rng, { ...params, octaveStart: 0 });
+    }
+    originalEvents = currentEvents.map(e => ({...e}));
+    fullCompositionSteps = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
+  }
+
+  const ROOT_SHIFTS = {
+    free:       { type: 'random', vals: [3, -3, 4, -4, 5, -5, 7, -7] },
+    thirds:     { type: 'random', vals: [3, -3, 4, -4] },
+    fourths:    { type: 'random', vals: [5, -5] },
+    fifths:     { type: 'random', vals: [7, -7] },
+    alt_whole:  { type: 'cycle',  vals: [2, -2, 2, -2] },
+    alt_semi:   { type: 'cycle',  vals: [1, -1, 1, -1] },
+    modal_iii:  { type: 'cycle',  vals: [4] },
+    modal_iv:   { type: 'cycle',  vals: [5] },
+    circulating:{ type: 'cycle',  vals: [7, 2, 2, -4, -4, -5, 5, 5] },
+    slow_osc:   { type: 'cycle',  vals: [5, -5, 7, -7] },
+    pop_standard: { type: 'cycle', vals: [7, 2, -5, 5] },
+    fifties:      { type: 'cycle', vals: [-3, 4, 2, 3] },
+    andalusian:   { type: 'cycle', vals: [-1, -3, -2] },
+    minor_common: { type: 'cycle', vals: [3, -5, 2, 3] },
+    jazz_standard:{ type: 'cycle', vals: [5, -5, 5, -1, 5, 2, -3, 5] },
+    pachelbel:    { type: 'cycle', vals: [7, 2, -4, 1, -5, 5, 2] },
+    chromatic:    { type: 'cycle', vals: [1, 1, 1, 1] },
+    pentatonic:   { type: 'cycle', vals: [3, 2, 2, 3, 2] }
+  };
+
+  for (let i = 1; i < iterations; i++) {
+    // 1. Octave Drift
+    if (driftProb > 0 && rng.chance(driftProb)) {
+      const driftDir = rng.chance(0.5) ? 12 : -12;
+      currentEvents = currentEvents.map(e => ({
+        ...e,
+        midi: clampMidi(e.midi + driftDir),
+        octave: e.octave + (driftDir / 12)
+      }));
+    }
+
+    // 2. Mutation
+    currentEvents = currentEvents.map(ev => {
+      if (rng.chance(mutationRate)) {
+        const newEv = {...ev};
+        if (rng.chance(0.7)) {
+          const deg = rng.pickWeighted(params.weights);
+          const oct = rng.int(-1, 1);
+          newEv.degree = deg;
+          newEv.octave = oct;
+          newEv.midi = clampMidi(scaleDegreeToMidi(currentRoot, params.scale, deg, oct));
+        } else {
+          newEv.octave += rng.chance(0.5) ? 1 : -1;
+          newEv.midi = clampMidi(scaleDegreeToMidi(currentRoot, params.scale, newEv.degree, newEv.octave));
+        }
+        return newEv;
+      }
+      return ev;
+    });
+
+    // 3. Thematic Grip
+    currentEvents = currentEvents.map((ev, idx) => {
+      if (rng.chance(gripStrength)) {
+        const orig = originalEvents[idx] || originalEvents[0];
+        if (!orig) return ev;
+        const originalInterval = orig.midi - root;
+        return { ...ev, midi: clampMidi(currentRoot + originalInterval), degree: orig.degree, octave: orig.octave };
+      }
+      return ev;
+    });
+
+    const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
+    fullCompositionSteps = fullCompositionSteps.concat(iterationBlock);
+
+    // 4. Root Shift - Now deterministic if a mode is selected
+    if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
+      const config = ROOT_SHIFTS[rootShiftMode] || ROOT_SHIFTS.free;
+      let interval;
+
+      if (config.type === 'cycle') {
+        const stepIndex = Math.floor(i / rootShiftInterval) % config.vals.length;
+        interval = config.vals[stepIndex];
+      } else {
+        interval = config.vals[rng.int(0, config.vals.length - 1)];
+      }
+
+      const newRoot = currentRoot + interval;
+      if (Math.abs(newRoot - root) <= 7) {
+        const shift = newRoot - currentRoot;
+        currentRoot = newRoot;
+        params.root = currentRoot;
+        currentEvents = currentEvents.map(e => ({ ...e, midi: clampMidi(e.midi + shift) }));
+      }
+    }
+  }
+
+  return fullCompositionSteps;
+}
+
+// ─── Render ───
+
+/**
+ * Initializes the sequencer grid by creating a fixed pool of DOM elements.
+ */
+function initSequencerGrid() {
+  const rows = document.getElementById('seqRows');
+  const labels = document.getElementById('rowLabels');
+
+  rows.innerHTML = '';
+  labels.innerHTML = '';
+
+  // We create a generous buffer to avoid recreating the DOM often.
+  const maxRows = 32;
+  const maxCols = 64; // Increased to cover all possible phrase lengths
+
+  for (let r = 0; r < maxRows; r++) {
+    const lbl = document.createElement('div');
+    lbl.className = 'row-label mono';
+    lbl.textContent = '×' + (r + 1);
+    lbl.style.display = 'none';
+    labels.appendChild(lbl);
+
+    const row = document.createElement('div');
+    row.className = 'step-row';
+    row.style.display = 'none';
+
+    for (let c = 0; c < maxCols; c++) {
+      const div = document.createElement('div');
+      div.className = 'step';
+      // IMPORTANT: The index is now relative to the column, not absolute
+      div.dataset.col = c;
+
+      const noteSpan = document.createElement('span');
+      noteSpan.className = 'step-note';
+      div.appendChild(noteSpan);
+
+      const pitchBar = document.createElement('div');
+      pitchBar.className = 'pitch-bar';
+      div.appendChild(pitchBar);
+
+      row.appendChild(div);
+    }
+    rows.appendChild(row);
+  }
+}
+
+/**
+ * Updates the existing DOM elements based on current sequence and phrase length.
+ */
+function renderSequence() {
+  if (!sequence.length) return;
+
+  const rowsContainer = document.getElementById('seqRows');
+  const labelsContainer = document.getElementById('rowLabels');
+  const rowElements = rowsContainer.children;
+  const labelElements = labelsContainer.children;
+
+  const phraseLen = +document.getElementById('phraseLen').value;
+  const total = sequence.length;
+  const numRows = Math.ceil(total / phraseLen);
+
+  const notes = sequence.filter(isNoteStep);
+  const midiMin = notes.length ? Math.min(...notes.map(s => s.midi)) : 48;
+  const midiMax = notes.length ? Math.max(...notes.map(s => s.midi)) : 72;
+  const midiRange = Math.max(1, midiMax - midiMin);
+
+  // Update Row Visibility
+  for (let r = 0; r < labelElements.length; r++) {
+    const isVisible = r < numRows;
+    labelElements[r].style.display = isVisible ? 'flex' : 'none';
+    rowElements[r].style.display = isVisible ? 'flex' : 'none';
+  }
+
+  // Update Step Elements
+  for (let r = 0; r < numRows; r++) {
+    const row = rowElements[r];
+    const steps = row.children;
+
+    for (let c = 0; c < steps.length; c++) {
+      const div = steps[c];
+
+      // Only process columns that belong to the current phrase length
+      if (c < phraseLen) {
+        div.style.display = 'flex';
+
+        const i = r * phraseLen + c; // Correct absolute index in sequence
+        const s = i < total ? sequence[i] : { rest: true };
+
+        // Update Index for the playing cursor (highlightStep)
+        div.dataset.idx = i;
+
+        let cls = 'step';
+        if (i >= total) {
+          cls += ' rest';
+          div.style.opacity = '0.2';
+        } else {
+          div.style.opacity = '1';
+          if (s.isAnchor) cls += ' anchor';
+          else if (s.tie) cls += ' tie';
+          else if (s.rest) cls += ' rest';
+          else cls += ' on';
+        }
+        div.className = cls;
+
+        const noteSpan = div.querySelector('.step-note');
+        const pitchBar = div.querySelector('.pitch-bar');
+
+        if (isNoteStep(s) || s.isAnchor) {
+          noteSpan.textContent = midiToName(s.midi);
+          const norm = (s.midi - midiMin) / midiRange;
+          pitchBar.style.height = Math.round(norm * 70 + 10) + '%';
+        } else {
+          noteSpan.textContent = '';
+          pitchBar.style.height = '0%';
+        }
+      } else {
+        // Hide all columns beyond the current phrase length
+        div.style.display = 'none';
+      }
+    }
+  }
+}
+
+function highlightStep(idx) {
+  document.querySelectorAll('.step').forEach(el=>{
+    const i=+el.dataset.idx;
+    el.classList.toggle('playing',i===idx);
+  });
+}
+
+function updatePills() {
+  const rootEl = document.getElementById('root').selectedOptions[0].text;
+  const scaleEl = document.getElementById('scale').selectedOptions[0].text.split(' ')[0];
+  const notes = sequence.filter(isNoteStep);
+  const anchors = sequence.filter(s => s.isAnchor);
+  let lo = 127, hi = 0;
+  notes.forEach(s => { if (s.midi < lo) lo = s.midi; if (s.midi > hi) hi = s.midi; });
+
+  const pills = document.getElementById('statPills');
+  const p = (...t) => `<span class="pill">${t.join('')}</span>`;
+
+  pills.innerHTML = [
+    p(rootEl, ' <strong>', scaleEl, '</strong>'),
+    p('Notes: <strong>', notes.length, '</strong>/', sequence.length),
+    anchors.length ? p('Anchors: <strong>', anchors.length, '</strong>') : '',
+    lo <= 127 ? p('↓ <strong>', midiToName(lo), '</strong>') : '',
+    hi >= 0 ? p('↑ <strong>', midiToName(hi), '</strong>') : '',
+  ].filter(Boolean).join('');
+}
+
+
+// ─── Audio playback ───
+function getAudio() {
+  if (!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playNote(ctx, midi, dur, velocity) {
+  dur = Math.max(0.05, dur);
+  const freq = 440 * Math.pow(2, (midi - 69) / 12);
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filt = ctx.createBiquadFilter();
+  filt.type = 'lowpass'; filt.frequency.value = 1600; filt.Q.value = 3;
+  osc.type = 'sawtooth';
+
+  const masterVol = parseInt(document.getElementById('masterVol')?.value || 50) / 100;
+  const velFactor = velocity / 127;
+  const maxAmp = 0.25 * masterVol;
+  const currentMax = maxAmp * velFactor;
+
+  const t0 = ctx.currentTime;
+  osc.frequency.setValueAtTime(freq, t0);
+
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(currentMax, t0 + 0.02);
+  gain.gain.setValueAtTime(currentMax * 0.8, t0 + Math.max(0.03, dur - 0.06));
+  gain.gain.linearRampToValueAtTime(0, t0 + dur);
+
+  osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+  osc.start(t0); osc.stop(t0 + dur + 0.02);
+}
+
+async function playSequence() {
+  if (!sequence.length) generateSequence();
+
+  const ctx = getAudio();
+  if (ctx.state === 'suspended') await ctx.resume().catch(() => { });
+
+  playing = true;
+  playToken++;
+  const token = playToken;
+
+  document.getElementById('playBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+  document.getElementById('statusArea').classList.add('playing');
+  setStatus('playing…', true);
+
+  const bpm           = +document.getElementById('bpm').value;
+  const stepsPerBeat  = +document.getElementById('stepsPerBeat').value;
+  const stepDur       = 60 / bpm / stepsPerBeat;
+
+  let lastFreq = null;
+  let nextStepTime = ctx.currentTime + 0.02;
+  let i = 0;
+
+  while (playing && token === playToken) {
+    const bpm          = +document.getElementById('bpm').value;
+    const stepsPerBeat = +document.getElementById('stepsPerBeat').value;
+    const stepDur      = 60 / bpm / stepsPerBeat;
+    const swingFraction = (+document.getElementById('swing').value) / 100;
+
+    const swingOffset = (i % 2 === 1) ? stepDur * swingFraction * 0.5 : 0;
+    const targetTime = nextStepTime + swingOffset;
+
+    const waitMs = Math.max(0, (targetTime - ctx.currentTime) * 1000);
+    await sleep(waitMs);
+
+    if (i >= sequence.length) i = i % sequence.length;
+    highlightStep(i);
+
+    const s = sequence[i];
+
+    if (!s.tie && (isNoteStep(s) || s.isAnchor)) {
+      const vel = 100;
+      playNote(ctx, s.midi, stepDur * (s.holdSteps || 1) * 0.9, vel);
+    }
+
+    nextStepTime += stepDur;
+    i++;
+
+    if (i >= sequence.length) {
+      i = 0;
+    }
+  }
+
+  highlightStep(-1);
+  document.getElementById('playBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('statusArea').classList.remove('playing');
+  setStatus('ready', false);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function stopPlayback(){
+  playing=false; playToken++;
+  document.getElementById('playBtn').disabled=false;
+  document.getElementById('stopBtn').disabled=true;
+  document.getElementById('statusArea').classList.remove('playing');
+  highlightStep(-1);
+  setStatus('ready', false);
+}
+
+function setStatus(t,p){
+  document.getElementById('statusText').textContent = t;
+}
+
+// MIDI Export:
+function vlq(n) {
+  n = Math.max(0, n | 0);
+  const buf = [n & 0x7f];
+  n >>>= 7;
+  while (n > 0) {
+    buf.unshift((n & 0x7f) | 0x80);
+    n >>>= 7;
+  }
+  return buf;
+}
+
+function eventsToTrack(evts) {
+  evts.sort((a, b) => a.tick - b.tick);
+  const out = [];
+  let lastTick = 0;
+  for (const ev of evts) {
+    const delta = ev.tick - lastTick;
+    if (delta < 0) continue;
+    out.push(...vlq(delta), ...ev.data);
+    lastTick = ev.tick;
+  }
+  return out;
+}
+
+function buildSmf(tracks) {
+  const tpq=480;
+  const hdr=new Uint8Array([0x4d,0x54,0x68,0x64,0,0,0,6,0,1,0,tracks.length,(tpq>>8)&0xff,tpq&0xff]);
+  const chunks=[hdr];
+  for(const tr of tracks){
+    const c=new Uint8Array(8+tr.length);
+    c.set([0x4d,0x54,0x72,0x6b],0);
+    c[4]=(tr.length>>24)&0xff;c[5]=(tr.length>>16)&0xff;c[6]=(tr.length>>8)&0xff;c[7]=tr.length&0xff;
+    c.set(tr,8); chunks.push(c);
+  }
+  const tot=chunks.reduce((n,c)=>n+c.length,0);
+  const out=new Uint8Array(tot); let off=0;
+  for(const c of chunks){out.set(c,off);off+=c.length;}
+  return out;
+}
+
+function stepStartTick(i, baseStepTicks, swing) {
+  const swingOffset = i % 2 === 1 ? Math.round(baseStepTicks * swing * 0.5) : 0;
+  return i * baseStepTicks + swingOffset;
+}
+
+/**
+ * Exports the current or a provided sequence as a MIDI file.
+ * Fixed: Now correctly detects whether to use 'exportStretch' (Standard)
+ * or 'exportStretchEvo' (Evolution) based on which one is active/provided.
+ */
+function exportMidi(customSequence = null) {
+  const seqToExport = customSequence || sequence;
+  if (!seqToExport.length) {
+    alert("No sequence to export!");
+    return;
+  }
+
+  const spb           = +document.getElementById('stepsPerBeat').value;
+  const swing         = +document.getElementById('swing').value / 100;
+  const tpq           = 480;
+
+  // --- FIX: Determine which "Steps per Bar" value to use ---
+  // If customSequence is provided, it's an Evolution export -> use 'exportStretchEvo'
+  // Otherwise, it's a standard export -> use 'exportStretch'
+  const stretchId = customSequence ? 'exportStretchEvo' : 'exportStretch';
+  const stepsPerBar = +document.getElementById(stretchId).value;
+
+  /**
+   * LOGIC:
+   * One bar is defined as 4 beats * TPQ.
+   * Dividing this by the selected stepsPerBar determines the length of one step.
+   */
+  const ticksPerStep = (4 * tpq) / stepsPerBar;
+
+  const metaTrack = [...eventsToTrack([
+    { tick: 0, data: [0xff, 0x58, 0x04, 4, 2, 24, 8] }
+  ]), ...vlq(0), 0xff, 0x2f, 0x00];
+
+  const noteEvts = [];
+
+  for (let i = 0; i < seqToExport.length; i++) {
+    const s = seqToExport[i];
+    if (!isNoteStep(s) && !s.isAnchor) continue;
+    if (s.tie) continue;
+
+    // Calculate absolute position based on the stretched ticksPerStep
+    const stepPosition = i * ticksPerStep;
+    const swingOffset = (i % 2 === 1) ? (ticksPerStep * swing * 0.5) : 0;
+    const startTick = Math.round(stepPosition + swingOffset);
+
+    // Duration also scales with the stretched ticksPerStep
+    const holdTicks = Math.round((s.holdSteps || 1) * ticksPerStep);
+    const endTick   = startTick + holdTicks - 2;
+
+    const velocity = 100;
+
+    noteEvts.push({ tick: startTick, type: 'on',  data: [0x90, s.midi, velocity] });
+    noteEvts.push({ tick: endTick,   type: 'off', data: [0x80, s.midi, 0] });
+  }
+
+  // Sort events by tick, then ensure 'off' comes before 'on' for the same tick
+  noteEvts.sort((a, b) => a.tick - b.tick || (a.type === 'off' ? -1 : 1));
+
+  const noteTrack = [...eventsToTrack(noteEvts), ...vlq(0), 0xff, 0x2f, 0x00];
+  const smf = buildSmf([metaTrack, noteTrack]);
+  const a   = document.createElement('a');
+  a.href    = URL.createObjectURL(new Blob([smf], { type: 'audio/midi' }));
+  a.download = customSequence ? 'berliner-schule-evolution.mid' : 'berliner-schule.mid';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus('MIDI exported', false);
+}
+
+/**
+ * Validates and synchronizes minNoteLen and maxNoteLen.
+ * Prevents the minimum value from exceeding the maximum value.
+ */
+function syncNoteLengths() {
+  const minEl = document.getElementById('minNoteLen');
+  const maxEl = document.getElementById('maxNoteLen');
+
+  if (!minEl || !maxEl) return;
+
+  let minVal = parseInt(minEl.value);
+  let maxVal = parseInt(maxEl.value);
+
+  // Case 1: Min is pushed above Max -> Push Max up to match Min
+  if (minVal > maxVal) {
+    maxEl.value = minVal;
+    document.getElementById('maxNoteLenVal').textContent = minVal;
+  }
+
+  // Case 2: Max is pushed below Min -> Push Min down to match Max
+  // We use a separate IF (not else if) to ensure both directions are handled cleanly
+  if (maxVal < minVal) {
+    minEl.value = maxVal;
+    document.getElementById('minLenVal').textContent = maxVal;
+  }
+}
+
+// --- Integration into UI Wiring ---
+
+// Add this to your existing slider event listeners section
+document.getElementById('minNoteLen')?.addEventListener('input', () => {
+  syncNoteLengths();
+});
+
+document.getElementById('maxNoteLen')?.addEventListener('input', () => {
+  syncNoteLengths();
+});
+
+// Volume Monitoring Update
+document.getElementById('masterVol')?.addEventListener('input', (e) => {
+  document.getElementById('volVal').textContent = e.target.value + '%';
+});
+
+// ─── UI wiring ───
+const sliderMap={
+  bpm:'bpmVal', phraseLen:'phraseVal', repeats:'repsVal',
+  maxInterval:'intervalVal', stepsPerBeat:'spbVal', noteCount:'noteCountVal', minNoteLen:'minLenVal',
+  maxNoteLen:'maxNoteLenVal',
+};
+const pctSliders={density:'densityVal',variation:'varVal',swing:'swingVal'};
+
+// A. Pure Label Updates (No Logic)
+Object.entries(sliderMap).forEach(([id,valId])=>{
+  document.getElementById(id)?.addEventListener('input',(e)=>{
+    fastUpdateText(valId, e.target.value);
+  });
+});
+
+Object.entries(pctSliders).forEach(([id,valId])=>{
+  document.getElementById(id)?.addEventListener('input',(e)=>{
+    fastUpdateText(valId, e.target.value, true);
+  });
+});
+
+// B. Separate Logic for Note Length Sync (Prevents Crash/Loops)
+['minNoteLen', 'maxNoteLen'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', () => {
+    syncNoteLengths();
+  });
+});
+
+// C. Evolution Labels
+const evoSliderConfigs = [
+  { id: 'evoIterations', valId: 'evoIterVal', isPct: false },
+  { id: 'evoMutation', valId: 'evoMutVal', isPct: true },
+  { id: 'evoDrift', valId: 'evoDriftVal', isPct: true },
+  { id: 'evoGrip', valId: 'evoGripVal', isPct: true },
+  { id: 'octaveDriftEvo', valId: 'driftValEvo', isPct: true }
+];
+
+evoSliderConfigs.forEach(s => {
+  document.getElementById(s.id)?.addEventListener('input', (e) => {
+    fastUpdateText(s.valId, e.target.value, s.isPct);
+  });
+});
+
+// D. Trigger Generation on Release
+const genSliders=['phraseLen','repeats','maxInterval','density','noteCount','minNoteLen','maxNoteLen','variation'];
+genSliders.forEach(id=>{
+  document.getElementById(id)?.addEventListener('change', generateSequence);
+});
+
+
+// Evolution sliders
+// --- Evolution UI Label Updates ---
+// This block ensures that moving the sliders actually updates the text labels next to them.
+document.getElementById('evoIterations')?.addEventListener('input', (e) => {
+  document.getElementById('evoIterVal').textContent = e.target.value;
+});
+
+document.getElementById('evoMutation')?.addEventListener('input', (e) => {
+  document.getElementById('evoMutVal').textContent = e.target.value + '%';
+});
+
+document.getElementById('evoDrift')?.addEventListener('input', (e) => {
+  document.getElementById('evoDriftVal').textContent = e.target.value + '%';
+});
+
+document.getElementById('evoGrip')?.addEventListener('input', (e) => {
+  document.getElementById('evoGripVal').textContent = e.target.value + '%';
+});
+
+// This handles the second drift slider in Row 2 of Evo Panel if used
+document.getElementById('octaveDriftEvo')?.addEventListener('input', (e) => {
+  document.getElementById('driftValEvo').textContent = e.target.value + '%';
+});
+
+genSliders.forEach(id=>{
+  document.getElementById(id)?.addEventListener('change',generateSequence);
+});
+
+document.querySelectorAll('.mode-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode=btn.dataset.mode;
+    applyModeUI();
+
+    // Only apply Schulze defaults if we are switching to that mode.
+    if (currentMode==='schulze') {
+      applySchulzePreset();
+    }
+
+    generateSequence();
+  });
+});
+
+/**
+ * Updates the visibility of control panels based on the selected mode.
+ * Min/Max Length are basic settings and visible in all modes EXCEPT Klaus Schulze.
+ */
+function applyModeUI() {
+  const isSchulze = currentMode === 'schulze';
+  const isArp     = currentMode === 'arp';
+  const isOffbeat = currentMode === 'offbeat';
+
+  // Basic Generative Controls
+  // Hide length and density in Schulze mode.
+  // Also hide length in Arp mode because Arps consist of single-step notes.
+  document.getElementById('densityCtrl').classList.toggle('hidden', isSchulze);
+  document.getElementById('minNoteLenCtrl').classList.toggle('hidden', isSchulze || isArp);
+  document.getElementById('maxNoteLenCtrl').classList.toggle('hidden', isSchulze || isArp);
+
+  // Schulze specific control (only visible in Schulze mode)
+  document.getElementById('noteCountCtrl').classList.toggle('hidden', !isSchulze);
+
+  // Mode specific panels
+  document.getElementById('anchorPanel').classList.toggle('visible', isOffbeat);
+  document.getElementById('arpPanel').classList.toggle('visible', isArp);
+}
+
+const PRESETS = {
+  // --- Classic Mode ---
+  phaedra:        { mode:'classic', scale:'dorian',     root:50, bpm:100, stepsPerBeat:4, phraseLen:16, repeats:4,  density:70, maxInterval:3, variation:20, swing:0,  minNoteLen:2, maxNoteLen:6  },
+  rubycon:        { mode:'classic', scale:'phrygian',   root:48, bpm:88,  stepsPerBeat:4, phraseLen:16, repeats:6,  density:65, maxInterval:2, variation:15, swing:15, minNoteLen:2, maxNoteLen:8  },
+  timewind:       { mode:'classic', scale:'aeolian',    root:55, bpm:72,  stepsPerBeat:2, phraseLen:16, repeats:4,  density:60, maxInterval:4, variation:10, swing:0,  minNoteLen:3, maxNoteLen:10 },
+  ricochet:       { mode:'classic', scale:'minorPent',  root:52, bpm:132, stepsPerBeat:4, phraseLen:16, repeats:8,  density:80, maxInterval:4, variation:30, swing:30, minNoteLen:1, maxNoteLen:4  },
+  mirage:         { mode:'classic', scale:'mixolydian', root:57, bpm:96,  stepsPerBeat:4, phraseLen:12, repeats:4,  density:68, maxInterval:3, variation:25, swing:20, minNoteLen:2, maxNoteLen:5  },
+  irrlicht:       { mode:'classic', scale:'phrygian',   root:48, bpm:60,  stepsPerBeat:2, phraseLen:24, repeats:3,  density:40, maxInterval:2, variation:8,  swing:0,  minNoteLen:4, maxNoteLen:12 },
+
+  // --- Klaus Schulze Mode ---
+  xenoglossia:    { mode:'schulze', scale:'phrygian',   root:48, bpm:65,  stepsPerBeat:2, phraseLen:24, repeats:4,  noteCount:2, minNoteLen:10, variation:10, swing:0  },
+  crystals:       { mode:'schulze', scale:'dorian',     root:52, bpm:90,  stepsPerBeat:4, phraseLen:16, repeats:6,  noteCount:3, minNoteLen:6,  variation:20, swing:0  },
+  dune:           { mode:'schulze', scale:'aeolian',    root:48, bpm:55,  stepsPerBeat:2, phraseLen:32, repeats:3,  noteCount:1, minNoteLen:20, variation:5,  swing:0  },
+
+  // --- Offbeat Anchor Mode ---
+  moog_sequencer: { mode:'offbeat', scale:'dorian',     root:50, bpm:115, stepsPerBeat:4, phraseLen:16, repeats:8,  density:80, maxInterval:3, anchorNote:55, anchorPattern:'offbeat', variation:25, swing:10, minNoteLen:2, maxNoteLen:4 },
+  berlin_pulse:   { mode:'offbeat', scale:'phrygian',   root:48, bpm:125, stepsPerBeat:4, phraseLen:16, repeats:4,  density:60, maxInterval:2, anchorNote:48, anchorPattern:'every4',  variation:15, swing:0,  minNoteLen:2, maxNoteLen:4 },
+  hypnosis:       { mode:'offbeat', scale:'aeolian',    root:55, bpm:95,  stepsPerBeat:4, phraseLen:12, repeats:6,  density:70, maxInterval:4, anchorNote:55, anchorPattern:'every3',  variation:30, swing:20, minNoteLen:2, maxNoteLen:6 },
+
+  // --- Arpeggiator Mode ---
+  starlight:      { mode:'arp', scale:'majorPent',  root:57, bpm:110, stepsPerBeat:4, phraseLen:16, repeats:4, density:100, arpRoot:9, arpChord:'maj7',  arpPattern:'updown', arpOctaves:2, variation:10, swing:0,  minNoteLen:1, maxNoteLen:2 },
+  cosmic_wind:    { mode:'arp', scale:'dorian',     root:50, bpm:85,  stepsPerBeat:4, phraseLen:16, repeats:6, density:90,  arpRoot:2, arpChord:'min9',  arpPattern:'up',     arpOctaves:3, variation:20, swing:10, minNoteLen:1, maxNoteLen:3 },
+  nebula:         { mode:'arp', scale:'mixolydian', root:55, bpm:120, stepsPerBeat:4, phraseLen:12, repeats:8, density:80,  arpRoot:7, arpChord:'dom13', arpPattern:'random', arpOctaves:2, variation:40, swing:25, minNoteLen:1, maxNoteLen:2 },
+
+  // --- Motivic Mode ---
+  dna_structure:  { mode:'motivic', scale:'dorian',   root:50, bpm:105, stepsPerBeat:4, phraseLen:16, repeats:4, density:75, maxInterval:3, variation:20, swing:0,  minNoteLen:2, maxNoteLen:6 },
+  recursive:      { mode:'motivic', scale:'phrygian', root:48, bpm:90,  stepsPerBeat:4, phraseLen:16, repeats:6, density:65, maxInterval:2, variation:15, swing:15, minNoteLen:2, maxNoteLen:5 },
+  evolutionary:   { mode:'motivic', scale:'aeolian',  root:55, bpm:80,  stepsPerBeat:4, phraseLen:24, repeats:3, density:70, maxInterval:4, variation:30, swing:0,  minNoteLen:2, maxNoteLen:8 },
+};
+
+
+/**
+ * Applies a preset by updating UI elements and triggering sequence generation.
+ * STRICT SEPARATION: This function only updates parameters and DOES NOT change the current mode.
+ */
+function applyPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+
+  // REMOVED: Mode switching logic is gone.
+  // The preset will now apply its values to whatever mode is currently active.
+
+  // Helper to set value and trigger 'input' event for UI updates (like labels)
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = v;
+      el.dispatchEvent(new Event('input'));
+    }
+  };
+
+  // Basic Timing & Rhythm
+  set('bpm', p.bpm);
+  set('stepsPerBeat', p.stepsPerBeat);
+  set('swing', p.swing);
+
+  // Phrase & Notes structure
+  set('phraseLen', p.phraseLen);
+  set('repeats', p.repeats);
+  set('maxInterval', p.maxInterval);
+  if (p.density !== undefined) set('density', p.density);
+  if (p.noteCount !== undefined) set('noteCount', p.noteCount);
+
+  // Note Lengths
+  if (p.minNoteLen !== undefined) set('minNoteLen', p.minNoteLen);
+  if (p.maxNoteLen !== undefined) set('maxNoteLen', p.maxNoteLen);
+
+  // Expression & Nuances
+  set('variation', p.variation);
+  set('octaveDrift', p.octaveDrift);
+
+  // Mode-specific settings (will be applied if the controls exist/are active)
+  if (p.anchorNote !== undefined) set('anchorNote', p.anchorNote);
+  if (p.anchorPattern !== undefined) set('anchorPattern', p.anchorPattern);
+  if (p.arpRoot !== undefined) set('arpRoot', p.arpRoot);
+  if (p.arpChord !== undefined) set('arpChord', p.arpChord);
+  if (p.arpPattern !== undefined) set('arpPattern', p.arpPattern);
+  if (p.arpOctaves !== undefined) set('arpOctaves', p.arpOctaves);
+
+  // Scale and Root
+  document.getElementById('scale').value = p.scale;
+  document.getElementById('root').value = p.root;
+
+  // Finalize by generating the sequence with new parameters in the CURRENT mode
+  generateSequence();
+}
+
+/**
+ * Sets default values for the Schulze mode without overriding
+ * global length settings that would affect other modes.
+ */
+function applySchulzePreset() {
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = v;
+      el.dispatchEvent(new Event('input'));
+    }
+  };
+  // Set parameters that are truly unique to the "feel" of this mode
+  set('bpm', 72);
+  set('stepsPerBeat', 2);
+  set('phraseLen', 16);
+  set('repeats', 4);
+  set('variation', 15);
+  set('noteCount', 2);
+  document.getElementById('scale').value = 'dorian';
+}
+
+document.getElementById('genBtn').addEventListener('click', generateSequence);
+document.getElementById('playBtn').addEventListener('click',()=>playSequence().catch(e=>console.error(e)));
+document.getElementById('stopBtn').addEventListener('click',stopPlayback);
+document.getElementById('exportBtn').addEventListener('click',() => exportMidi());
+
+// New Evolutionary Export Trigger - FIXED for UI Performance
+document.getElementById('exportEvoBtn').addEventListener('click', async () => {
+  setStatus('evolving...', true);
+  await new Promise(resolve => setTimeout(resolve, 10));
+  try {
+    const evoSeq = generateEvolutionaryChain();
+    exportMidi(evoSeq);
+    setStatus('MIDI exported', false);
+  } catch (e) {
+    console.error(e);
+    setStatus('Error during evolution', false);
+  }
+});
+
+['scale','root','anchorNote','anchorPattern','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('change',generateSequence);
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'){
+    e.preventDefault();
+    if(playing)stopPlayback(); else document.getElementById('playBtn').click();
+  }
+});
+
+// Preset Dropdown Event
+document.getElementById('presetSelect').addEventListener('change', (e) => {
+  applyPreset(e.target.value);
+});
+
+// init
+initSequencerGrid();
+applyModeUI();
+generateSequence();
+</script>
+</body>
+</html>
