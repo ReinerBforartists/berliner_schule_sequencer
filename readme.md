@@ -66,4 +66,5 @@ No installation is required.
 - **Blue height bar**: Relative pitch indicator.
 
 ## License
+Berliner Schule Seqencer is free and open source.
 MIT License © 2026 Reiner Prokein
