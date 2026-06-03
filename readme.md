@@ -2,6 +2,13 @@
 
 An algorithmic MIDI sequencer that runs directly in the browser. It generates melodic patterns inspired by the **Berliner Schule** style of electronic music, balancing repetition with subtle organic evolution.
 
+
+## 📸 Preview
+
+| Interface | Howto |
+| :---: | :---: |
+| ![Main Interface](img/bss.jpg) | ![Howto section](img/bss_howto.jpg) |
+
 ## Core Functionality
 
 The tool is designed as a sequence generator. While it includes a basic internal synth for monitoring and previewing patterns, its primary purpose is to generate MIDI data. The actual sound design and final music production are intended to take place within a **Digital Audio Workstation (DAW)** or with external hardware via the MIDI export function.
