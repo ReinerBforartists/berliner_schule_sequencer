@@ -1650,6 +1650,7 @@ function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpP
 
 // ─── State ───
 let sequence=[];
+let cachedStepEls = [];
 let playing=false;
 let playToken=0;
 let audioCtx=null;
@@ -2040,14 +2041,10 @@ function renderSequence() {
     for (let c = 0; c < steps.length; c++) {
       const div = steps[c];
 
-      // Only process columns that belong to the current phrase length
       if (c < phraseLen) {
         div.style.display = 'flex';
-
-        const i = r * phraseLen + c; // Correct absolute index in sequence
+        const i = r * phraseLen + c;
         const s = i < total ? sequence[i] : { rest: true };
-
-        // Update Index for the playing cursor (highlightStep)
         div.dataset.idx = i;
 
         let cls = 'step';
@@ -2075,17 +2072,19 @@ function renderSequence() {
           pitchBar.style.height = '0%';
         }
       } else {
-        // Hide all columns beyond the current phrase length
         div.style.display = 'none';
       }
     }
   }
+
+  // --- FIX: Cache die Elemente am Ende des Render-Vorgangs ---
+  cachedStepEls = Array.from(document.querySelectorAll('.step'));
 }
 
 function highlightStep(idx) {
-  document.querySelectorAll('.step').forEach(el=>{
-    const i=+el.dataset.idx;
-    el.classList.toggle('playing',i===idx);
+  // Nutzt den Cache statt jedes Mal das DOM zu scannen
+  cachedStepEls.forEach(el => {
+    el.classList.toggle('playing', +el.dataset.idx === idx);
   });
 }
 
