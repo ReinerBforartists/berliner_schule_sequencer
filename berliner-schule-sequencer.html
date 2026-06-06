@@ -2448,10 +2448,6 @@ document.getElementById('octaveDriftEvo')?.addEventListener('input', (e) => {
   document.getElementById('driftValEvo').textContent = e.target.value + '%';
 });
 
-genSliders.forEach(id=>{
-  document.getElementById(id)?.addEventListener('change',generateSequence);
-});
-
 document.querySelectorAll('.mode-tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('active'));
