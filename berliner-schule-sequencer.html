@@ -1656,9 +1656,10 @@ let playToken=0;
 let audioCtx=null;
 let currentMode='classic';
 
-// ─── NEW HELPER: The "Block Factory" ───
-// This function implements the EXACT logic of the main loop generation.
-// It takes a starting phrase and expands it by 'repeats' using the variation logic.
+/**
+ * Core block generator. Expands a base phrase into a full block by repeating it
+ * and applying mode-specific variations for each repeat.
+ */
 function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams) {
   const block = [];
   let currentEvents = [...startEvents];
@@ -1706,7 +1707,7 @@ function generateSequence() {
   const scale = SCALES[scaleKey];
   const root = parseInt(document.getElementById('root').value);
 
-  // FIXED: Ensure all numeric values are parsed correctly from the DOM
+  // Ensure all numeric values are parsed correctly from the DOM
   const phraseLen = parseInt(document.getElementById('phraseLen').value) || 16;
   const repeats = parseInt(document.getElementById('repeats').value) || 4;
   const density = (parseFloat(document.getElementById('density').value) || 72) / 100;
@@ -1780,15 +1781,13 @@ function generateSequence() {
   }
 }
 
-// ─── Evolution Logic (New) ───
-
 // ─── Evolution Logic ───
 
 /**
  * Generates a long evolutionary chain of phrases for MIDI export.
- * FIXED: Octave Drift is now fully functional and integrated into the mutation cycle.
- * FIXED: ROOT_SHIFTS moved outside the loop to prevent re-declaration and ensure correct harmonic progression.
- * FIXED: Return statement moved outside the loop to complete the full evolution chain.
+ * Octave Drift is now fully functional and integrated into the mutation cycle.
+ * ROOT_SHIFTS moved outside the loop to prevent re-declaration and ensure correct harmonic progression.
+ * Return statement moved outside the loop to complete the full evolution chain.
  */
 function generateEvolutionaryChain() {
   const mode = currentMode;
@@ -1833,9 +1832,8 @@ function generateEvolutionaryChain() {
     octaves: document.getElementById('arpOctaves').value
   };
 
-  let fullCompositionSteps = [];
+let fullCompositionSteps = [];
   let currentEvents = [];
-  let originalEvents = [];
   let currentRoot = root;
 
   const clampMidi = (m) => Math.max(24, Math.min(84, m));
@@ -1850,7 +1848,6 @@ function generateEvolutionaryChain() {
         currentEvents.push({ start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave });
       }
     });
-    originalEvents = currentEvents.map(e => ({...e}));
   } else {
     if (mode === 'schulze') {
       const expanded = buildSchulzePhrase(rng, { ...params, octaveStart: 0 });
@@ -1865,7 +1862,6 @@ function generateEvolutionaryChain() {
     } else {
       currentEvents = buildPhrase(rng, { ...params, octaveStart: 0 });
     }
-    originalEvents = currentEvents.map(e => ({...e}));
     fullCompositionSteps = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
   }
 
@@ -1902,7 +1898,9 @@ function generateEvolutionaryChain() {
     }
 
     // 2. Mutation
-    currentEvents = currentEvents.map(ev => {
+    // Grip blocks mutation before it happens
+    currentEvents = currentEvents.map((ev, idx) => {
+      if (rng.chance(gripStrength)) return ev;
       if (rng.chance(mutationRate)) {
         const newEv = {...ev};
         if (rng.chance(0.7)) {
@@ -2077,12 +2075,12 @@ function renderSequence() {
     }
   }
 
-  // --- FIX: Cache die Elemente am Ende des Render-Vorgangs ---
+  // Cache elements to optimize the highlightStep loop
   cachedStepEls = Array.from(document.querySelectorAll('.step'));
 }
 
 function highlightStep(idx) {
-  // Nutzt den Cache statt jedes Mal das DOM zu scannen
+  // Uses the cache instead of scanning the DOM on every step
   cachedStepEls.forEach(el => {
     el.classList.toggle('playing', +el.dataset.idx === idx);
   });
@@ -2217,6 +2215,11 @@ function setStatus(t,p){
 }
 
 // MIDI Export:
+
+/**
+ * Implements Variable Length Quantity (VLQ) encoding.
+ * Used in MIDI files to represent delta-times and length.
+ */
 function vlq(n) {
   n = Math.max(0, n | 0);
   const buf = [n & 0x7f];
@@ -2241,6 +2244,9 @@ function eventsToTrack(evts) {
   return out;
 }
 
+/**
+ * Assembles the Standard MIDI File (SMF) binary structure.
+ */
 function buildSmf(tracks) {
   const tpq=480;
   const hdr=new Uint8Array([0x4d,0x54,0x68,0x64,0,0,0,6,0,1,0,tracks.length,(tpq>>8)&0xff,tpq&0xff]);
@@ -2264,7 +2270,7 @@ function stepStartTick(i, baseStepTicks, swing) {
 
 /**
  * Exports the current or a provided sequence as a MIDI file.
- * Fixed: Now correctly detects whether to use 'exportStretch' (Standard)
+ * Detects whether to use 'exportStretch' (Standard)
  * or 'exportStretchEvo' (Evolution) based on which one is active/provided.
  */
 function exportMidi(customSequence = null) {
@@ -2278,7 +2284,7 @@ function exportMidi(customSequence = null) {
   const swing         = +document.getElementById('swing').value / 100;
   const tpq           = 480;
 
-  // --- FIX: Determine which "Steps per Bar" value to use ---
+  // --- Determine which "Steps per Bar" value to use ---
   // If customSequence is provided, it's an Evolution export -> use 'exportStretchEvo'
   // Otherwise, it's a standard export -> use 'exportStretch'
   const stretchId = customSequence ? 'exportStretchEvo' : 'exportStretch';
@@ -2575,8 +2581,7 @@ function applyPreset(name) {
 }
 
 /**
- * Sets default values for the Schulze mode without overriding
- * global length settings that would affect other modes.
+ * Sets default values for the Schulze mode.
  */
 function applySchulzePreset() {
   const set = (id, v) => {
