@@ -1525,24 +1525,31 @@ function mutateSchulzePhrase(rng, phrase, variation, params) {
 }
 
 // ─── Offbeat anchor mode ───
-function buildOffbeatPhrase(rng, {scale,root,phraseLen,maxInterval,density,weights,octaveStart,maxNoteLen}, anchorMidi, anchorPattern) {
+function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights, octaveStart, maxNoteLen, palette}, anchorMidi, anchorPattern) {
   const events=[];
-  let degree=rng.int(0,scale.length-1), octave=octaveStart;
+  const usePalette = palette && palette.length > 0;
+  let paletteIdx = usePalette ? rng.int(0, palette.length - 1) : 0;
+  let degree = !usePalette ? rng.int(0, scale.length - 1) : 0;
+  let octave = octaveStart;
 
-  for (let i=0;i<phraseLen;i++) {
+  for (let i=0; i<phraseLen; i++) {
     if (checkAnchorPos(i, anchorPattern, phraseLen)) {
       events.push({start: i, duration: 1, midi: anchorMidi, degree: null, octave: null, isAnchor: true});
     } else if (rng.chance(density)) {
-      const midi=scaleDegreeToMidi(root,scale,degree,octave);
+      const midi = usePalette ? palette[paletteIdx] : scaleDegreeToMidi(root, scale, degree, octave);
       const dur = rng.int(1, Math.min(maxNoteLen, phraseLen - i));
       events.push({start: i, duration: dur, midi, degree, octave});
       i += dur - 1;
 
-      let step=rng.int(-maxInterval,maxInterval);
-      degree+=step||( rng.chance(0.5)?1:-1);
-      while(degree>=scale.length){degree-=scale.length;octave++;}
-      while(degree<0){degree+=scale.length;octave--;}
-      octave=Math.max(-1,Math.min(2,octave));
+      const step = rng.int(-maxInterval, maxInterval);
+      if (usePalette) {
+        paletteIdx = Math.max(0, Math.min(palette.length - 1, paletteIdx + step));
+      } else {
+        degree += step || (rng.chance(0.5) ? 1 : -1);
+        while(degree >= scale.length) { degree -= scale.length; octave++; }
+        while(degree < 0) { degree += scale.length; octave--; }
+        octave = Math.max(-1, Math.min(2, octave));
+      }
     }
   }
   return events;
@@ -1556,28 +1563,32 @@ function checkAnchorPos(i, pattern, len) {
   return false;
 }
 
-function mutateOffbeatPhrase(rng,events,variation,params,anchorMidi,anchorPattern) {
+function mutateOffbeatPhrase(rng, events, variation, params, anchorMidi, anchorPattern) {
   const copy = events.map(e => ({...e}));
   const n = Math.max(1, Math.floor(copy.length * variation));
+  const tones = params.palette && params.palette.length > 0 ? params.palette : null;
 
   for (let m=0; m<n; m++) {
     const idx = rng.int(0, copy.length - 1);
     const ev = copy[idx];
 
-    // Do not mutate anchor notes
     if (ev.isAnchor) continue;
 
     if (rng.chance(0.3)) {
       copy.splice(idx, 1);
     } else {
-      const deg = rng.pickWeighted(params.weights);
-      const oct = rng.int(-1, 1);
-      ev.degree = deg;
-      ev.octave = oct;
-      ev.midi = scaleDegreeToMidi(params.root, params.scale, deg, oct);
+      if (tones) {
+        ev.midi = tones[rng.int(0, tones.length - 1)];
+      } else {
+        const deg = rng.pickWeighted(params.weights);
+        const oct = rng.int(-1, 1);
+        ev.degree = deg;
+        ev.octave = oct;
+        ev.midi = scaleDegreeToMidi(params.root, params.scale, deg, oct);
+      }
     }
   }
-  return copy; // Returns mutated Event-Array
+  return copy;
 }
 
 // ─── Arpeggiator Logic ───
@@ -1750,9 +1761,11 @@ function generateSequence() {
   // General params object used across different modes
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
-  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic')
-    ? buildPalette(rng, scale, paletteSize, root, toneRange)
-    : null;
+// Inside generateSequence()
+  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
+      ? buildPalette(rng, scale, paletteSize, root, toneRange)
+      : null;
+
 
   const params = {
     scale,
@@ -1836,7 +1849,7 @@ function generateEvolutionaryChain() {
 
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
-  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic')
+  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
     ? buildPalette(rng, scale, paletteSize, root, toneRange)
     : null;
 
@@ -2501,7 +2514,7 @@ function applyModeUI() {
   const isSchulze = currentMode === 'schulze';
   const isArp     = currentMode === 'arp';
   const isOffbeat = currentMode === 'offbeat';
-  const hasPalette = isSchulze || currentMode === 'classic' || currentMode === 'motivic';
+  const hasPalette = isSchulze || currentMode === 'classic' || currentMode === 'motivic' || isOffbeat;
 
   // Basic Generative Controls
   document.getElementById('densityCtrl').classList.toggle('hidden', isSchulze);
@@ -2511,7 +2524,7 @@ function applyModeUI() {
   // Schulze specific control
   document.getElementById('noteCountCtrl').classList.toggle('hidden', !isSchulze);
 
-  // Palette control — visible for Classic, Schulze, Motivic
+  // Palette control
   document.getElementById('paletteCtrl').classList.toggle('hidden', !hasPalette);
   document.getElementById('rangeCtrl').classList.toggle('hidden', !hasPalette);
 
