@@ -1914,26 +1914,29 @@ function generateEvolutionaryChain() {
     pentatonic:   { type: 'cycle', vals: [3, 2, 2, 3, 2] }
   };
 
+  // Helper: snap a MIDI value to nearest tone in palette
+  const snapToPalette = (midi, tones) => {
+    if (!tones || tones.length === 0) return clampMidi(midi);
+    return tones.reduce((a, b) => Math.abs(b - midi) < Math.abs(a - midi) ? b : a);
+  };
+
   for (let i = 1; i < iterations; i++) {
-    // 1. Octave Drift
+    const tones = params.palette && params.palette.length > 0 ? params.palette : null;
+
+    // 1. Octave Drift — snap back to palette after shift
     if (driftProb > 0 && rng.chance(driftProb)) {
       const driftDir = rng.chance(0.5) ? 12 : -12;
-      currentEvents = currentEvents.map(e => ({
-        ...e,
-        midi: clampMidi(e.midi + driftDir),
-        octave: e.octave + (driftDir / 12)
-      }));
+      currentEvents = currentEvents.map(e => {
+        const shifted = clampMidi(e.midi + driftDir);
+        return {...e, midi: tones ? snapToPalette(shifted, tones) : shifted};
+      });
     }
 
     // 2. Mutation + Grip (grip blocks mutation before it happens)
-    const tones = params.palette && params.palette.length > 0
-      ? params.palette
-      : [currentRoot];
-
     currentEvents = currentEvents.map((ev) => {
       if (rng.chance(gripStrength)) return ev;
       if (rng.chance(mutationRate)) {
-        return {...ev, midi: clampMidi(tones[rng.int(0, tones.length - 1)])};
+        return {...ev, midi: clampMidi(tones ? tones[rng.int(0, tones.length - 1)] : currentRoot)};
       }
       return ev;
     });
@@ -1941,7 +1944,7 @@ function generateEvolutionaryChain() {
     const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
     fullCompositionSteps = fullCompositionSteps.concat(iterationBlock);
 
-    // 4. Root Shift - Now deterministic if a mode is selected
+    // 4. Root Shift — rebuild palette against new root, snap events
     if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
       const config = ROOT_SHIFTS[rootShiftMode] || ROOT_SHIFTS.free;
       let interval;
@@ -1958,7 +1961,17 @@ function generateEvolutionaryChain() {
         const shift = newRoot - currentRoot;
         currentRoot = newRoot;
         params.root = currentRoot;
-        currentEvents = currentEvents.map(e => ({ ...e, midi: clampMidi(e.midi + shift) }));
+        // Rebuild palette against new root so corridor stays valid
+        if (params.palette) {
+          const toneRange = parseInt(document.getElementById('toneRange').value) || 4;
+          const paletteSize = parseInt(document.getElementById('paletteSize').value) || 2;
+          params.palette = buildPalette(rng, params.scale, paletteSize, currentRoot, toneRange);
+        }
+        const newTones = params.palette || null;
+        currentEvents = currentEvents.map(e => ({
+          ...e,
+          midi: newTones ? snapToPalette(clampMidi(e.midi + shift), newTones) : clampMidi(e.midi + shift)
+        }));
       }
     }
   }
