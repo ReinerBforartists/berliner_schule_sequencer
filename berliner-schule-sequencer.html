@@ -744,6 +744,21 @@ details[open] summary::before { content: '− '; }
       <!-- Evo Row 2: Root & Octave Drift -->
       <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px;">
 
+      <!-- Evolution curve dropdown -->
+      <div class="ctrl" style="width: 160px; flex-shrink: 0;">
+        <div class="ctrl-label">Evolution Curve</div>
+        <select id="evolutionCurve" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%;">
+          <option value="linear">Linear</option>
+          <option value="rampUp">Ramp Up</option>
+          <option value="rampDown">Ramp Down</option>
+          <option value="arch">Arch</option>
+          <option value="valley">Valley</option>
+          <option value="easeIn">Ease In</option>
+          <option value="easeOut">Ease Out</option>
+          <option value="easeInOut">Ease In/Out</option>
+        </select>
+      </div>
+
         <!-- Octave Drift: Fixed width to prevent jumping -->
         <div class="ctrl" style="width: 120px; flex-shrink: 0;">
           <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
@@ -1265,6 +1280,24 @@ function getWeights(len) {
   if (len>3) w[2] = 1.5;
   if (len>5) w[len-2] = 1.2;
   return w;
+}
+
+/**
+ * Calculates a multiplier between 0.0 and 1.0 based on the selected
+ * evolution curve and the current iteration progress.
+ */
+function getCurveMultiplier(curve, i, total) {
+  const t = i / Math.max(1, total - 1);
+  switch(curve) {
+    case 'rampUp':   return t;
+    case 'rampDown': return 1 - t;
+    case 'arch':     return Math.sin(t * Math.PI);
+    case 'valley':   return 1 - Math.sin(t * Math.PI);
+    case 'easeIn':   return t * t;
+    case 'easeOut':  return 1 - (1 - t) * (1 - t);
+    case 'easeInOut': return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+    default:         return 1; // linear
+  }
 }
 
 /**
@@ -1835,7 +1868,6 @@ function generateEvolutionaryChain() {
   const driftProb = +document.getElementById('evoDrift').value / 100;
   const gripStrength = +document.getElementById('evoGrip').value / 100;
 
-  // Root Shift Settings - Now deterministic based on mode and interval
   const rootShiftMode = document.getElementById('evoRootMode').value;
   const rootShiftInterval = parseInt(document.getElementById('evoRootInterval')?.value || "2");
 
@@ -1849,7 +1881,7 @@ function generateEvolutionaryChain() {
 
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
-  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
+  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic')
     ? buildPalette(rng, scale, paletteSize, root, toneRange)
     : null;
 
@@ -1879,7 +1911,6 @@ function generateEvolutionaryChain() {
 
   const clampMidi = (m) => Math.max(24, Math.min(84, m));
 
-  // Initialize starting point
   if (sequence && sequence.length > 0) {
     fullCompositionSteps = [...sequence];
     const firstPhraseSteps = sequence.slice(0, phraseLen);
@@ -1927,17 +1958,21 @@ function generateEvolutionaryChain() {
     pentatonic:   { type: 'cycle', vals: [3, 2, 2, 3, 2] }
   };
 
-  // Helper: snap a MIDI value to nearest tone in palette
   const snapToPalette = (midi, tones) => {
     if (!tones || tones.length === 0) return clampMidi(midi);
     return tones.reduce((a, b) => Math.abs(b - midi) < Math.abs(a - midi) ? b : a);
   };
 
+  const curve = document.getElementById('evolutionCurve').value;
+
   for (let i = 1; i < iterations; i++) {
     const tones = params.palette && params.palette.length > 0 ? params.palette : null;
 
-    // 1. Octave Drift — snap back to palette after shift
-    if (driftProb > 0 && rng.chance(driftProb)) {
+    const curveMult = getCurveMultiplier(curve, i - 1, iterations - 1);
+    const effectiveDriftProb = driftProb * curveMult;
+    const effectiveMutationRate = mutationRate * curveMult;
+
+    if (effectiveDriftProb > 0 && rng.chance(effectiveDriftProb)) {
       const driftDir = rng.chance(0.5) ? 12 : -12;
       currentEvents = currentEvents.map(e => {
         const shifted = clampMidi(e.midi + driftDir);
@@ -1945,10 +1980,9 @@ function generateEvolutionaryChain() {
       });
     }
 
-    // 2. Mutation + Grip (grip blocks mutation before it happens)
     currentEvents = currentEvents.map((ev) => {
       if (rng.chance(gripStrength)) return ev;
-      if (rng.chance(mutationRate)) {
+      if (rng.chance(effectiveMutationRate)) {
         return {...ev, midi: clampMidi(tones ? tones[rng.int(0, tones.length - 1)] : currentRoot)};
       }
       return ev;
@@ -1957,7 +1991,6 @@ function generateEvolutionaryChain() {
     const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
     fullCompositionSteps = fullCompositionSteps.concat(iterationBlock);
 
-    // 4. Root Shift — rebuild palette against new root, snap events
     if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
       const config = ROOT_SHIFTS[rootShiftMode] || ROOT_SHIFTS.free;
       let interval;
@@ -1974,11 +2007,10 @@ function generateEvolutionaryChain() {
         const shift = newRoot - currentRoot;
         currentRoot = newRoot;
         params.root = currentRoot;
-        // Rebuild palette against new root so corridor stays valid
         if (params.palette) {
-          const toneRange = parseInt(document.getElementById('toneRange').value) || 4;
-          const paletteSize = parseInt(document.getElementById('paletteSize').value) || 2;
-          params.palette = buildPalette(rng, params.scale, paletteSize, currentRoot, toneRange);
+          const tRange = parseInt(document.getElementById('toneRange').value) || 4;
+          const pSize = parseInt(document.getElementById('paletteSize').value) || 2;
+          params.palette = buildPalette(rng, params.scale, pSize, currentRoot, tRange);
         }
         const newTones = params.palette || null;
         currentEvents = currentEvents.map(e => ({
