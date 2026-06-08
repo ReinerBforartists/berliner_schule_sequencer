@@ -1071,6 +1071,7 @@ details[open] summary::before { content: '− '; }
                 <li><span style="color: var(--amber);">Grip:</span> <span style="color: var(--text-bright);">The "anchor" to the original theme. High grip prevents the evolution from wandering too far away from your starting phrase.</span></li>
                 <li><span style="color: var(--amber);">Octave Drift:</span> <span style="color: var(--text-bright);">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
                 <li><span style="color: var(--amber);">Root Shift:</span> <span style="color: var(--text-bright);">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).</span></li>
+                <li><span style="color: var(--amber);">Evolution Curve:</span> <span style="color: var(--text-bright);">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, or "Ease" functions for organic transitions.</span></li>
               </ul>
             </li>
           </ul>
@@ -1106,7 +1107,7 @@ details[open] summary::before { content: '− '; }
               <li><span style="color: var(--amber);">Variation:</span> <span style="color: var(--text-bright);">The "organic" factor within a loop. A Sequence consists of several repeats of a Phrase. Variation determines how much each repeat differs from the first one. 0% = perfect repetition (robotic); High % = the pattern evolves slightly every time it loops, preventing listener fatigue.</span></li>
             </ul></p>
 
-            <!-- PART C: Phrase & Notes -->
+            <!-- PART C: Phrase & Notes (Structural) -->
             <p><strong style="color:var(--text-bright)">C. Phrase & Notes (Structural):</strong></p>
             <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
               <li><span style="color: var(--amber);">Root Note:</span> <span style="color: var(--text-bright);">The root defines the key.</span></li>
@@ -1119,7 +1120,6 @@ details[open] summary::before { content: '− '; }
                   <li><strong style="color:var(--amber)">Pentatonic:</strong> Pure and rhythmic. It avoids heavy tension, focusing on fluid, effortless melodic movement.</li>
                 </ul>
               </li>
-              <li><span style="color: var(--amber);">Steps:</span> <span style="color: var(--text-bright);">Length of one musical idea before it repeats.</span></li>
               <li><span style="color: var(--amber);">Steps:</span> <span style="color: var(--text-bright);">The length of one musical "idea" before it repeats. 16 is standard; shorter values feel like tight loops, longer values feel like evolving melodies.</span></li>
               <li><span style="color: var(--amber);">Repeats:</span> <span style="color: var(--text-bright);">How many times the phrase is played to form one full sequence loop. More repeats give the "Variation" slider more room to work.</span></li>
               <li><span style="color: var(--amber);">Density:</span> <span style="color: var(--text-bright);">The probability of a note occurring on any given step. 100% = a constant stream of notes; 30% = many rests, creating a sparse, rhythmic pattern.</span></li>
@@ -1150,6 +1150,13 @@ details[open] summary::before { content: '− '; }
                 </li>
               </ul>
             </p>
+
+            <!-- PART E: Palette & Harmonic Corridor -->
+            <p><strong style="color:var(--text-bright)">E. Palette & Harmonic Corridor:</strong>
+            <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
+              <li><span style="color: var(--amber);">Range:</span> <span style="color: var(--text-bright);">Defines the size of the "corridor" (in scale steps) from the root note. A smaller range keeps the melody tighter and more focused.</span></li>
+              <li><span style="color: var(--amber);">Palette:</span> <span style="color: var(--text-bright);">The number of notes randomly selected from the corridor to be used in the sequence. By limiting the available notes, the sequencer avoids dissonant jumps and maintains a more cohesive harmonic character.</span></li>
+            </ul></p>
           </div>
         </div>
 
