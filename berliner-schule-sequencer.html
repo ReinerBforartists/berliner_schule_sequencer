@@ -1370,7 +1370,8 @@ function isNoteStep(s) { return s&&!s.rest&&!s.tie&&s.midi!=null; }
  * Motivic Logic: Creates a short "DNA" motif and then builds the phrase
  * using classical transformations: Original, Inversion, Retrograde, and Transposition.
  */
-function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, density, maxNoteLen, palette}) {
+function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, density, minNoteLen, maxNoteLen, palette})
+ {
   const motifLen = 4;
   const tones = palette && palette.length > 0 ? palette : [root];
 
@@ -1407,7 +1408,9 @@ function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, 
       }
 
       if (rng.chance(density ?? 1)) {
-        const dur = rng.int(1, Math.min(maxNoteLen, phraseLen - currentStep));
+        const available = phraseLen - currentStep;
+        if (available < minNoteLen) { currentStep++; continue; } // Make sure there is enough space
+        const dur = rng.int(minNoteLen, Math.min(maxNoteLen, available));
         fullEvents.push({start: currentStep, duration: dur, midi, degree: 0, octave: 0});
         currentStep += dur;
       } else {
@@ -1569,7 +1572,7 @@ function mutateSchulzePhrase(rng, phrase, variation, params) {
 }
 
 // ─── Offbeat anchor mode ───
-function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights, octaveStart, maxNoteLen, palette}, anchorMidi, anchorPattern, anchorOnbeat) {
+function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights, octaveStart, minNoteLen, maxNoteLen, palette}, anchorMidi, anchorPattern, anchorOnbeat) {
   const events=[];
   const usePalette = palette && palette.length > 0;
   let paletteIdx = usePalette ? rng.int(0, palette.length - 1) : 0;
@@ -1581,7 +1584,9 @@ function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, 
       events.push({start: i, duration: 1, midi: anchorMidi, degree: null, octave: null, isAnchor: true});
     } else if (rng.chance(density)) {
       const midi = usePalette ? palette[paletteIdx] : scaleDegreeToMidi(root, scale, degree, octave);
-      const dur = rng.int(1, Math.min(maxNoteLen, phraseLen - i));
+      const available = phraseLen - i;
+      if (available < minNoteLen) continue; // Sicherstellen, dass genug Platz ist
+      const dur = rng.int(minNoteLen, Math.min(maxNoteLen, available));
       events.push({start: i, duration: dur, midi, degree, octave});
       i += dur - 1;
 
