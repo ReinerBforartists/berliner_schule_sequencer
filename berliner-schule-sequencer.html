@@ -814,6 +814,21 @@ details[open] summary::before { content: '− '; }
           <option value="fixed">Evo Seed: Fixed</option>
         </select>
       </div>
+        <!-- Evo Row 3: Root Constraints (Only for Random Mode) -->
+      <div id="evoRootConstraintRow" style="display: none; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px; margin-top: 6px;">
+        <span class="seed-label" style="white-space: nowrap;">ROOT CONSTRAINTS:</span>
+        <!-- Palette first -->
+        <div class="ctrl" style="width: 120px; flex-shrink: 0;">
+          <div class="ctrl-label">Palette <span class="val" id="evoRootPalVal">4</span></div>
+          <input type="range" id="evoRootPalette" min="1" max="12" value="4">
+        </div>
+        <!-- Range second -->
+        <div class="ctrl" style="width: 120px; flex-shrink: 0;">
+          <div class="ctrl-label">Range <span class="val" id="evoRootRangeVal">7</span></div>
+          <input type="range" id="evoRootRange" min="0" max="24" value="7">
+        </div>
+        <span class="anchor-desc" style="font-size: 11px;">Limits the allowed root notes for Random mode.</span>
+      </div>
     </div> <!-- End of evoPanel -->
   </div> <!-- End of Row 2 / Export Station -->
 </div> <!-- End of transport-section -->
@@ -1247,14 +1262,15 @@ initExportTabs();
 function updateEvoRootUI() {
   const mode = document.getElementById('evoRootMode').value;
   const container = document.getElementById('evoIntervalContainer');
+  const constraintRow = document.getElementById('evoRootConstraintRow');
 
-  // Hide if "none", show for everything else
-  if (mode === 'none') {
-    container.style.display = 'none';
-  } else {
-    container.style.display = 'flex';
-  }
+  // Show interval dropdown for everything except "none"
+  container.style.display = (mode === 'none') ? 'none' : 'flex';
+
+  // Show constraint sliders ONLY for "free" mode
+  constraintRow.style.display = (mode === 'free') ? 'flex' : 'none';
 }
+
 
 // Attach the listener to the Root Mode dropdown
 document.getElementById('evoRootMode').addEventListener('change', updateEvoRootUI);
@@ -1868,6 +1884,22 @@ function generateSequence() {
 // --- EVOLUTION SYSTEM (LONG-FORM GENERATION) ---
 
 /**
+ * Generates a set of allowed root notes within a specific range
+ */
+function buildRootPalette(rng, root, size, range) {
+  const corridor = [];
+  for (let i = -range; i <= range; i++) {
+    corridor.push(root + i);
+  }
+  const result = [root];
+  const pool = corridor.filter(m => m !== root).sort(() => rng.next() - 0.5);
+  while (result.length < size && pool.length > 0) {
+    result.push(pool.shift());
+  }
+  return result.sort((a, b) => a - b);
+}
+
+/**
  * Generates a long evolutionary chain of phrases for MIDI export.
  * Octave Drift is now fully functional and integrated into the mutation cycle.
  * ROOT_SHIFTS moved outside the loop to prevent re-declaration and ensure correct harmonic progression.
@@ -2009,7 +2041,7 @@ function generateEvolutionaryChain() {
     const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat);
     fullCompositionSteps = fullCompositionSteps.concat(iterationBlock);
 
-    if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
+        if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
       const config = ROOT_SHIFTS[rootShiftMode] || ROOT_SHIFTS.free;
       let interval;
 
@@ -2020,22 +2052,44 @@ function generateEvolutionaryChain() {
         interval = config.vals[rng.int(0, config.vals.length - 1)];
       }
 
-      const newRoot = currentRoot + interval;
-      if (Math.abs(newRoot - root) <= 7) {
-        const shift = newRoot - currentRoot;
-        currentRoot = newRoot;
-        params.root = currentRoot;
-        if (params.palette) {
-          const tRange = parseInt(document.getElementById('toneRange').value) || 4;
-          const pSize = parseInt(document.getElementById('paletteSize').value) || 2;
-          params.palette = buildPalette(rng, params.scale, pSize, currentRoot, tRange);
+      let targetRoot = currentRoot + interval;
+
+      // --- ONLY FOR FREE MODE: Apply Palette & Range constraints ---
+      if (rootShiftMode === 'free') {
+        const rRange = parseInt(document.getElementById('evoRootRange').value) || 7;
+        const rPalSize = parseInt(document.getElementById('evoRootPalette').value) || 4;
+        const rootPalette = buildRootPalette(rng, root, rPalSize, rRange);
+
+        // Snap to the nearest note in the palette
+        const snappedRoot = rootPalette.reduce((prev, curr) =>
+          Math.abs(curr - targetRoot) < Math.abs(prev - targetRoot) ? curr : prev
+        );
+
+        // Only apply if the snapped result stays within the range from original root
+        if (Math.abs(snappedRoot - root) <= rRange) {
+          targetRoot = snappedRoot;
+        } else {
+          // Skip this shift if it's completely out of range
+          continue;
         }
-        const newTones = params.palette || null;
-        currentEvents = currentEvents.map(e => ({
-          ...e,
-          midi: newTones ? snapToPalette(clampMidi(e.midi + shift), newTones) : clampMidi(e.midi + shift)
-        }));
       }
+
+      // --- FOR ALL MODES: Apply the final calculated target root ---
+      const shift = targetRoot - currentRoot;
+      currentRoot = targetRoot;
+      params.root = currentRoot;
+
+      if (params.palette) {
+        const tRange = parseInt(document.getElementById('toneRange').value) || 4;
+        const pSize = parseInt(document.getElementById('paletteSize').value) || 2;
+        params.palette = buildPalette(rng, params.scale, pSize, currentRoot, tRange);
+      }
+
+      const newTones = params.palette || null;
+      currentEvents = currentEvents.map(e => ({
+        ...e,
+        midi: newTones ? snapToPalette(clampMidi(e.midi + shift), newTones) : clampMidi(e.midi + shift)
+      }));
     }
   }
 
@@ -2485,6 +2539,36 @@ function syncPaletteRange() {
   }
 }
 
+/**
+ * Ensures that the root palette size does not exceed the
+ * number of available notes within the specified root range.
+ */
+function syncRootConstraints() {
+  const palEl = document.getElementById('evoRootPalette');
+  const rangeEl = document.getElementById('evoRootRange');
+  if (!palEl || !rangeEl) return;
+
+  let palVal = parseInt(palEl.value);
+  let rangeVal = parseInt(rangeEl.value);
+
+  // Max available notes in range = (range * 2) + 1
+  const maxPossibleNotes = (rangeVal * 2) + 1;
+
+  // Palette cannot be larger than available notes in range
+  if (palVal > maxPossibleNotes) {
+    palEl.value = maxPossibleNotes;
+    document.getElementById('evoRootPalVal').textContent = maxPossibleNotes;
+  }
+
+  // Range must be at least large enough to accommodate the palette size
+  // minRange = (palette - 1) / 2
+  const minRequiredRange = Math.ceil((palVal - 1) / 2);
+  if (rangeVal < minRequiredRange) {
+    rangeEl.value = minRequiredRange;
+    document.getElementById('evoRootRangeVal').textContent = minRequiredRange;
+  }
+}
+
 // --- UI EVENT WIRING ---
 
 document.getElementById('minNoteLen')?.addEventListener('input', () => {
@@ -2781,6 +2865,17 @@ document.querySelectorAll('input[type="range"]').forEach(slider => {
     slider.dispatchEvent(new Event('input'));
     slider.dispatchEvent(new Event('change'));
   }, { passive: false });
+});
+
+// UI Listeners for Root Constraints
+document.getElementById('evoRootPalette')?.addEventListener('input', (e) => {
+  document.getElementById('evoRootPalVal').textContent = e.target.value;
+  syncRootConstraints();
+});
+
+document.getElementById('evoRootRange')?.addEventListener('input', (e) => {
+  document.getElementById('evoRootRangeVal').textContent = e.target.value;
+  syncRootConstraints();
 });
 
 // init
