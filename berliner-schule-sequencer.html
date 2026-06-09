@@ -947,8 +947,11 @@ details[open] summary::before { content: '− '; }
         <option value="offbeat">Every 2nd Step (Classic)</option>
         <option value="every3">Every 3rd Step</option>
         <option value="every4">Every 4th Step</option>
+        <option value="every5">Every 5th Step</option>
         <option value="offbeat16">16th-Note Offbeats</option>
       </select>
+      <label style="font-family:monospace;font-size:10px;color:var(--muted)">ONBEAT</label>
+      <input type="checkbox" id="anchorOnbeat" style="width:auto;margin-top:4px;">
     </div>
   </div>
 
@@ -1565,7 +1568,7 @@ function mutateSchulzePhrase(rng, phrase, variation, params) {
 }
 
 // ─── Offbeat anchor mode ───
-function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights, octaveStart, maxNoteLen, palette}, anchorMidi, anchorPattern) {
+function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights, octaveStart, maxNoteLen, palette}, anchorMidi, anchorPattern, anchorOnbeat) {
   const events=[];
   const usePalette = palette && palette.length > 0;
   let paletteIdx = usePalette ? rng.int(0, palette.length - 1) : 0;
@@ -1573,7 +1576,7 @@ function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, 
   let octave = octaveStart;
 
   for (let i=0; i<phraseLen; i++) {
-    if (checkAnchorPos(i, anchorPattern, phraseLen)) {
+    if (checkAnchorPos(i, anchorPattern, phraseLen, anchorOnbeat)) {
       events.push({start: i, duration: 1, midi: anchorMidi, degree: null, octave: null, isAnchor: true});
     } else if (rng.chance(density)) {
       const midi = usePalette ? palette[paletteIdx] : scaleDegreeToMidi(root, scale, degree, octave);
@@ -1595,15 +1598,17 @@ function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, 
   return events;
 }
 
-function checkAnchorPos(i, pattern, len) {
-  if (pattern==='offbeat') return i%2===1;
-  if (pattern==='every3') return i%3===2;
-  if (pattern==='every4') return i%4===3;
-  if (pattern==='offbeat16') return i%4===2;
+function checkAnchorPos(i, pattern, len, onbeat) {
+  const beat = onbeat ? 0 : 1;
+  if (pattern==='offbeat')  return i%2 === (onbeat ? 0 : 1);
+  if (pattern==='every3')   return i%3 === (onbeat ? 0 : 2);
+  if (pattern==='every4')   return i%4 === (onbeat ? 0 : 3);
+  if (pattern==='every5')   return i%5 === (onbeat ? 0 : 4);
+  if (pattern==='offbeat16') return i%4 === (onbeat ? 0 : 2);
   return false;
 }
 
-function mutateOffbeatPhrase(rng, events, variation, params, anchorMidi, anchorPattern) {
+function mutateOffbeatPhrase(rng, events, variation, params, anchorMidi, anchorPattern, anchorOnbeat) {
   const copy = events.map(e => ({...e}));
   const n = Math.max(1, Math.floor(copy.length * variation));
   const tones = params.palette && params.palette.length > 0 ? params.palette : null;
@@ -1725,7 +1730,7 @@ let currentMode='classic';
  * The "Block Factory": Orchestrates the repetition of a base phrase and applies
  * mode-specific mutations for every repeat to create organic variation.
  */
-function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams) {
+function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat) {
   const block = [];
   let currentEvents = [...startEvents];
 
@@ -1744,7 +1749,7 @@ function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, an
         if(s.noteStart) currentEvents.push({start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave});
       });
     } else if (mode === 'offbeat') {
-      currentEvents = mutateOffbeatPhrase(rng, currentEvents, varRate, params, anchorMidi, anchorPattern);
+      currentEvents = mutateOffbeatPhrase(rng, currentEvents, varRate, params, anchorMidi, anchorPattern, anchorOnbeat);
     } else if (mode === 'arp') {
       currentEvents = mutateArpPhrase(rng, currentEvents, varRate, params, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
     } else if (mode === 'motivic') {
@@ -1785,8 +1790,7 @@ function generateSequence() {
 
   const anchorMidi = parseInt(document.getElementById('anchorNote').value) || 48;
   const anchorPattern = document.getElementById('anchorPattern').value;
-
-  // FIXED: Ensure arpParams are grabbed correctly
+  const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
   const arpParams = {
     root: parseInt(document.getElementById('arpRoot').value) || 0,
     chord: document.getElementById('arpChord').value,
@@ -1832,7 +1836,7 @@ function generateSequence() {
         if(s.noteStart) currentEvents.push({start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave});
       });
     } else if (mode === 'offbeat') {
-      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart }, anchorMidi, anchorPattern);
+      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart }, anchorMidi, anchorPattern, anchorOnbeat);
     } else if (mode === 'arp') {
       currentEvents = buildArpPhrase(rng, { phraseLen, density, maxNoteLen }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
     } else if (mode === 'motivic') {
@@ -1842,7 +1846,7 @@ function generateSequence() {
       currentEvents = buildPhrase(rng, { ...params, octaveStart });
     }
 
-    const full = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
+    const full = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat);
 
     sequence = full;
     renderSequence();
@@ -1905,6 +1909,7 @@ function generateEvolutionaryChain() {
 
   const anchorMidi = parseInt(document.getElementById('anchorNote').value);
   const anchorPattern = document.getElementById('anchorPattern').value;
+  const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
   const arpParams = {
     root: parseInt(document.getElementById('arpRoot').value),
     chord: document.getElementById('arpChord').value,
@@ -1933,7 +1938,7 @@ function generateEvolutionaryChain() {
       currentEvents = [];
       expanded.forEach((s, idx) => { if(s.noteStart) currentEvents.push({start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave}); });
     } else if (mode === 'offbeat') {
-      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart: 0 }, anchorMidi, anchorPattern);
+      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart: 0 }, anchorMidi, anchorPattern, anchorOnbeat);
     } else if (mode === 'arp') {
       currentEvents = buildArpPhrase(rng, { phraseLen, density: params.density, maxNoteLen }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
     } else if (mode === 'motivic') {
@@ -1941,7 +1946,7 @@ function generateEvolutionaryChain() {
     } else {
       currentEvents = buildPhrase(rng, { ...params, octaveStart: 0 });
     }
-    fullCompositionSteps = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
+    fullCompositionSteps = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat);
   }
 
   const ROOT_SHIFTS = {
@@ -1995,7 +2000,7 @@ function generateEvolutionaryChain() {
       return ev;
     });
 
-    const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams);
+    const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat);
     fullCompositionSteps = fullCompositionSteps.concat(iterationBlock);
 
     if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
@@ -2700,7 +2705,7 @@ document.getElementById('exportEvoBtn').addEventListener('click', async () => {
   }
 });
 
-['scale','root','anchorNote','anchorPattern','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+['scale','root','anchorNote','anchorPattern','anchorOnbeat','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change',generateSequence);
 });
 
