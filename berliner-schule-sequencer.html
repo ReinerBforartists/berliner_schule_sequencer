@@ -2762,6 +2762,21 @@ document.getElementById('presetSelect').addEventListener('change', (e) => {
   applyPreset(e.target.value);
 });
 
+// Mousewheel on all range sliders
+document.querySelectorAll('input[type="range"]').forEach(slider => {
+  slider.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const step = parseFloat(slider.step) || 1;
+    const min  = parseFloat(slider.min) || 0;
+    const max  = parseFloat(slider.max) || 100;
+    const dir  = e.deltaY < 0 ? 1 : -1;
+    const newVal = Math.min(max, Math.max(min, parseFloat(slider.value) + dir * step));
+    slider.value = newVal;
+    slider.dispatchEvent(new Event('input'));
+    slider.dispatchEvent(new Event('change'));
+  }, { passive: false });
+});
+
 // init
 initSequencerGrid();
 applyModeUI();
