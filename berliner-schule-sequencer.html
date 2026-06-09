@@ -2458,6 +2458,27 @@ function syncNoteLengths() {
   }
 }
 
+function syncPaletteRange() {
+  const paletteEl = document.getElementById('paletteSize');
+  const rangeEl   = document.getElementById('toneRange');
+  if (!paletteEl || !rangeEl) return;
+
+  const paletteVal = parseInt(paletteEl.value);
+  const rangeVal   = parseInt(rangeEl.value);
+
+  // Palette can never be larger than range
+  if (paletteVal > rangeVal) {
+    paletteEl.value = rangeVal;
+    document.getElementById('paletteVal').textContent = rangeVal;
+  }
+
+  // Range can never be smaller than palette
+  if (rangeVal < paletteVal) {
+    rangeEl.value = paletteVal;
+    document.getElementById('rangeVal').textContent = paletteVal;
+  }
+}
+
 // --- UI EVENT WIRING ---
 
 document.getElementById('minNoteLen')?.addEventListener('input', () => {
@@ -2498,6 +2519,13 @@ Object.entries(pctSliders).forEach(([id,valId])=>{
 ['minNoteLen', 'maxNoteLen'].forEach(id => {
   document.getElementById(id)?.addEventListener('input', () => {
     syncNoteLengths();
+  });
+});
+
+// B2. Palette/Range sync
+['paletteSize', 'toneRange'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', () => {
+    syncPaletteRange();
   });
 });
 
