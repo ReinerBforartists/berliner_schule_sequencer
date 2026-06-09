@@ -2193,7 +2193,10 @@ function getAudio() {
   return audioCtx;
 }
 
+let activeGains = [];
+
 function playNote(ctx, midi, dur, velocity) {
+  if (!audioCtx) return;
   dur = Math.max(0.05, dur);
   const freq = 440 * Math.pow(2, (midi - 69) / 12);
   const osc = ctx.createOscillator();
@@ -2217,6 +2220,9 @@ function playNote(ctx, midi, dur, velocity) {
 
   osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
   osc.start(t0); osc.stop(t0 + dur + 0.02);
+
+  activeGains.push(gain);
+  osc.onended = () => { activeGains = activeGains.filter(g => g !== gain); };
 }
 
 async function playSequence() {
@@ -2283,6 +2289,13 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function stopPlayback(){
   playing=false; playToken++;
+  if (audioCtx) {
+    const t = audioCtx.currentTime;
+    activeGains.forEach(g => {
+      try { g.gain.cancelScheduledValues(t); g.gain.linearRampToValueAtTime(0, t + 0.02); } catch(e){}
+    });
+    activeGains = [];
+  }
   document.getElementById('playBtn').disabled=false;
   document.getElementById('stopBtn').disabled=true;
   document.getElementById('statusArea').classList.remove('playing');
