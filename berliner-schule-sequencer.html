@@ -1758,7 +1758,12 @@ let currentMode='classic';
  * The "Block Factory": Orchestrates the repetition of a base phrase and applies
  * mode-specific mutations for every repeat to create organic variation.
  */
-function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat) {
+/**
+ * The "Block Factory": Orchestrates the repetition of a base phrase and applies
+ * mode-specific mutations for every repeat to create organic variation.
+ * Now accepts internalVariation as a parameter to allow deterministic repeats.
+ */
+function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat, internalVariation) {
   const block = [];
   let currentEvents = [...startEvents];
 
@@ -1766,10 +1771,10 @@ function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, an
     // Expand the current event set into actual steps
     block.push(...expandEvents(currentEvents, params.phraseLen));
 
-    // Apply variation for the next repeat within the block
-    const varRate = +document.getElementById('variation').value / 100;
+    // Use the passed internalVariation instead of reading directly from DOM
+    const varRate = internalVariation;
+
     if (mode === 'schulze') {
-      // Schulze mutation is special as it works on expanded steps
       const expanded = expandEvents(currentEvents, params.phraseLen);
       const mutated = mutateSchulzePhrase(rng, expanded, varRate, params);
       currentEvents = [];
@@ -1805,7 +1810,6 @@ function generateSequence() {
   const scale = SCALES[scaleKey];
   const root = parseInt(document.getElementById('root').value);
 
-  // Ensure all numeric values are parsed correctly from the DOM
   const phraseLen = parseInt(document.getElementById('phraseLen').value) || 16;
   const repeats = parseInt(document.getElementById('repeats').value) || 4;
   const density = (parseFloat(document.getElementById('density').value) || 72) / 100;
@@ -1830,14 +1834,11 @@ function generateSequence() {
   const minNoteLen = parseInt(document.getElementById('minNoteLen').value) || 1;
   const maxNoteLen = parseInt(document.getElementById('maxNoteLen').value) || 4;
 
-  // General params object used across different modes
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
-// Inside generateSequence()
   const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
       ? buildPalette(rng, scale, paletteSize, root, toneRange)
       : null;
-
 
   const params = {
     scale,
@@ -1855,7 +1856,9 @@ function generateSequence() {
   let octaveStart = 0;
   let currentEvents = [];
 
-  // Initial Phrase Generation - Mode specific logic
+  // Get current UI variation
+  const uiVariation = +document.getElementById('variation').value / 100;
+
   try {
     if (mode === 'schulze') {
       const p = buildSchulzePhrase(rng, { ...params, octaveStart });
@@ -1870,11 +1873,10 @@ function generateSequence() {
     } else if (mode === 'motivic') {
       currentEvents = buildMotivicPhrase(rng, { ...params, octaveStart });
     } else {
-      // Classic mode
       currentEvents = buildPhrase(rng, { ...params, octaveStart });
     }
 
-    const full = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat);
+    const full = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat, uiVariation);
 
     sequence = full;
     renderSequence();
@@ -1883,7 +1885,7 @@ function generateSequence() {
   } catch (err) {
     console.error("Generation failed:", err);
     setStatus('Error generating', false);
-    sequence = []; // Reset to prevent rendering old/broken data
+    sequence = [];
   }
 }
 
@@ -1961,12 +1963,14 @@ function generateEvolutionaryChain() {
     octaves: document.getElementById('arpOctaves').value
   };
 
+  const uiVariation = +document.getElementById('variation').value / 100;
   let fullCompositionSteps = [];
   let currentEvents = [];
   let currentRoot = root;
 
   const clampMidi = (m) => Math.max(24, Math.min(84, m));
 
+  // Initialize first block
   if (sequence && sequence.length > 0) {
     fullCompositionSteps = [...sequence];
     const firstPhraseSteps = sequence.slice(0, phraseLen);
@@ -1990,8 +1994,11 @@ function generateEvolutionaryChain() {
     } else {
       currentEvents = buildPhrase(rng, { ...params, octaveStart: 0 });
     }
-    fullCompositionSteps = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat);
+    fullCompositionSteps = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat, uiVariation);
   }
+
+  // Store the first generated block as a template for "Pure Repeats"
+  const baseBlock = [...fullCompositionSteps];
 
   const ROOT_SHIFTS = {
     free:       { type: 'random', vals: [3, -3, 4, -4, 5, -5, 7, -7] },
@@ -2023,79 +2030,77 @@ function generateEvolutionaryChain() {
 
   for (let i = 1; i < iterations; i++) {
     const tones = params.palette && params.palette.length > 0 ? params.palette : null;
-
     const curveMult = getCurveMultiplier(curve, i - 1, iterations - 1);
     const effectiveDriftProb = driftProb * curveMult;
     const effectiveMutationRate = mutationRate * curveMult;
 
+    let isEvolving = (effectiveMutationRate > 0 || effectiveDriftProb > 0);
+
+    // Octave Drift
     if (effectiveDriftProb > 0 && rng.chance(effectiveDriftProb)) {
       const driftDir = rng.chance(0.5) ? 12 : -12;
       currentEvents = currentEvents.map(e => {
         const shifted = clampMidi(e.midi + driftDir);
         return {...e, midi: tones ? snapToPalette(shifted, tones) : shifted};
       });
+      isEvolving = true;
     }
 
-    currentEvents = currentEvents.map((ev) => {
-      if (rng.chance(gripStrength)) return ev;
-      if (rng.chance(effectiveMutationRate)) {
-        return {...ev, midi: clampMidi(tones ? tones[rng.int(0, tones.length - 1)] : currentRoot)};
-      }
-      return ev;
-    });
+    // Note Mutation
+    if (effectiveMutationRate > 0) {
+      currentEvents = currentEvents.map((ev) => {
+        if (rng.chance(gripStrength)) return ev;
+        if (rng.chance(effectiveMutationRate)) {
+          return {...ev, midi: clampMidi(tones ? tones[rng.int(0, tones.length - 1)] : currentRoot)};
+        }
+        return ev;
+      });
+      isEvolving = true;
+    }
 
-    const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat);
-    fullCompositionSteps = fullCompositionSteps.concat(iterationBlock);
-
-        if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
+    // ROOT SHIFTS
+    let rootShiftHappened = false;
+    if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
       const config = ROOT_SHIFTS[rootShiftMode] || ROOT_SHIFTS.free;
-      let interval;
-
-      if (config.type === 'cycle') {
-        const stepIndex = Math.floor(i / rootShiftInterval) % config.vals.length;
-        interval = config.vals[stepIndex];
-      } else {
-        interval = config.vals[rng.int(0, config.vals.length - 1)];
-      }
+      let interval = (config.type === 'cycle')
+        ? config.vals[Math.floor(i / rootShiftInterval) % config.vals.length]
+        : config.vals[rng.int(0, config.vals.length - 1)];
 
       let targetRoot = currentRoot + interval;
-
-      // --- ONLY FOR FREE MODE: Apply Palette & Range constraints ---
       if (rootShiftMode === 'free') {
         const rRange = parseInt(document.getElementById('evoRootRange').value) || 7;
         const rPalSize = parseInt(document.getElementById('evoRootPalette').value) || 4;
         const rootPalette = buildRootPalette(rng, root, rPalSize, rRange);
-
-        // Snap to the nearest note in the palette
-        const snappedRoot = rootPalette.reduce((prev, curr) =>
-          Math.abs(curr - targetRoot) < Math.abs(prev - targetRoot) ? curr : prev
-        );
-
-        // Only apply if the snapped result stays within the range from original root
-        if (Math.abs(snappedRoot - root) <= rRange) {
-          targetRoot = snappedRoot;
-        } else {
-          // Skip this shift if it's completely out of range
-          continue;
-        }
+        const snappedRoot = rootPalette.reduce((prev, curr) => Math.abs(curr - targetRoot) < Math.abs(prev - targetRoot) ? curr : prev);
+        if (Math.abs(snappedRoot - root) <= rRange) targetRoot = snappedRoot; else { /* skip shift */ }
       }
 
-      // --- FOR ALL MODES: Apply the final calculated target root ---
       const shift = targetRoot - currentRoot;
       currentRoot = targetRoot;
       params.root = currentRoot;
-
-      if (params.palette) {
-        const tRange = parseInt(document.getElementById('toneRange').value) || 4;
-        const pSize = parseInt(document.getElementById('paletteSize').value) || 2;
-        params.palette = buildPalette(rng, params.scale, pSize, currentRoot, tRange);
-      }
-
+      if (params.palette) params.palette = buildPalette(rng, params.scale, paletteSize, currentRoot, toneRange);
       const newTones = params.palette || null;
-      currentEvents = currentEvents.map(e => ({
-        ...e,
-        midi: newTones ? snapToPalette(clampMidi(e.midi + shift), newTones) : clampMidi(e.midi + shift)
-      }));
+      currentEvents = currentEvents.map(e => ({...e, midi: newTones ? snapToPalette(clampMidi(e.midi + shift), newTones) : clampMidi(e.midi + shift)}));
+      rootShiftHappened = true;
+    }
+
+    // FINAL BLOCK GENERATION
+    if (!isEvolving && !rootShiftHappened) {
+      // PURE REPEAT: Just copy the first block
+      fullCompositionSteps = fullCompositionSteps.concat(baseBlock);
+    } else if (!isEvolving && rootShiftHappened) {
+      // ROOT-SHIFTED REPEAT: Copy first block but shift all MIDI notes
+      const shift = currentRoot - root;
+      const shiftedBlock = baseBlock.map(s => {
+        if (s.rest) return s;
+        const shiftedMidi = clampMidi(s.midi + shift);
+        return {...s, midi: shiftedMidi};
+      });
+      fullCompositionSteps = fullCompositionSteps.concat(shiftedBlock);
+    } else {
+      // ACTUAL EVOLUTION: Generate a new block with variations
+      const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat, uiVariation);
+      fullCompositionSteps = fullCompositionSteps.concat(iterationBlock);
     }
   }
 
