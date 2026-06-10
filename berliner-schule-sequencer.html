@@ -719,25 +719,35 @@ details[open] summary::before { content: '− '; }
           <option value="32">32</option>
         </select>
         <button class="btn evo-btn" id="exportEvoBtn" style="white-space: nowrap; margin-right: auto;">🧬 EXPORT EVOLUTION</button>
+
         <!-- Visual Separator -->
         <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+
         <div class="ctrl" style="min-width:70px; flex:1;">
-          <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">8</span></div>
-          <input type="range" id="evoIterations" min="1" max="64" value="8" style="width:100%;">
+          <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">12</span></div>
+          <!-- Erhöht auf 12 für einen längeren, fließenderen Verlauf -->
+          <input type="range" id="evoIterations" min="1" max="64" value="12" style="width:100%;">
         </div>
+
         <!-- Visual Separator -->
         <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+
         <div class="ctrl" style="min-width:70px; flex:1;">
-          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">25%</span></div>
-          <input type="range" id="evoMutation" min="0" max="100" value="25" style="width:100%;">
+          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">10%</span></div>
+          <!-- Gesenkt auf 10%: Nur sehr wenige Noten ändern sich pro Block -->
+          <input type="range" id="evoMutation" min="0" max="100" value="10" style="width:100%;">
         </div>
+
         <div class="ctrl" style="min-width:70px; flex:1;">
-          <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">30%</span></div>
-          <input type="range" id="evoDrift" min="0" max="100" value="30" style="width:100%;">
+          <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">5%</span></div>
+          <!-- Stark gesenkt auf 5%: Oktavsprünge passieren nur noch selten -->
+          <input type="range" id="evoDrift" min="0" max="100" value="5" style="width:100%;">
         </div>
+
         <div class="ctrl" style="min-width:70px; flex:1;">
-          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">30%</span></div>
-          <input type="range" id="evoGrip" min="0" max="100" value="30" style="width:100%;">
+          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">70%</span></div>
+          <!-- Erhöht auf 70%: Der Großteil der ursprünglichen Phrase bleibt erhalten -->
+          <input type="range" id="evoGrip" min="0" max="100" value="70" style="width:100%;">
         </div>
       </div>
 
