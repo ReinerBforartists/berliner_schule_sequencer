@@ -733,9 +733,9 @@ details[open] summary::before { content: '− '; }
         <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
 
         <div class="ctrl" style="min-width:70px; flex:1;">
-          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">10%</span></div>
+          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
           <!-- Gesenkt auf 10%: Nur sehr wenige Noten ändern sich pro Block -->
-          <input type="range" id="evoMutation" min="0" max="100" value="10" style="width:100%;">
+          <input type="range" id="evoMutation" min="0" max="100" value="20" style="width:100%;">
         </div>
 
         <div class="ctrl" style="min-width:70px; flex:1;">
@@ -745,9 +745,9 @@ details[open] summary::before { content: '− '; }
         </div>
 
         <div class="ctrl" style="min-width:70px; flex:1;">
-          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">70%</span></div>
+          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
           <!-- Erhöht auf 70%: Der Großteil der ursprünglichen Phrase bleibt erhalten -->
-          <input type="range" id="evoGrip" min="0" max="100" value="70" style="width:100%;">
+          <input type="range" id="evoGrip" min="0" max="100" value="50" style="width:100%;">
         </div>
       </div>
 
@@ -885,8 +885,8 @@ details[open] summary::before { content: '− '; }
       <input type="range" id="variation" min="0" max="60" value="25">
     </div>
     <div class="ctrl hidden" id="paletteCtrl">
-      <div class="ctrl-label">Palette <span class="val" id="paletteVal">2</span></div>
-      <input type="range" id="paletteSize" min="2" max="8" value="2">
+      <div class="ctrl-label">Palette <span class="val" id="paletteVal">3</span></div>
+      <input type="range" id="paletteSize" min="2" max="8" value="3">
     </div>
     <div class="ctrl hidden" id="rangeCtrl">
       <div class="ctrl-label">Range <span class="val" id="rangeVal">4</span></div>
@@ -894,7 +894,6 @@ details[open] summary::before { content: '− '; }
     </div>
   </div>
 </div>
-
 
 <!-- GROUP 2: PHRASE & NOTES (Structural) -->
 <div class="controls-group" style="margin-bottom: 15px;">
@@ -1454,6 +1453,7 @@ function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, 
 }
 
 function mutateMotivicPhrase(rng, events, variation, params) {
+  if (!variation || variation <= 0) return events;
   const copy = events.map(e => ({...e}));
   const tones = params.palette && params.palette.length > 0 ? params.palette : [params.root];
   const n = Math.max(1, Math.floor(copy.length * variation));
@@ -1492,6 +1492,7 @@ function buildPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights
 }
 
 function mutatePhrase(rng, events, variation, params) {
+  if (!variation || variation <= 0) return events;
   const copy = events.map(e => ({...e}));
   const tones = params.palette && params.palette.length > 0 ? params.palette : [params.root];
 
@@ -1578,6 +1579,7 @@ function buildSchulzePhrase(rng,{scale,root,phraseLen,weights,octaveStart,noteCo
 }
 
 function mutateSchulzePhrase(rng, phrase, variation, params) {
+  if (!variation || variation <= 0) return phrase;
   const events = [];
   for (let i = 0; i < phrase.length; i++) {
     const s = phrase[i];
@@ -1647,6 +1649,7 @@ function checkAnchorPos(i, pattern, len, onbeat) {
 }
 
 function mutateOffbeatPhrase(rng, events, variation, params, anchorMidi, anchorPattern, anchorOnbeat) {
+  if (!variation || variation <= 0) return events;
   const copy = events.map(e => ({...e}));
   const n = Math.max(1, Math.floor(copy.length * variation));
   const tones = params.palette && params.palette.length > 0 ? params.palette : null;
@@ -1737,6 +1740,7 @@ const events = [];
 }
 
 function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpPattern, arpOctaves) {
+  if (!variation || variation <= 0) return events;
   const copy = events.map(e => ({...e}));
   const n = Math.max(1, Math.floor(copy.length * variation));
   for (let m = 0; m < n; m++) {
@@ -1948,7 +1952,7 @@ function generateEvolutionaryChain() {
 
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
-  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic')
+  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
     ? buildPalette(rng, scale, paletteSize, root, toneRange)
     : null;
 
@@ -1980,7 +1984,7 @@ function generateEvolutionaryChain() {
 
   const clampMidi = (m) => Math.max(24, Math.min(84, m));
 
-  // Initialize first block
+  // 1. Start-Block initialisieren
   if (sequence && sequence.length > 0) {
     fullCompositionSteps = [...sequence];
     const firstPhraseSteps = sequence.slice(0, phraseLen);
@@ -2004,11 +2008,11 @@ function generateEvolutionaryChain() {
     } else {
       currentEvents = buildPhrase(rng, { ...params, octaveStart: 0 });
     }
-    fullCompositionSteps = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat, uiVariation);
+    const firstExpanded = expandEvents(currentEvents, params.phraseLen);
+    for (let r = 0; r < repeats; r++) {
+      fullCompositionSteps = fullCompositionSteps.concat(firstExpanded);
+    }
   }
-
-  // Store the first generated block as a template for "Pure Repeats"
-  const baseBlock = [...fullCompositionSteps];
 
   const ROOT_SHIFTS = {
     free:       { type: 'random', vals: [3, -3, 4, -4, 5, -5, 7, -7] },
@@ -2044,29 +2048,33 @@ function generateEvolutionaryChain() {
     const effectiveDriftProb = driftProb * curveMult;
     const effectiveMutationRate = mutationRate * curveMult;
 
-    let isEvolving = (effectiveMutationRate > 0 || effectiveDriftProb > 0);
-
-    // Octave Drift
+    // OCTAVE DRIFT
     if (effectiveDriftProb > 0 && rng.chance(effectiveDriftProb)) {
       const driftDir = rng.chance(0.5) ? 12 : -12;
       currentEvents = currentEvents.map(e => {
         const shifted = clampMidi(e.midi + driftDir);
         return {...e, midi: tones ? snapToPalette(shifted, tones) : shifted};
       });
-      isEvolving = true;
     }
 
-    // Note Mutation
-    if (effectiveMutationRate > 0) {
-      currentEvents = currentEvents.map((ev) => {
-        if (rng.chance(gripStrength)) return ev;
-        if (rng.chance(effectiveMutationRate)) {
-          return {...ev, midi: clampMidi(tones ? tones[rng.int(0, tones.length - 1)] : currentRoot)};
+    // MUTATION (Palette-Walk)
+    // Grip schützt hier die Tonhöhe. Mutation verschiebt sie nur minimal in der Palette.
+    currentEvents = currentEvents.map((ev) => {
+      if (rng.chance(gripStrength)) return ev; // Grip friert Tonhöhe ein
+
+      if (rng.chance(effectiveMutationRate) && tones) {
+        const currentIdx = tones.indexOf(ev.midi);
+        let newIdx = currentIdx;
+        if (currentIdx !== -1) {
+          const step = rng.chance(0.5) ? 1 : -1;
+          newIdx = Math.max(0, Math.min(tones.length - 1, currentIdx + step));
+        } else {
+          newIdx = rng.int(0, tones.length - 1);
         }
-        return ev;
-      });
-      isEvolving = true;
-    }
+        return {...ev, midi: tones[newIdx]};
+      }
+      return ev;
+    });
 
     // ROOT SHIFTS
     let rootShiftHappened = false;
@@ -2082,7 +2090,7 @@ function generateEvolutionaryChain() {
         const rPalSize = parseInt(document.getElementById('evoRootPalette').value) || 4;
         const rootPalette = buildRootPalette(rng, root, rPalSize, rRange);
         const snappedRoot = rootPalette.reduce((prev, curr) => Math.abs(curr - targetRoot) < Math.abs(prev - targetRoot) ? curr : prev);
-        if (Math.abs(snappedRoot - root) <= rRange) targetRoot = snappedRoot; else { /* skip shift */ }
+        if (Math.abs(snappedRoot - root) <= rRange) targetRoot = snappedRoot; else { /* skip */ }
       }
 
       const shift = targetRoot - currentRoot;
@@ -2090,27 +2098,19 @@ function generateEvolutionaryChain() {
       params.root = currentRoot;
       if (params.palette) params.palette = buildPalette(rng, params.scale, paletteSize, currentRoot, toneRange);
       const newTones = params.palette || null;
-      currentEvents = currentEvents.map(e => ({...e, midi: newTones ? snapToPalette(clampMidi(e.midi + shift), newTones) : clampMidi(e.midi + shift)}));
+
+      // Linear shift + Soft Snap an die neue Palette, um die Form zu bewahren
+      currentEvents = currentEvents.map(e => {
+        const shifted = clampMidi(e.midi + shift);
+        return {...e, midi: newTones ? snapToPalette(shifted, newTones) : shifted};
+      });
       rootShiftHappened = true;
     }
 
-    // FINAL BLOCK GENERATION
-    if (!isEvolving && !rootShiftHappened) {
-      // PURE REPEAT: Just copy the first block
-      fullCompositionSteps = fullCompositionSteps.concat(baseBlock);
-    } else if (!isEvolving && rootShiftHappened) {
-      // ROOT-SHIFTED REPEAT: Copy first block but shift all MIDI notes
-      const shift = currentRoot - root;
-      const shiftedBlock = baseBlock.map(s => {
-        if (s.rest) return s;
-        const shiftedMidi = clampMidi(s.midi + shift);
-        return {...s, midi: shiftedMidi};
-      });
-      fullCompositionSteps = fullCompositionSteps.concat(shiftedBlock);
-    } else {
-      // ACTUAL EVOLUTION: Generate a new block with variations
-      const iterationBlock = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat, uiVariation);
-      fullCompositionSteps = fullCompositionSteps.concat(iterationBlock);
+    // In evolution mode: repeat the frozen phrase exactly, no internal mutation
+    const expandedPhrase = expandEvents(currentEvents, params.phraseLen);
+    for (let r = 0; r < repeats; r++) {
+      fullCompositionSteps = fullCompositionSteps.concat(expandedPhrase);
     }
   }
 
