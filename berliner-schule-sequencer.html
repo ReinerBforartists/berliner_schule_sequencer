@@ -1117,6 +1117,8 @@ details[open] summary::before { content: '− '; }
           <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
             <li><strong style="color: var(--green);">Live Parameters</strong> <span style="color: var(--text-bright);"> (green labels): These affect the playback engine in real-time. You will hear the change immediately without stopping the music.</span></li>
             <li><strong style="color: var(--amber);">Generative Parameters:</strong> <span style="color: var(--text-bright);"> These define the "blueprint" of the sequence. To apply these changes, you must click <span style="color: #fff; font-weight: bold;">"↻ Generate"</span> to rebuild the pattern.</span></li>
+            <!-- node length variation warning -->
+            <li><strong style="color: var(--amber);">Note Interruption (Modular Priority):</strong> High values of the <span style="color: #fff; font-weight: bold;">Variation</span> slider can cause new notes to be placed over existing ones. In these cases, the previous note is instantly interrupted (Hard Cut) to make room for the new one. This mimics the behavior of classic analog modular systems and may result in notes appearing shorter than your specified   <strong>Min Length</strong>.</li>
           </ul>
         </div>
 
