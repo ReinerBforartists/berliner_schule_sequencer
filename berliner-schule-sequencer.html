@@ -2060,18 +2060,31 @@ function generateEvolutionaryChain() {
     }
 
     // MUTATION (Palette-Walk)
-    // Grip schützt hier die Tonhöhe. Mutation verschiebt sie nur minimal in der Palette.
     currentEvents = currentEvents.map((ev) => {
-      if (rng.chance(gripStrength)) return ev; // Grip friert Tonhöhe ein
+      if (rng.chance(gripStrength)) return ev; // Grip freezes tone height
 
       if (rng.chance(effectiveMutationRate) && tones) {
         const currentIdx = tones.indexOf(ev.midi);
         let newIdx = currentIdx;
+
         if (currentIdx !== -1) {
+          // Case 1: Note is in the palette -> Gentle step to the left or right
           const step = rng.chance(0.5) ? 1 : -1;
           newIdx = Math.max(0, Math.min(tones.length - 1, currentIdx + step));
         } else {
-          newIdx = rng.int(0, tones.length - 1);
+        // FIX: Note lies outside the palette -> Gravitational approach
+        // Find the index of the pitch in the palette closest to the current value
+          let nearestIdx = 0;
+          let minDist = Infinity;
+
+          for (let i = 0; i < tones.length; i++) {
+            const dist = Math.abs(tones[i] - ev.midi);
+            if (dist < minDist) {
+              minDist = dist;
+              nearestIdx = i;
+            }
+          }
+          newIdx = nearestIdx;
         }
         return {...ev, midi: tones[newIdx]};
       }
