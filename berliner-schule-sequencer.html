@@ -1954,9 +1954,16 @@ function generateEvolutionaryChain() {
 
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
-  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
+  let palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
     ? buildPalette(rng, scale, paletteSize, root, toneRange)
     : null;
+
+  // FIX: guarantee at least 2 distinct tones, otherwise mutation degenerates
+  // into a permanent no-op (tones[newIdx] always resolves to the same value).
+  if (palette && palette.length < 2) {
+    const fallback = Math.max(24, Math.min(84, root + (scale[1] !== undefined ? scale[1] : 2)));
+    if (!palette.includes(fallback)) palette = [...palette, fallback].sort((a, b) => a - b);
+  }
 
   const params = {
     scale, root, phraseLen,
@@ -1989,13 +1996,39 @@ function generateEvolutionaryChain() {
   // 1. Start-Block initialisieren
   if (sequence && sequence.length > 0) {
     fullCompositionSteps = [...sequence];
-    const firstPhraseSteps = sequence.slice(0, phraseLen);
+
+    // FIX: `sequence` consists of `repeats` copies of one phrase, each carrying
+    // its own internal variation (mutate*Phrase). Repeat #1 isn't necessarily
+    // representative - pick the copy with the most note events as the
+    // evolution seed, so variation already present in `sequence` isn't lost.
+    let bestPhraseSteps = sequence.slice(0, phraseLen);
+    let bestCount = bestPhraseSteps.filter(s => s.noteStart && !s.rest).length;
+    for (let r = 1; r < repeats; r++) {
+      const candidate = sequence.slice(r * phraseLen, (r + 1) * phraseLen);
+      if (candidate.length < phraseLen) break;
+      const count = candidate.filter(s => s.noteStart && !s.rest).length;
+      if (count > bestCount) { bestCount = count; bestPhraseSteps = candidate; }
+    }
+
     currentEvents = [];
-    firstPhraseSteps.forEach((s, idx) => {
+    bestPhraseSteps.forEach((s, idx) => {
       if (s.noteStart && !s.rest) {
         currentEvents.push({ start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave });
       }
     });
+
+    // FIX: Build the evolution palette from the pitches actually present in the
+    // seed phrase, instead of an independently-built palette from the current
+    // UI root/scale/paletteSize/toneRange (which may not match `sequence` at
+    // all and can degenerate to a single tone, making mutation a no-op).
+    if (params.palette) {
+      const distinctTones = [...new Set(currentEvents.map(e => e.midi))].sort((a, b) => a - b);
+      if (distinctTones.length >= 2) {
+        params.palette = distinctTones;
+      }
+      // else: fewer than 2 distinct tones in the seed -> keep the
+      // freshly-built `palette` fallback (guarantees mutation is possible).
+    }
   } else {
     if (mode === 'schulze') {
       const expanded = buildSchulzePhrase(rng, { ...params, octaveStart: 0 });
