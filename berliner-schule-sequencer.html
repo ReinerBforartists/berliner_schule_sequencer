@@ -1927,31 +1927,43 @@ let evoForcedSeed = null;
  * Renders a graphical piano-roll style preview of the full evolution chain
  * onto the evoPreviewCanvas, without touching playback or export.
  */
+/**
+ * Logic: Handles seed locking and generates the actual evolution data.
+ * This should ONLY be called when parameters change or a refresh is requested.
+ */
+function refreshEvolutionData() {
+  const evoSeedMode = document.getElementById('evoSeedMode')?.value;
+
+  // Lock the seed: If random, generate a new one and keep it until the next parameter change.
+  if (evoSeedMode === 'fixed') {
+    evoForcedSeed = null;
+  } else {
+    evoForcedSeed = Math.floor(Math.random() * 9999999);
+  }
+
+  try {
+    // Calculate the chain and store it in the global buffer
+    currentEvoChain = generateEvolutionaryChain();
+  } catch (e) {
+    console.error('Evolution generation failed:', e);
+  }
+}
+
+/**
+ * View: Only handles the drawing of the existing buffer onto the canvas.
+ * This is safe to call during window resize/zoom.
+ */
 function renderEvolutionPreview() {
   const canvas = document.getElementById('evoPreviewCanvas');
   const info = document.getElementById('evoPreviewInfo');
   if (!canvas) return;
 
-  // Lock the seed used for this render. In "Random" mode this means the
-  // very next "EXPORT EVOLUTION" click will reproduce exactly this preview.
-  const evoSeedMode = document.getElementById('evoSeedMode')?.value;
-  if (evoSeedMode === 'fixed') {
-    evoForcedSeed = null; // export already deterministic via seedValue
-  } else {
-    evoForcedSeed = Math.floor(Math.random() * 9999999);
+  // Safety: If no data exists yet, generate it once
+  if (!currentEvoChain || currentEvoChain.length === 0) {
+    refreshEvolutionData();
   }
 
-  let chain;
-  try {
-    chain = generateEvolutionaryChain();
-    // SAVE THE GENERATED CHAIN FOR EXPORT
-    currentEvoChain = chain;
-  } catch (e) {
-    console.error('Evolution preview failed:', e);
-    if (info) info.textContent = 'Preview error - check console';
-    return;
-  }
-
+  const chain = currentEvoChain;
   const ctx = canvas.getContext('2d');
   const height = 160;
   const cssWidth = canvas.parentElement.clientWidth || canvas.clientWidth || 600;
@@ -1976,7 +1988,6 @@ function renderEvolutionPreview() {
   }
   const range = (maxMidi - minMidi) || 1;
 
-  // Block / iteration boundaries
   const phraseLen = +document.getElementById('phraseLen').value || 1;
   const repeats = +document.getElementById('repeats').value || 1;
   const blockLen = phraseLen * repeats;
@@ -1993,7 +2004,6 @@ function renderEvolutionPreview() {
     ctx.stroke();
   }
 
-  // Notes
   ctx.fillStyle = noteColor;
   for (let i = 0; i < chain.length; i++) {
     const s = chain[i];
@@ -2004,7 +2014,6 @@ function renderEvolutionPreview() {
     }
   }
 
-  // Root-shift markers (amber tick at top edge of each block start)
   ctx.fillStyle = accentColor;
   for (let b = 0; b < iterations; b++) {
     const x = Math.round(b * blockLen * pxPerStep);
@@ -2014,21 +2023,24 @@ function renderEvolutionPreview() {
 
   if (info) {
     const totalSteps = chain.length;
-    const seedNote = (evoSeedMode !== 'fixed') ? ' · seed locked for export' : '';
+    const seedNote = (document.getElementById('evoSeedMode')?.value !== 'fixed') ? ' · seed locked for export' : '';
     info.textContent = `${iterations} blocks · ${totalSteps} steps · pitch range ${minMidi + 1}–${maxMidi - 1}${seedNote}`;
   }
 }
 
 // Debounced auto-refresh of the evolution preview
 let evoPreviewTimer = null;
+// Debounced update: Both refreshes the data AND redraws the canvas
 function scheduleEvoPreview() {
   const evoPanel = document.getElementById('evoPanel');
   if (!evoPanel || !evoPanel.classList.contains('active')) return;
+
   clearTimeout(evoPreviewTimer);
-  evoPreviewTimer = setTimeout(renderEvolutionPreview, 200);
+  evoPreviewTimer = setTimeout(() => {
+    refreshEvolutionData(); // 1. Recalculate the music
+    renderEvolutionPreview(); // 2. Draw it
+  }, 200);
 }
-
-
 
 /**
  * Generates a set of allowed root notes within a specific range
@@ -3084,7 +3096,12 @@ applyModeUI();
 generateSequence();
 
 // --- Evolution Preview wiring ---
-document.getElementById('evoPreviewBtn')?.addEventListener('click', renderEvolutionPreview);
+// The Refresh Button should trigger an immediate recalculation and redraw,
+// bypassing the debounce timer and the "active panel" check.
+document.getElementById('evoPreviewBtn')?.addEventListener('click', () => {
+  refreshEvolutionData();  // 1. Immediately generate new seed/data
+  renderEvolutionPreview(); // 2. Immediately draw it to the canvas
+});
 
 // Render preview when switching to the Evolution Export tab
 document.querySelector('.export-tab[data-target="evoPanel"]')?.addEventListener('click', () => {
@@ -3101,8 +3118,8 @@ document.getElementById('genBtn')?.addEventListener('click', scheduleEvoPreview)
   document.getElementById(id)?.addEventListener('change', scheduleEvoPreview);
 });
 document.getElementById('presetSelect')?.addEventListener('change', () => setTimeout(scheduleEvoPreview, 0));
-window.addEventListener('resize', scheduleEvoPreview);
-
+// Only redraw the canvas on resize/zoom, do NOT recalculate data
+window.addEventListener('resize', renderEvolutionPreview);
 </script>
 </body>
 </html>
