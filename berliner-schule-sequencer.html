@@ -2232,26 +2232,49 @@ function generateEvolutionaryChain() {
   const mutationStyle = document.getElementById('evoMutationStyle')?.value || 'walk';
 
   for (let i = 1; i < iterations; i++) {
-    const tones = params.palette && params.palette.length > 0 ? params.palette : null;
+    // FIXED: Generate Arp-specific tones so mutation/grip work in Arp mode.
+    let arpTones = null;
+    if (mode === 'arp') {
+      const intervals = CHORD_TYPES[arpParams.chord] || [0, 4, 7];
+      const octaves = parseInt(arpParams.octaves) || 2;
+      const baseOct = 4;
+      arpTones = [];
+      for (let o = 0; o < octaves; o++) {
+        for (const iv of intervals) {
+          const midi = (baseOct + o) * 12 + arpParams.root + iv;
+          if (midi >= 24 && midi <= 127) arpTones.push(midi);
+        }
+      }
+      arpTones = [...new Set(arpTones)].sort((a, b) => a - b);
+    }
+
+    // Unified tones variable for mutation/grip/drift logic
+    const tones = mode === 'arp' ? arpTones : (params.palette && params.palette.length > 0 ? params.palette : null);
+
     const curveMult = getCurveMultiplier(curve, i - 1, iterations - 1);
-    const effectiveDriftProb = driftProb * curveMult;
     const effectiveMutationRate = mutationRate * curveMult;
 
     // OCTAVE DRIFT
-    if (effectiveDriftProb > 0 && rng.chance(effectiveDriftProb)) {
+    // FIXED: Shift the palette (tones) along with the drift.
+    // Without this, 'snapToPalette' forces notes back to the old octave immediately.
+    const rawDriftValue = +document.getElementById('octaveDriftEvo')?.value || 0;
+    const octaveDriftProbability = Math.max(0, Math.min(1, rawDriftValue / 100));
+
+    if (octaveDriftProbability > 0.01 && rng.chance(octaveDriftProbability)) {
       const driftDir = rng.chance(0.5) ? 12 : -12;
-      currentEvents = currentEvents.map(e => {
-        const shifted = clampMidi(e.midi + driftDir);
-        return {...e, midi: tones ? snapToPalette(shifted, tones) : shifted};
-      });
+
+      // 1. Shift the events
+      currentEvents = currentEvents.map(e => ({...e, midi: clampMidi(e.midi + driftDir)}));
+
+      // 2. Shift the palette (tones) so subsequent mutation logic stays in the new register
+      if (mode === 'arp' && arpTones) {
+        arpTones.forEach((t, idx) => arpTones[idx] = clampMidi(t + driftDir));
+      } else if (params.palette) {
+        params.palette.forEach((t, idx) => params.palette[idx] = clampMidi(t + driftDir));
+      }
     }
 
-    // MUTATION (Palette-Walk / Palette-Random / Mix)
-    // Instead of one big mutation pass applied all at once at the block
-    // boundary (which caused hard "jumps"), the mutation rate is now spread
-    // across the `repeats` of this block: each repeat gets its own small
-    // mutation pass, so the sequence drifts gradually within the block
-    // instead of snapping to a new state between blocks.
+    // MUTATION & GRIP
     const perRepeatMutationRate = effectiveMutationRate / Math.max(1, repeats);
 
     const mutateTone = (ev) => {
@@ -2259,7 +2282,6 @@ function generateEvolutionaryChain() {
       const currentIdx = tones.indexOf(ev.midi);
 
       if (currentIdx === -1) {
-        // Note lies outside the palette -> gravitational snap to nearest tone
         let nearestIdx = 0, minDist = Infinity;
         for (let k = 0; k < tones.length; k++) {
           const dist = Math.abs(tones[k] - ev.midi);
@@ -2272,32 +2294,16 @@ function generateEvolutionaryChain() {
         || (mutationStyle === 'mix' && rng.chance(0.5));
 
       if (useRandom && tones.length > 1) {
-        // Palette Random: jump to any *other* tone in the palette, fully
-        // independent of the current one (true "random walk inside a
-        // palette" behaviour, e.g. C/E/G picked at random).
         let newIdx;
         do { newIdx = rng.int(0, tones.length - 1); } while (newIdx === currentIdx);
         return tones[newIdx];
       }
 
-      // Palette Walk: gentle step to a neighbouring tone. At the edges of
-      // the palette, an "outward" step is clamped to a self-loop (stay on
-      // the edge tone). This gives each palette tone an equal long-run
-      // share (uniform stationary distribution for n tones), so edge tones
-      // like the highest/lowest note in C/E/G don't get pushed out of
-      // rotation permanently.
       let step = rng.chance(0.5) ? 1 : -1;
       const newIdx = Math.max(0, Math.min(tones.length - 1, currentIdx + step));
       return tones[newIdx];
     };
 
-    // Palette coverage: independent per-event random walks can drift such
-    // that one or more palette tones disappear from the population entirely
-    // and never return (e.g. an edge tone becomes a pure "pass-through"
-    // state). To guarantee the full palette (e.g. C/E/G) stays in rotation,
-    // check once per iteration whether every palette tone is represented
-    // among the current events, and if not, force one event onto each
-    // missing tone.
     const enforcePaletteCoverage = (events) => {
       if (!tones || tones.length < 2 || events.length < 2) return events;
       const present = new Set(events.map(e => e.midi));
@@ -2312,10 +2318,24 @@ function generateEvolutionaryChain() {
     };
 
     currentEvents = currentEvents.map((ev) => {
-      if (rng.chance(gripStrength)) return ev; // Grip freezes tone height
+      if (rng.chance(gripStrength)) return ev;
       if (tones && rng.chance(effectiveMutationRate)) return {...ev, midi: mutateTone(ev)};
       return ev;
     });
+
+    currentEvents = enforcePaletteCoverage(currentEvents);
+
+    // Repeat the block with gradual mutation spread across repeats
+    for (let r = 0; r < repeats; r++) {
+      if (r > 0 && tones) {
+        currentEvents = currentEvents.map((ev) => {
+          if (rng.chance(gripStrength)) return ev;
+          if (rng.chance(perRepeatMutationRate)) return {...ev, midi: mutateTone(ev)};
+          return ev;
+        });
+      }
+      fullCompositionSteps = fullCompositionSteps.concat(expandEvents(currentEvents, params.phraseLen));
+    }
 
     // ROOT SHIFTS
     let rootShiftHappened = false;
@@ -2331,56 +2351,33 @@ function generateEvolutionaryChain() {
         const rPalSize = parseInt(document.getElementById('evoRootPalette').value) || 4;
         const rootPalette = buildRootPalette(rng, root, rPalSize, rRange);
         const snappedRoot = rootPalette.reduce((prev, curr) => Math.abs(curr - targetRoot) < Math.abs(prev - targetRoot) ? curr : prev);
-        if (Math.abs(snappedRoot - root) <= rRange) targetRoot = snappedRoot; else { /* skip */ }
+        if (Math.abs(snappedRoot - root) <= rRange) targetRoot = snappedRoot;
       }
 
       const shift = targetRoot - currentRoot;
       currentRoot = targetRoot;
       params.root = currentRoot;
 
-      // FIXED: Respect actual tone count in the current phrase instead of forcing UI slider values.
-      // Prevents artificial palette expansion or clamping during root shifts.
+      // FIXED: Respect actual tone count during root shifts instead of forcing UI slider values.
       if (params.palette) {
-        // Extract unique MIDI values actually used in the current phrase
         const distinctTones = [...new Set(currentEvents.map(e => e.midi))];
-        // Ensure at least 2 tones to keep mutation logic functional
         const actualToneCount = Math.max(2, distinctTones.length);
-        // Cap the new palette size to the smaller of UI setting or actual usage
         const newSize = Math.min(paletteSize, actualToneCount);
-
         params.palette = buildPalette(rng, params.scale, newSize, currentRoot, toneRange);
       }
 
       const newTones = params.palette || null;
-
-      // Linear shift + Soft Snap an die neue Palette, um die Form zu bewahren
       currentEvents = currentEvents.map(e => {
         const shifted = clampMidi(e.midi + shift);
         return {...e, midi: newTones ? snapToPalette(shifted, newTones) : shifted};
       });
       rootShiftHappened = true;
     }
-
-    currentEvents = enforcePaletteCoverage(currentEvents);
-
-    // Repeat the block, applying a small additional mutation pass before
-    // each repeat (except the very first, which reflects the state already
-    // mutated/drifted above for this iteration). This turns the previously
-    // hard block-to-block jump into a gradual drift across the repeats.
-    for (let r = 0; r < repeats; r++) {
-      if (r > 0 && tones) {
-        currentEvents = currentEvents.map((ev) => {
-          if (rng.chance(gripStrength)) return ev; // Grip freezes tone height
-          if (rng.chance(perRepeatMutationRate)) return {...ev, midi: mutateTone(ev)};
-          return ev;
-        });
-      }
-      fullCompositionSteps = fullCompositionSteps.concat(expandEvents(currentEvents, params.phraseLen));
-    }
-  }
+  } // End of evolution loop
 
   return fullCompositionSteps;
 }
+
 
 // --- UI RENDERING ENGINE ---
 
