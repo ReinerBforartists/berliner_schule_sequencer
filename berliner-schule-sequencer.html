@@ -1850,6 +1850,10 @@ function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, an
  * Main generation entry point.
  * Orchestrates the creation of the sequence based on current UI settings.
  */
+/**
+ * Main generation entry point.
+ * Orchestrates the creation of the sequence based on current UI settings.
+ */
 function generateSequence() {
   const mode = currentMode;
   const scaleKey = document.getElementById('scale').value;
@@ -1928,6 +1932,13 @@ function generateSequence() {
     renderSequence();
     updatePills();
     setStatus('ready', false);
+
+    // FIX: Automatically refresh the evolution preview when the base sequence changes.
+    // This ensures the evolutionary chain is always synchronized with the current seed phrase,
+    // preventing state drift and giving immediate visual feedback to the user.
+    refreshEvolutionData();
+    renderEvolutionPreview();
+
   } catch (err) {
     console.error("Generation failed:", err);
     setStatus('Error generating', false);
