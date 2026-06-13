@@ -752,7 +752,7 @@ details[open] summary::before { content: '− '; }
       </div>
 
       <!-- Evo Row 2: Root & Octave Drift -->
-      <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px;">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 6px; row-gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px;">
 
       <!-- Evolution curve dropdown -->
       <div class="ctrl" style="width: 160px; flex-shrink: 0;">
@@ -769,8 +769,19 @@ details[open] summary::before { content: '− '; }
         </select>
       </div>
 
+      <!-- Mutation Style dropdown -->
+      <div class="ctrl" style="width: 170px; flex-shrink: 0;">
+        <div class="ctrl-label">Mutation Style</div>
+        <select id="evoMutationStyle" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%;">
+          <option value="walk" selected>Palette Walk</option>
+          <option value="random">Palette Random</option>
+          <option value="mix">Mix (Walk + Random)</option>
+        </select>
+      </div>
+
+
         <!-- Octave Drift: Fixed width to prevent jumping -->
-        <div class="ctrl" style="width: 120px; flex-shrink: 0;">
+        <div class="ctrl" style="width: 140px; flex-shrink: 0;">
           <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
           <input type="range" id="octaveDriftEvo" min="0" max="80" value="0" style="width:100%;">
         </div>
@@ -778,51 +789,58 @@ details[open] summary::before { content: '− '; }
         <!-- Visual Separator -->
         <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
 
-        <!-- Root Mode Dropdown: Fixed width -->
-        <select id="evoRootMode" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 300px; flex-shrink: 0;">
-          <option value="none" selected>Root: None (Static)</option>
-          <option value="free">Root: Free (Random)</option>
-          <option value="thirds">Root: Thirds (3rd/4th)</option>
-          <option value="fourths">Root: 4ths/5ths</option>
-          <option value="fifths">Root: Cycle of 5ths</option>
-          <option value="alt_whole">Root: Alt. Whole Tones (+2/-2)</option>
-          <option value="alt_semi">Root: Alt. Semitones (+1/-1)</option>
-          <optgroup label="Berliner Schule / Ambient">
-            <option value="modal_iii">Root: Modal I → III</option>
-            <option value="modal_iv">Root: Modal I → IV</option>
-            <option value="circulating">Root: Circulating Fifths/Fourths</option>
-            <option value="slow_osc">Root: Slow Oscillation (I-IV-I-V)</option>
-          </optgroup>
-          <optgroup label="Pop / Rock / Standards">
-            <option value="pop_standard">Root: Pop Standard (I-V-vi-IV)</option>
-            <option value="fifties">Root: 50s Progression (vi-IV-I-V)</option>
-            <option value="andalusian">Root: Andalusian / Hollywood (i-bVII-bVI-bV)</option>
-            <option value="minor_common">Root: Minor Common (vi-III-IV-V)</option>
-            <option value="jazz_standard">Root: Jazz Standard (ii-V-I-IV-III-VI-II-V)</option>
-            <option value="pachelbel">Root: Pachelbel's Canon</option>
-            <option value="chromatic">Root: Chromatic Descent</option>
-            <option value="pentatonic">Root: Minor Pentatonic</option>
-          </optgroup>
-        </select>
+        <!-- Root Mode Dropdown -->
+        <div class="ctrl" style="width: 180px; flex-shrink: 0;">
+          <div class="ctrl-label">Root</div>
+          <select id="evoRootMode" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%; overflow: hidden; text-overflow: ellipsis;">
+            <option value="none" selected>None (Static)</option>
+            <option value="free">Free (Random)</option>
+            <option value="thirds">Thirds (3rd/4th)</option>
+            <option value="fourths">4ths/5ths</option>
+            <option value="fifths">Cycle of 5ths</option>
+            <option value="alt_whole">Alt. Whole Tones (+2/-2)</option>
+            <option value="alt_semi">Alt. Semitones (+1/-1)</option>
+            <optgroup label="Berliner Schule / Ambient">
+              <option value="modal_iii">Modal I → III</option>
+              <option value="modal_iv">Modal I → IV</option>
+              <option value="circulating">Circulating Fifths/Fourths</option>
+              <option value="slow_osc">Slow Oscillation (I-IV-I-V)</option>
+            </optgroup>
+            <optgroup label="Pop / Rock / Standards">
+              <option value="pop_standard">Pop Standard (I-V-vi-IV)</option>
+              <option value="fifties">50s Progression (vi-IV-I-V)</option>
+              <option value="andalusian">Andalusian / Hollywood (i-bVII-bVI-bV)</option>
+              <option value="minor_common">Minor Common (vi-III-IV-V)</option>
+              <option value="jazz_standard">Jazz Standard (ii-V-I-IV-III-VI-II-V)</option>
+              <option value="pachelbel">Pachelbel's Canon</option>
+              <option value="chromatic">Chromatic Descent</option>
+              <option value="pentatonic">Minor Pentatonic</option>
+            </optgroup>
+          </select>
+        </div>
 
-        <!-- Interval Container: Now it just appears next to the mode without pushing everything -->
-        <div id="evoIntervalContainer" style="display: none; align-items: center; gap: 8px; flex-shrink: 0;">
-          <select id="evoRootInterval" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 130px;">
-            <option value="1">Every Block</option>
-            <option value="2" selected>Every 2 Blocks</option>
-            <option value="4">Every 4 Blocks</option>
-            <option value="8">Every 8 Blocks</option>
+        <!-- Interval Container: appears next to Root Mode without pushing everything -->
+        <div id="evoIntervalContainer" class="ctrl" style="display: none; width: 110px; flex-shrink: 0;">
+          <div class="ctrl-label">Every</div>
+          <select id="evoRootInterval" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%;">
+            <option value="1">1 Block</option>
+            <option value="2" selected>2 Blocks</option>
+            <option value="4">4 Blocks</option>
+            <option value="8">8 Blocks</option>
           </select>
         </div>
 
         <!-- Visual Separator -->
         <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
 
-        <!-- Seed Mode Dropdown: Fixed width -->
-        <select id="evoSeedMode" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 130px; flex-shrink: 0;">
-          <option value="random">Evo Seed: Random</option>
-          <option value="fixed">Evo Seed: Fixed</option>
-        </select>
+        <!-- Seed Mode Dropdown -->
+        <div class="ctrl" style="width: 110px; flex-shrink: 0;">
+          <div class="ctrl-label">Evo Seed</div>
+          <select id="evoSeedMode" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%;">
+            <option value="random">Random</option>
+            <option value="fixed">Fixed</option>
+          </select>
+        </div>
       </div>
         <!-- Evo Row 3: Root Constraints (Only for Random Mode) -->
       <div id="evoRootConstraintRow" style="display: none; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px; margin-top: 6px;">
@@ -1293,7 +1311,7 @@ function updateEvoRootUI() {
   const constraintRow = document.getElementById('evoRootConstraintRow');
 
   // Show interval dropdown for everything except "none"
-  container.style.display = (mode === 'none') ? 'none' : 'flex';
+  container.style.display = (mode === 'none') ? 'none' : 'block';
 
   // Show constraint sliders ONLY for "free" mode
   constraintRow.style.display = (mode === 'free') ? 'flex' : 'none';
@@ -2211,6 +2229,7 @@ function generateEvolutionaryChain() {
   };
 
   const curve = document.getElementById('evolutionCurve').value;
+  const mutationStyle = document.getElementById('evoMutationStyle')?.value || 'walk';
 
   for (let i = 1; i < iterations; i++) {
     const tones = params.palette && params.palette.length > 0 ? params.palette : null;
@@ -2227,37 +2246,78 @@ function generateEvolutionaryChain() {
       });
     }
 
-    // MUTATION (Palette-Walk)
-    currentEvents = currentEvents.map((ev) => {
-      if (rng.chance(gripStrength)) return ev; // Grip freezes tone height
+    // MUTATION (Palette-Walk / Palette-Random / Mix)
+    // Instead of one big mutation pass applied all at once at the block
+    // boundary (which caused hard "jumps"), the mutation rate is now spread
+    // across the `repeats` of this block: each repeat gets its own small
+    // mutation pass, so the sequence drifts gradually within the block
+    // instead of snapping to a new state between blocks.
+    const perRepeatMutationRate = effectiveMutationRate / Math.max(1, repeats);
 
-      if (rng.chance(effectiveMutationRate) && tones) {
-        const currentIdx = tones.indexOf(ev.midi);
-        let newIdx = currentIdx;
+    const mutateTone = (ev) => {
+      if (!tones) return ev.midi;
+      const currentIdx = tones.indexOf(ev.midi);
 
-        if (currentIdx !== -1) {
-          // Case 1: Note is in the palette -> Gentle step to the left or right
-          const step = rng.chance(0.5) ? 1 : -1;
-          newIdx = Math.max(0, Math.min(tones.length - 1, currentIdx + step));
-        } else {
-        // FIX: Note lies outside the palette -> Gravitational approach
-        // Find the index of the pitch in the palette closest to the current value
-          let nearestIdx = 0;
-          let minDist = Infinity;
-
-          for (let i = 0; i < tones.length; i++) {
-            const dist = Math.abs(tones[i] - ev.midi);
-            if (dist < minDist) {
-              minDist = dist;
-              nearestIdx = i;
-            }
-          }
-          newIdx = nearestIdx;
+      if (currentIdx === -1) {
+        // Note lies outside the palette -> gravitational snap to nearest tone
+        let nearestIdx = 0, minDist = Infinity;
+        for (let k = 0; k < tones.length; k++) {
+          const dist = Math.abs(tones[k] - ev.midi);
+          if (dist < minDist) { minDist = dist; nearestIdx = k; }
         }
-        return {...ev, midi: tones[newIdx]};
+        return tones[nearestIdx];
       }
-      return ev;
-    });
+
+      const useRandom = mutationStyle === 'random'
+        || (mutationStyle === 'mix' && rng.chance(0.5));
+
+      if (useRandom && tones.length > 1) {
+        // Palette Random: jump to any *other* tone in the palette, fully
+        // independent of the current one (true "random walk inside a
+        // palette" behaviour, e.g. C/E/G picked at random).
+        let newIdx;
+        do { newIdx = rng.int(0, tones.length - 1); } while (newIdx === currentIdx);
+        return tones[newIdx];
+      }
+
+      // Palette Walk: gentle step to a neighbouring tone. At the edges of
+      // the palette, an "outward" step is clamped to a self-loop (stay on
+      // the edge tone). This gives each palette tone an equal long-run
+      // share (uniform stationary distribution for n tones), so edge tones
+      // like the highest/lowest note in C/E/G don't get pushed out of
+      // rotation permanently.
+      let step = rng.chance(0.5) ? 1 : -1;
+      const newIdx = Math.max(0, Math.min(tones.length - 1, currentIdx + step));
+      return tones[newIdx];
+    };
+
+    // Palette coverage: independent per-event random walks can drift such
+    // that one or more palette tones disappear from the population entirely
+    // and never return (e.g. an edge tone becomes a pure "pass-through"
+    // state). To guarantee the full palette (e.g. C/E/G) stays in rotation,
+    // check once per iteration whether every palette tone is represented
+    // among the current events, and if not, force one event onto each
+    // missing tone.
+    const enforcePaletteCoverage = (events) => {
+      if (!tones || tones.length < 2 || events.length < 2) return events;
+      const present = new Set(events.map(e => e.midi));
+      const missing = tones.filter(t => !present.has(t));
+      if (missing.length === 0) return events;
+      const copy = events.map(e => ({...e}));
+      missing.forEach((mt) => {
+        const idx = rng.int(0, copy.length - 1);
+        copy[idx].midi = mt;
+      });
+      return copy;
+    };
+
+    if (repeats <= 0) {
+      currentEvents = currentEvents.map((ev) => {
+        if (rng.chance(gripStrength)) return ev; // Grip freezes tone height
+        if (tones && rng.chance(effectiveMutationRate)) return {...ev, midi: mutateTone(ev)};
+        return ev;
+      });
+    }
 
     // ROOT SHIFTS
     let rootShiftHappened = false;
@@ -2290,10 +2350,21 @@ function generateEvolutionaryChain() {
       rootShiftHappened = true;
     }
 
-    // In evolution mode: repeat the frozen phrase exactly, no internal mutation
-    const expandedPhrase = expandEvents(currentEvents, params.phraseLen);
+    currentEvents = enforcePaletteCoverage(currentEvents);
+
+    // Repeat the block, applying a small additional mutation pass before
+    // each repeat (except the very first, which reflects the state already
+    // mutated/drifted above for this iteration). This turns the previously
+    // hard block-to-block jump into a gradual drift across the repeats.
     for (let r = 0; r < repeats; r++) {
-      fullCompositionSteps = fullCompositionSteps.concat(expandedPhrase);
+      if (r > 0 && tones) {
+        currentEvents = currentEvents.map((ev) => {
+          if (rng.chance(gripStrength)) return ev; // Grip freezes tone height
+          if (rng.chance(perRepeatMutationRate)) return {...ev, midi: mutateTone(ev)};
+          return ev;
+        });
+      }
+      fullCompositionSteps = fullCompositionSteps.concat(expandEvents(currentEvents, params.phraseLen));
     }
   }
 
