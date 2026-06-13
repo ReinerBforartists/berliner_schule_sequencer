@@ -2369,11 +2369,13 @@ function generateEvolutionaryChain() {
       currentRoot = targetRoot;
       params.root = currentRoot;
 
-      // FIXED: Respect actual tone count during root shifts instead of forcing UI slider values.
+      // Rebuild the palette at the new root, keeping the SAME size as the
+      // currently established evolution palette. Deriving the size from
+      // currentEvents' *current* distinct-tone count is a one-way ratchet:
+      // a transient dip (e.g. 5 -> 4 due to normal mutation) gets baked in
+      // permanently at the next root shift and can never grow back.
       if (params.palette) {
-        const distinctTones = [...new Set(currentEvents.map(e => e.midi))];
-        const actualToneCount = Math.max(2, distinctTones.length);
-        const newSize = Math.min(paletteSize, actualToneCount);
+        const newSize = Math.max(2, params.palette.length);
         params.palette = buildPalette(rng, params.scale, newSize, currentRoot, toneRange);
       }
 
