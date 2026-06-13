@@ -2311,13 +2311,11 @@ function generateEvolutionaryChain() {
       return copy;
     };
 
-    if (repeats <= 0) {
-      currentEvents = currentEvents.map((ev) => {
-        if (rng.chance(gripStrength)) return ev; // Grip freezes tone height
-        if (tones && rng.chance(effectiveMutationRate)) return {...ev, midi: mutateTone(ev)};
-        return ev;
-      });
-    }
+    currentEvents = currentEvents.map((ev) => {
+      if (rng.chance(gripStrength)) return ev; // Grip freezes tone height
+      if (tones && rng.chance(effectiveMutationRate)) return {...ev, midi: mutateTone(ev)};
+      return ev;
+    });
 
     // ROOT SHIFTS
     let rootShiftHappened = false;
