@@ -2337,7 +2337,20 @@ function generateEvolutionaryChain() {
       const shift = targetRoot - currentRoot;
       currentRoot = targetRoot;
       params.root = currentRoot;
-      if (params.palette) params.palette = buildPalette(rng, params.scale, paletteSize, currentRoot, toneRange);
+
+      // FIXED: Respect actual tone count in the current phrase instead of forcing UI slider values.
+      // Prevents artificial palette expansion or clamping during root shifts.
+      if (params.palette) {
+        // Extract unique MIDI values actually used in the current phrase
+        const distinctTones = [...new Set(currentEvents.map(e => e.midi))];
+        // Ensure at least 2 tones to keep mutation logic functional
+        const actualToneCount = Math.max(2, distinctTones.length);
+        // Cap the new palette size to the smaller of UI setting or actual usage
+        const newSize = Math.min(paletteSize, actualToneCount);
+
+        params.palette = buildPalette(rng, params.scale, newSize, currentRoot, toneRange);
+      }
+
       const newTones = params.palette || null;
 
       // Linear shift + Soft Snap an die neue Palette, um die Form zu bewahren
