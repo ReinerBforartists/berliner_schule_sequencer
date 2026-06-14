@@ -263,211 +263,76 @@ body {
   display: block;
 }
 
-/* ── Sequencer display ── */
-/* Limit the sequencer container height */
+/* ── Sequencer display (Unified & Height Fixed) ── */
 .seq-section {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  height: 0;
-  max-height: 65vh;
-}
-.seq-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-.seq-title {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-.stat-pills {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.pill {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  padding: 3px 8px;
-  border-radius: 2px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  color: var(--muted);
-}
-.pill strong { color: var(--text); }
-
-/* Step rows */
-.step-row {
-  flex: 1;
-  display: flex;
-  gap: 3px;
-  min-height: 0;
-}
-.step {
-  flex: 1;
-  border-radius: 2px;
-  border: 1px solid var(--border);
-  background: var(--raised);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  transition: border-color 0.08s, background 0.08s;
-  min-width: 0;
-}
-.step-note {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: clamp(8px, 1vw, 11px);
-  color: rgba(255,255,255,0.9);
-  text-align: center;
-  line-height: 1;
-  z-index: 1;
-}
-/* active note */
-.step.on {
-  background: var(--cyan-dim);
-  border-color: var(--cyan);
-}
-/* anchor note */
-.step.anchor {
-  background: var(--anchor-dim);
-  border-color: var(--anchor);
-}
-.step.anchor .step-note { color: var(--anchor); }
-/* rest */
-.step.rest {
-  background: var(--bg);
-  border-color: var(--border);
-}
-.step.rest::after {
-  content: '';
-  width: 3px; height: 3px;
-  border-radius: 50%;
-  background: var(--muted);
-  opacity: 0.3;
-}
-/* tie */
-.step.tie {
-  background: var(--cyan-dim);
-  border-color: var(--border2);
-  opacity: 0.5;
-}
-/* pitchbend dot */
-.step.bend::before {
-  content: '';
-  position: absolute;
-  top: 3px; right: 3px;
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--amber);
-  opacity: 0.9;
-}
-/* playing cursor */
-.step.playing {
-  box-shadow: inset 0 0 0 2px var(--green);
-}
-.step.playing.on, .step.playing.anchor {
-  box-shadow: inset 0 0 0 2px var(--green);
-}
-
-/* pitch height bar inside step */
-.step .pitch-bar {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  /* Increased opacity to make the background darker and the bar more visible */
-  background: rgba(14, 165, 233, 0.4);
-  pointer-events: none;
-}
-.step.anchor .pitch-bar {
-  /* Increased opacity for anchor notes too */
-  background: rgba(236, 72, 153, 0.4);
-}
-
-/* ── Sequencer display ── */
-.seq-section {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  height: 0;
-  max-height: 40vh; /* Compact height for the piano roll */
-}
-.seq-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-.seq-title {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-.stat-pills {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.pill {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  padding: 3px 8px;
-  border-radius: 2px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  color: var(--muted);
-}
-.pill strong { color: var(--text-bright); }
-
-.seq-canvas-container {
-  flex: 1;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--r);
   padding: 10px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.seq-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.seq-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.stat-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.pill {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.pill strong { color: var(--text-bright); }
+
+/* ── Sequencer Canvas Container (FIXED HEIGHT) ── */
+.seq-canvas-container {
+  /* CHANGE: Fixed to 200px to match Evolution Preview inner area.
+     flex: 0 0 200px prevents the container from stretching to fill available space. */
+  flex: 0 0 200px;
+  background: var(--bg);
+  border: none;
+  border-radius: var(--r);
+  padding: 0;
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 #mainSeqCanvas {
   display: block;
-  width: 100%;
-  height: 140px; /* Fixed height for the piano roll view */
-  background: var(--bg);
-  border-radius: 2px;
-}
-
-/* row labels */
-.row-label {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 0.06em;
-  padding-right: 4px;
-  justify-content: flex-end;
-}
-
-.seq-inner {
-  display: flex;
-  gap: 6px;
-  flex: 1;
-  min-height: 0;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent;
 }
 
 /* ── control bar ── */
@@ -896,7 +761,7 @@ details[open] summary::before { content: '− '; }
           <button class="btn" id="evoPreviewBtn" style="white-space: nowrap;">↻ Refresh Evolution</button>
           <span style="font-family:'Share Tech Mono',monospace; font-size: 10px; color: var(--muted);" id="evoPreviewInfo"></span>
         </div>
-        <div style="border: 1px solid var(--border2); border-radius: 2px; background: var(--bg);">
+        <div style="border: none; border-radius: 2px; background: var(--bg);">
           <canvas id="evoPreviewCanvas" height="160" style="display: block; width: 100%;"></canvas>
         </div>
       </div>
@@ -1276,7 +1141,6 @@ details[open] summary::before { content: '− '; }
 
       </div>
   </details>
-
   <!-- Sequencer display -->
   <section class="seq-section">
     <div class="seq-header">
@@ -2446,10 +2310,6 @@ function generateEvolutionaryChain() {
  * Redraws the entire sequence on the canvas.
  * This handles the piano-roll visualization for the main loop.
  */
-/**
- * Redraws the entire sequence on the canvas.
- * This handles the piano-roll visualization for the main loop.
- */
 function renderSequence() {
   if (!sequence || sequence.length === 0) return;
 
@@ -2457,16 +2317,17 @@ function renderSequence() {
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  canvas.width = width;
-  canvas.height = height;
+
+  // Synchronisiere die interne Auflösung des Canvas mit der CSS-Größe
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
 
   const totalSteps = sequence.length;
   const phraseLen = +document.getElementById('phraseLen').value || 16;
-  const pxPerStep = width / totalSteps;
+  const pxPerStep = canvas.width / totalSteps;
 
-  // Determine pitch range for normalization
+  // MIDI-Bereich für Y-Achse berechnen
   const notes = sequence.filter(s => (s.midi !== undefined));
   const midiMin = notes.length ? Math.min(...notes.map(s => s.midi)) - 1 : 48;
   const midiMax = notes.length ? Math.max(...notes.map(s => s.midi)) + 1 : 72;
@@ -2475,35 +2336,33 @@ function renderSequence() {
   const css = getComputedStyle(document.documentElement);
   const noteColor = (css.getPropertyValue('--cyan') || '#0ea5e9').trim();
   const anchorColor = (css.getPropertyValue('--anchor') || '#ec4899').trim();
-  const lineColor = 'rgba(255,255,255,0.05)';
+  const lineColor = 'rgba(255,255,255,0.08)';
 
-  // Clear background
+  // Hintergrund zeichnen
   ctx.fillStyle = (css.getPropertyValue('--bg') || '#0f172a').trim();
-  ctx.fillRect(0, 0, width, height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 1. Draw Repeat Dividers (The structural grid)
+  // 1. Struktur-Linien (Repeats)
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 1;
   for (let r = 1; r < (totalSteps / phraseLen); r++) {
     const x = r * phraseLen * pxPerStep;
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
+    ctx.lineTo(x, canvas.height);
     ctx.stroke();
   }
 
-  // 2. Draw Notes
+  // 2. Noten-Blöcke zeichnen
   for (let i = 0; i < totalSteps; i++) {
     const s = sequence[i];
     if (!s || s.rest || s.midi === undefined) continue;
 
     const x = i * pxPerStep;
-    // Normalize MIDI to Y position
     const norm = (s.midi - midiMin) / midiRange;
-    const y = height - (norm * height);
-
+    const y = canvas.height - (norm * canvas.height);
     const blockWidth = Math.max(pxPerStep * (s.holdSteps || 1), 1);
-    const blockHeight = 4;
+    const blockHeight = 3;
 
     ctx.fillStyle = s.isAnchor ? anchorColor : noteColor;
     ctx.fillRect(x, y - (blockHeight/2), blockWidth, blockHeight);
@@ -2517,13 +2376,12 @@ function highlightStep(idx) {
   if (!sequence.length) return;
 
   const canvas = document.getElementById('mainSeqCanvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const width = canvas.width;
-  const height = canvas.height;
   const totalSteps = sequence.length;
-  const pxPerStep = width / totalSteps;
+  const pxPerStep = canvas.width / totalSteps;
 
-  // Redraw the scene to clear the previous cursor position
+  // Komplette Szene neu zeichnen, um alten Cursor zu löschen
   renderSequence();
 
   if (idx === -1) return;
@@ -2536,10 +2394,10 @@ function highlightStep(idx) {
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x, 0);
-  ctx.lineTo(x, height);
+  ctx.lineTo(x, canvas.height);
   ctx.stroke();
 
-  // Glow effect
+  // Glow-Effekt für den Cursor
   ctx.shadowBlur = 10;
   ctx.shadowColor = cursorColor;
   ctx.stroke();
@@ -2565,7 +2423,6 @@ function updatePills() {
     hi >= 0 ? p('↑ <strong>', midiToName(hi), '</strong>') : '',
   ].filter(Boolean).join('');
 }
-
 
 // --- AUDIO ENGINE (WEB AUDIO API) ---
 
