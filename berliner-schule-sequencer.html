@@ -303,21 +303,6 @@ body {
 }
 .pill strong { color: var(--text); }
 
-/* Enable scrolling inside the canvas */
-.seq-canvas {
-  flex: 1;
-  min-height: 0;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
-  height: 0;
-}
-
 /* Step rows */
 .step-row {
   flex: 1;
@@ -406,14 +391,66 @@ body {
   background: rgba(236, 72, 153, 0.4);
 }
 
-/* row labels */
-.row-labels {
+/* ── Sequencer display ── */
+.seq-section {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
-  width: 44px;
+  gap: 8px;
+  height: 0;
+  max-height: 40vh; /* Compact height for the piano roll */
 }
+.seq-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.seq-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.stat-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pill {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.pill strong { color: var(--text-bright); }
+
+.seq-canvas-container {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+#mainSeqCanvas {
+  display: block;
+  width: 100%;
+  height: 140px; /* Fixed height for the piano roll view */
+  background: var(--bg);
+  border-radius: 2px;
+}
+
+/* row labels */
 .row-label {
   flex: 1;
   display: flex;
@@ -430,13 +467,6 @@ body {
   display: flex;
   gap: 6px;
   flex: 1;
-  min-height: 0;
-}
-.seq-rows {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   min-height: 0;
 }
 
@@ -1250,14 +1280,11 @@ details[open] summary::before { content: '− '; }
   <!-- Sequencer display -->
   <section class="seq-section">
     <div class="seq-header">
-      <span class="seq-title">Sequence</span>
+      <span class="seq-title">Sequence Contour</span>
       <div class="stat-pills" id="statPills"></div>
     </div>
-    <div class="seq-canvas">
-      <div class="seq-inner">
-        <div class="row-labels" id="rowLabels"></div>
-        <div class="seq-rows" id="seqRows"></div>
-      </div>
+    <div class="seq-canvas-container">
+      <canvas id="mainSeqCanvas"></canvas>
     </div>
   </section>
 </div>
@@ -2416,140 +2443,107 @@ function generateEvolutionaryChain() {
 // --- UI RENDERING ENGINE ---
 
 /**
- * Initializes the sequencer grid by creating a fixed pool of DOM elements.
- */
-function initSequencerGrid() {
-  const rows = document.getElementById('seqRows');
-  const labels = document.getElementById('rowLabels');
-
-  rows.innerHTML = '';
-  labels.innerHTML = '';
-
-  // We create a generous buffer to avoid recreating the DOM often.
-  const maxRows = 32;
-  const maxCols = 64; // Increased to cover all possible phrase lengths
-
-  for (let r = 0; r < maxRows; r++) {
-    const lbl = document.createElement('div');
-    lbl.className = 'row-label mono';
-    lbl.textContent = '×' + (r + 1);
-    lbl.style.display = 'none';
-    labels.appendChild(lbl);
-
-    const row = document.createElement('div');
-    row.className = 'step-row';
-    row.style.display = 'none';
-
-    for (let c = 0; c < maxCols; c++) {
-      const div = document.createElement('div');
-      div.className = 'step';
-      // IMPORTANT: The index is now relative to the column, not absolute
-      div.dataset.col = c;
-
-      const noteSpan = document.createElement('span');
-      noteSpan.className = 'step-note';
-      div.appendChild(noteSpan);
-
-      const pitchBar = document.createElement('div');
-      pitchBar.className = 'pitch-bar';
-      div.appendChild(pitchBar);
-
-      row.appendChild(div);
-    }
-    rows.appendChild(row);
-  }
-}
-
-/**
- * Updates the existing DOM elements based on current sequence and phrase length.
+ * Redraws the entire sequence on the canvas.
+ * This handles the piano-roll visualization for the main loop.
  */
 /**
- * Updates the existing DOM elements based on current sequence and phrase length.
+ * Redraws the entire sequence on the canvas.
+ * This handles the piano-roll visualization for the main loop.
  */
 function renderSequence() {
-  if (!sequence.length) return;
+  if (!sequence || sequence.length === 0) return;
 
-  const rowsContainer = document.getElementById('seqRows');
-  const labelsContainer = document.getElementById('rowLabels');
-  const rowElements = rowsContainer.children;
-  const labelElements = labelsContainer.children;
+  const canvas = document.getElementById('mainSeqCanvas');
+  if (!canvas) return;
 
-  const phraseLen = +document.getElementById('phraseLen').value;
-  const total = sequence.length;
-  const numRows = Math.ceil(total / phraseLen);
+  const ctx = canvas.getContext('2d');
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  canvas.width = width;
+  canvas.height = height;
 
-  const notes = sequence.filter(isNoteStep);
-  const midiMin = notes.length ? Math.min(...notes.map(s => s.midi)) : 48;
-  const midiMax = notes.length ? Math.max(...notes.map(s => s.midi)) : 72;
+  const totalSteps = sequence.length;
+  const phraseLen = +document.getElementById('phraseLen').value || 16;
+  const pxPerStep = width / totalSteps;
+
+  // Determine pitch range for normalization
+  const notes = sequence.filter(s => (s.midi !== undefined));
+  const midiMin = notes.length ? Math.min(...notes.map(s => s.midi)) - 1 : 48;
+  const midiMax = notes.length ? Math.max(...notes.map(s => s.midi)) + 1 : 72;
   const midiRange = Math.max(1, midiMax - midiMin);
 
-  // Update Row Visibility
-  for (let r = 0; r < labelElements.length; r++) {
-    const isVisible = r < numRows;
-    labelElements[r].style.display = isVisible ? 'flex' : 'none';
-    rowElements[r].style.display = isVisible ? 'flex' : 'none';
+  const css = getComputedStyle(document.documentElement);
+  const noteColor = (css.getPropertyValue('--cyan') || '#0ea5e9').trim();
+  const anchorColor = (css.getPropertyValue('--anchor') || '#ec4899').trim();
+  const lineColor = 'rgba(255,255,255,0.05)';
+
+  // Clear background
+  ctx.fillStyle = (css.getPropertyValue('--bg') || '#0f172a').trim();
+  ctx.fillRect(0, 0, width, height);
+
+  // 1. Draw Repeat Dividers (The structural grid)
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 1;
+  for (let r = 1; r < (totalSteps / phraseLen); r++) {
+    const x = r * phraseLen * pxPerStep;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
   }
 
-  // Update Step Elements
-  for (let r = 0; r < numRows; r++) {
-    const row = rowElements[r];
-    const steps = row.children;
+  // 2. Draw Notes
+  for (let i = 0; i < totalSteps; i++) {
+    const s = sequence[i];
+    if (!s || s.rest || s.midi === undefined) continue;
 
-    for (let c = 0; c < steps.length; c++) {
-      const div = steps[c];
+    const x = i * pxPerStep;
+    // Normalize MIDI to Y position
+    const norm = (s.midi - midiMin) / midiRange;
+    const y = height - (norm * height);
 
-      if (c < phraseLen) {
-        div.style.display = 'flex';
-        const i = r * phraseLen + c;
-        const s = i < total ? sequence[i] : { rest: true };
-        div.dataset.idx = i;
+    const blockWidth = Math.max(pxPerStep * (s.holdSteps || 1), 1);
+    const blockHeight = 4;
 
-        let cls = 'step';
-        if (i >= total) {
-          cls += ' rest';
-          div.style.opacity = '0.2';
-        } else {
-          div.style.opacity = '1';
-          if (s.isAnchor) cls += ' anchor';
-          else if (s.tie) cls += ' tie';
-          else if (s.rest) cls += ' rest';
-          else cls += ' on';
-        }
-        div.className = cls;
-
-        const noteSpan = div.querySelector('.step-note');
-        const pitchBar = div.querySelector('.pitch-bar');
-
-        if (isNoteStep(s) || s.isAnchor) {
-          noteSpan.textContent = midiToName(s.midi);
-          const norm = (s.midi - midiMin) / midiRange;
-          pitchBar.style.height = Math.round(norm * 70 + 10) + '%';
-        } else {
-          noteSpan.textContent = '';
-          pitchBar.style.height = '0%';
-
-          // NEW: Render pitch bar for tied notes (ties) to visualize the continuation
-          // but keep the text label empty so it looks like a "tie"
-          if (s.tie && s.tiedMidi != null) {
-            const norm = (s.tiedMidi - midiMin) / midiRange;
-            pitchBar.style.height = Math.round(norm * 70 + 10) + '%';
-          }
-        }
-      } else {
-        div.style.display = 'none';
-      }
-    }
+    ctx.fillStyle = s.isAnchor ? anchorColor : noteColor;
+    ctx.fillRect(x, y - (blockHeight/2), blockWidth, blockHeight);
   }
-
-  // Cache elements to optimize the highlightStep loop
-  cachedStepEls = Array.from(document.querySelectorAll('.step'));
 }
 
+/**
+ * Draws a vertical cursor on the canvas to show current playback position.
+ */
 function highlightStep(idx) {
-  // Uses the cache instead of scanning the DOM on every step
-  cachedStepEls.forEach(el => {
-    el.classList.toggle('playing', +el.dataset.idx === idx);
-  });
+  if (!sequence.length) return;
+
+  const canvas = document.getElementById('mainSeqCanvas');
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  const totalSteps = sequence.length;
+  const pxPerStep = width / totalSteps;
+
+  // Redraw the scene to clear the previous cursor position
+  renderSequence();
+
+  if (idx === -1) return;
+
+  const x = idx * pxPerStep;
+  const css = getComputedStyle(document.documentElement);
+  const cursorColor = (css.getPropertyValue('--green') || '#10b981').trim();
+
+  ctx.strokeStyle = cursorColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x, height);
+  ctx.stroke();
+
+  // Glow effect
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = cursorColor;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
 }
 
 function updatePills() {
@@ -3214,7 +3208,6 @@ document.getElementById('evoRootRange')?.addEventListener('input', (e) => {
 });
 
 // init
-initSequencerGrid();
 applyModeUI();
 generateSequence();
 
@@ -3243,6 +3236,10 @@ document.getElementById('genBtn')?.addEventListener('click', scheduleEvoPreview)
 document.getElementById('presetSelect')?.addEventListener('change', () => setTimeout(scheduleEvoPreview, 0));
 // Only redraw the canvas on resize/zoom, do NOT recalculate data
 window.addEventListener('resize', renderEvolutionPreview);
+// Ensure the main sequencer canvas redraws when the window is resized
+window.addEventListener('resize', () => {
+  renderSequence();
+});
 </script>
 </body>
 </html>
