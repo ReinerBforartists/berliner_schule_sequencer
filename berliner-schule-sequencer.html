@@ -47,7 +47,7 @@
   --amber:     #fbbf24;
   --amber-dim: #92400e;
   --cyan:      #0ea5e9;
-  --cyan-dim:  #0c4a6e;
+  --cyan-dim:  #0b4060;
   --green:     #10b981;
   --red:       #ef4444;
   --anchor:    #ec4899;
@@ -397,11 +397,13 @@ body {
 .step .pitch-bar {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  background: rgba(14, 165, 233, 0.15);
+  /* Increased opacity to make the background darker and the bar more visible */
+  background: rgba(14, 165, 233, 0.4);
   pointer-events: none;
 }
 .step.anchor .pitch-bar {
-  background: rgba(236, 72, 153, 0.2);
+  /* Increased opacity for anchor notes too */
+  background: rgba(236, 72, 153, 0.4);
 }
 
 /* row labels */
@@ -2461,6 +2463,9 @@ function initSequencerGrid() {
 /**
  * Updates the existing DOM elements based on current sequence and phrase length.
  */
+/**
+ * Updates the existing DOM elements based on current sequence and phrase length.
+ */
 function renderSequence() {
   if (!sequence.length) return;
 
@@ -2522,6 +2527,13 @@ function renderSequence() {
         } else {
           noteSpan.textContent = '';
           pitchBar.style.height = '0%';
+
+          // NEW: Render pitch bar for tied notes (ties) to visualize the continuation
+          // but keep the text label empty so it looks like a "tie"
+          if (s.tie && s.tiedMidi != null) {
+            const norm = (s.tiedMidi - midiMin) / midiRange;
+            pitchBar.style.height = Math.round(norm * 70 + 10) + '%';
+          }
         }
       } else {
         div.style.display = 'none';
