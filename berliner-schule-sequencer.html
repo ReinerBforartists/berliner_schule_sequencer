@@ -2317,8 +2317,6 @@ function renderSequence() {
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
-
-  // Synchronisiere die interne Auflösung des Canvas mit der CSS-Größe
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width;
   canvas.height = rect.height;
@@ -2327,7 +2325,6 @@ function renderSequence() {
   const phraseLen = +document.getElementById('phraseLen').value || 16;
   const pxPerStep = canvas.width / totalSteps;
 
-  // MIDI-Bereich für Y-Achse berechnen
   const notes = sequence.filter(s => (s.midi !== undefined));
   const midiMin = notes.length ? Math.min(...notes.map(s => s.midi)) - 1 : 48;
   const midiMax = notes.length ? Math.max(...notes.map(s => s.midi)) + 1 : 72;
@@ -2338,34 +2335,38 @@ function renderSequence() {
   const anchorColor = (css.getPropertyValue('--anchor') || '#ec4899').trim();
   const lineColor = 'rgba(255,255,255,0.08)';
 
-  // Hintergrund zeichnen
   ctx.fillStyle = (css.getPropertyValue('--bg') || '#0f172a').trim();
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 1. Struktur-Linien (Repeats)
+  // Structural & step grid lines
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 1;
   for (let r = 1; r < (totalSteps / phraseLen); r++) {
     const x = r * phraseLen * pxPerStep;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  for (let i = 0; i < totalSteps; i++) {
+    const x = i * pxPerStep + 0.5;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
   }
 
-  // 2. Noten-Blöcke zeichnen
+  // Draw notes ONLY on noteStart to prevent overlap.
+  // Math.round() ensures pixel-perfect alignment and kills subpixel bleeding.
+  const GAP = 2; // Fixed horizontal gap between individual notes
   for (let i = 0; i < totalSteps; i++) {
     const s = sequence[i];
-    if (!s || s.rest || s.midi === undefined) continue;
+    if (!s || s.rest || s.midi === undefined || !s.noteStart) continue;
 
-    const x = i * pxPerStep;
+    const hold = s.holdSteps || 1;
+    const startX = Math.round(i * pxPerStep) + (GAP / 2);
+    const width = Math.max(1, Math.round(hold * pxPerStep) - GAP);
     const norm = (s.midi - midiMin) / midiRange;
     const y = canvas.height - (norm * canvas.height);
-    const blockWidth = Math.max(pxPerStep * (s.holdSteps || 1), 1);
     const blockHeight = 3;
 
     ctx.fillStyle = s.isAnchor ? anchorColor : noteColor;
-    ctx.fillRect(x, y - (blockHeight/2), blockWidth, blockHeight);
+    ctx.fillRect(startX, y - blockHeight/2, width, blockHeight);
   }
 }
 
