@@ -2266,33 +2266,41 @@ function generateEvolutionaryChain() {
     const effectiveMutationRate = mutationRate * curveMult;
 
     // OCTAVE DRIFT
-    // FIXED: Shift the palette (tones) along with the drift.
-    // Without this, 'snapToPalette' forces notes back to the old octave immediately.
+    // Root-cause fix: drift must never push the palette (or events) outside
+    // [24, 84]. Previously, drift always shifted by +/-12 and then clamped
+    // out-of-range values back into [24, 84]. Near a boundary, clamping can
+    // map two different tones onto the same value, producing a duplicate.
+    // Deduping that duplicate permanently shrinks the palette by one tone
+    // (and can cascade down to a single tone over repeated drifts) -
+    // reintroducing the original "collapse to one note" problem via a
+    // different path. Instead, only drift in a direction that is provably
+    // safe (no clamping needed at all); if neither direction is safe, skip
+    // drift for this iteration. This keeps palette.length constant forever.
     const rawDriftValue = +document.getElementById('octaveDriftEvo')?.value || 0;
     const octaveDriftProbability = Math.max(0, Math.min(1, rawDriftValue / 100));
 
     if (octaveDriftProbability > 0.01 && rng.chance(octaveDriftProbability)) {
-      const driftDir = rng.chance(0.5) ? 12 : -12;
+      const refTones = (mode === 'arp' && arpTones) ? arpTones : (params.palette || []);
+      const allValues = [...refTones, ...currentEvents.map(e => e.midi)];
+      const canGoUp   = allValues.length > 0 && allValues.every(m => m + 12 <= 84);
+      const canGoDown = allValues.length > 0 && allValues.every(m => m - 12 >= 24);
 
-      // 1. Shift the events
-      currentEvents = currentEvents.map(e => ({...e, midi: clampMidi(e.midi + driftDir)}));
+      let driftDir = null;
+      if (canGoUp && canGoDown) driftDir = rng.chance(0.5) ? 12 : -12;
+      else if (canGoUp) driftDir = 12;
+      else if (canGoDown) driftDir = -12;
+      // else: no safe direction (palette already spans the full range) ->
+      // skip drift this iteration rather than clamp.
 
-      // 2. Shift the palette (tones) so subsequent mutation logic stays in the new register
-      if (mode === 'arp' && arpTones) {
-        arpTones.forEach((t, idx) => arpTones[idx] = clampMidi(t + driftDir));
-        const deduped = [...new Set(arpTones)].sort((a, b) => a - b);
-        arpTones.length = 0;
-        arpTones.push(...deduped);
-      } else if (params.palette) {
-        // Clamping near the 24/84 boundary can map two different palette
-        // tones onto the same clamped value, producing duplicates. A
-        // palette with duplicates breaks tones.length/indexOf-based logic
-        // in mutateTone/enforcePaletteCoverage (one "slot" becomes
-        // permanently un-coverable). Dedupe after clamping.
-        const shifted = params.palette.map(t => clampMidi(t + driftDir));
-        const deduped = [...new Set(shifted)].sort((a, b) => a - b);
-        params.palette.length = 0;
-        params.palette.push(...deduped);
+      if (driftDir !== null) {
+        // Plain addition is injective - no clamping, no possible duplicates.
+        currentEvents = currentEvents.map(e => ({...e, midi: e.midi + driftDir}));
+
+        if (mode === 'arp' && arpTones) {
+          arpTones.forEach((t, idx) => arpTones[idx] = t + driftDir);
+        } else if (params.palette) {
+          params.palette.forEach((t, idx) => params.palette[idx] = t + driftDir);
+        }
       }
     }
 
