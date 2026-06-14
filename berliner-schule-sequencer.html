@@ -2280,8 +2280,19 @@ function generateEvolutionaryChain() {
       // 2. Shift the palette (tones) so subsequent mutation logic stays in the new register
       if (mode === 'arp' && arpTones) {
         arpTones.forEach((t, idx) => arpTones[idx] = clampMidi(t + driftDir));
+        const deduped = [...new Set(arpTones)].sort((a, b) => a - b);
+        arpTones.length = 0;
+        arpTones.push(...deduped);
       } else if (params.palette) {
-        params.palette.forEach((t, idx) => params.palette[idx] = clampMidi(t + driftDir));
+        // Clamping near the 24/84 boundary can map two different palette
+        // tones onto the same clamped value, producing duplicates. A
+        // palette with duplicates breaks tones.length/indexOf-based logic
+        // in mutateTone/enforcePaletteCoverage (one "slot" becomes
+        // permanently un-coverable). Dedupe after clamping.
+        const shifted = params.palette.map(t => clampMidi(t + driftDir));
+        const deduped = [...new Set(shifted)].sort((a, b) => a - b);
+        params.palette.length = 0;
+        params.palette.push(...deduped);
       }
     }
 
