@@ -969,6 +969,17 @@ details[open] summary::before { content: '− '; }
     </div>
   </div>
 
+  <!-- Sequencer display -->
+  <section class="seq-section">
+    <div class="seq-header">
+      <span class="seq-title">Sequence Contour</span>
+      <div class="stat-pills" id="statPills"></div>
+    </div>
+    <div class="seq-canvas-container">
+      <canvas id="mainSeqCanvas"></canvas>
+    </div>
+  </section>
+
   <!-- Howto -->
   <details>
       <summary style="color: var(--amber); font-weight: bold; cursor: pointer;">Howto & Technical Logic</summary>
@@ -1141,16 +1152,6 @@ details[open] summary::before { content: '− '; }
 
       </div>
   </details>
-  <!-- Sequencer display -->
-  <section class="seq-section">
-    <div class="seq-header">
-      <span class="seq-title">Sequence Contour</span>
-      <div class="stat-pills" id="statPills"></div>
-    </div>
-    <div class="seq-canvas-container">
-      <canvas id="mainSeqCanvas"></canvas>
-    </div>
-  </section>
 </div>
 
 <style>.hidden { display: none !important; }</style>
