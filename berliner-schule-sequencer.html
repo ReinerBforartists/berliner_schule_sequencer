@@ -1391,24 +1391,27 @@ function mutateMotivicPhrase(rng, events, variation, params) {
 /**
  * Classic Mode: Generates a basic melodic phrase based on random walk logic.
  * Respects minNoteLen and maxNoteLen to avoid unwanted short notes.
+ * Dynamically clamps bounds to remaining available steps to prevent rng.int(a,b) collapse.
  */
 function buildPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights, octaveStart, maxNoteLen, minNoteLen, palette}) {
   const events = [];
-  // palette is now concrete MIDI values — pick directly
   const tones = palette && palette.length > 0 ? palette : [root];
   let toneIdx = rng.int(0, tones.length - 1);
 
   for (let i = 0; i < phraseLen; i++) {
     if (!rng.chance(density)) continue;
-    const midi = tones[toneIdx];
-    const min = minNoteLen || 1;
-    const max = maxNoteLen || phraseLen;
     const available = phraseLen - i;
-    if (available < min) continue;
-    const dur = rng.int(min, Math.min(max, available));
-    events.push({start: i, duration: dur, midi, degree: 0, octave: 0});
+
+    // DYNAMIC CLAMPING: Prevents rng.int(a, b) where a > b
+    const effMin = Math.min(minNoteLen, available);
+    const effMax = Math.max(effMin, Math.min(maxNoteLen, available));
+
+    if (effMin > effMax) continue; // Skip if no valid length fits
+
+    const dur = rng.int(effMin, effMax);
+    events.push({start: i, duration: dur, midi: tones[toneIdx], degree: 0, octave: 0});
     i += dur - 1;
-    // Step within palette by maxInterval positions
+
     const step = rng.int(-maxInterval, maxInterval);
     toneIdx = Math.max(0, Math.min(tones.length - 1, toneIdx + step));
   }
@@ -1435,11 +1438,19 @@ function mutatePhrase(rng, events, variation, params) {
       if (copy.length > 1) copy.splice(rng.int(0, copy.length - 1), 1);
     } else if (roll < removeChance + addChance) {
       const start = rng.int(0, params.phraseLen - (params.minNoteLen || 1));
+      const available = params.phraseLen - start;
+
+      // DYNAMIC CLAMPING: Prevents rng.int(a, b) where a > b
+      const effMin = Math.min(params.minNoteLen, available);
+      const effMax = Math.max(effMin, Math.min(params.maxNoteLen, available));
+
+      if (effMin > effMax) continue;
+
       if (!copy.find(e => e.start === start)) {
         const midi = tones[rng.int(0, tones.length - 1)];
         copy.push({
           start,
-          duration: Math.max(params.minNoteLen || 1, rng.int(1, Math.min(params.maxNoteLen || 4, params.phraseLen - start))),
+          duration: rng.int(effMin, effMax),
           midi, degree: 0, octave: 0
         });
       }
@@ -1737,15 +1748,7 @@ function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, an
 /**
  * Main generation entry point.
  * Orchestrates the creation of the sequence based on current UI settings.
- */
-
-/**
- * Main generation entry point.
- * Orchestrates the creation of the sequence based on current UI settings.
- */
-/**
- * Main generation entry point.
- * Orchestrates the creation of the sequence based on current UI settings.
+ * Enforces strict logical constraints to prevent algorithmic collapse.
  */
 function generateSequence() {
   const mode = currentMode;
@@ -1757,6 +1760,30 @@ function generateSequence() {
   const repeats = parseInt(document.getElementById('repeats').value) || 4;
   const density = (parseFloat(document.getElementById('density').value) || 72) / 100;
   const maxInterval = parseInt(document.getElementById('maxInterval').value) || 3;
+
+  // --- STRICT CONSTRAINT RESOLUTION ---
+  // Guarantees minNoteLen and maxNoteLen always stay within valid bounds relative to phraseLen
+  const rawMin = parseInt(document.getElementById('minNoteLen').value) || 1;
+  const rawMax = parseInt(document.getElementById('maxNoteLen').value) || 4;
+
+  // Clamp both to phraseLen, enforce minimum of 1
+  const clampedMin = Math.max(1, Math.min(rawMin, phraseLen));
+  // Enforce max >= min, and clamp to phraseLen
+  const clampedMax = Math.max(clampedMin, Math.min(rawMax, phraseLen));
+
+  // Synchronize UI only if values were adjusted to prevent silent mismatches
+  if (rawMin !== clampedMin) {
+    document.getElementById('minNoteLen').value = clampedMin;
+    fastUpdateText('minLenVal', clampedMin);
+  }
+  if (rawMax !== clampedMax) {
+    document.getElementById('maxNoteLen').value = clampedMax;
+    fastUpdateText('maxNoteLenVal', clampedMax);
+  }
+
+  // Assign safe, validated values to the generation engine
+  const minNoteLen = clampedMin;
+  const maxNoteLen = clampedMax;
 
   const seedMode = document.getElementById('seedMode').value;
   let seed = (seedMode === 'fixed') ? (parseInt(document.getElementById('seedValue').value) || 0) : Math.floor(Math.random() * 9999999);
@@ -1774,9 +1801,6 @@ function generateSequence() {
   };
 
   const noteCount  = parseInt(document.getElementById('noteCount').value) || 2;
-  const minNoteLen = parseInt(document.getElementById('minNoteLen').value) || 1;
-  const maxNoteLen = parseInt(document.getElementById('maxNoteLen').value) || 4;
-
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
   const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
@@ -1826,9 +1850,6 @@ function generateSequence() {
     updatePills();
     setStatus('ready', false);
 
-    // FIX: Automatically refresh the evolution preview when the base sequence changes.
-    // This ensures the evolutionary chain is always synchronized with the current seed phrase,
-    // preventing state drift and giving immediate visual feedback to the user.
     refreshEvolutionData();
     renderEvolutionPreview();
 
