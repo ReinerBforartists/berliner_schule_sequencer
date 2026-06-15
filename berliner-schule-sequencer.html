@@ -877,6 +877,12 @@ details[open] summary::before { content: '− '; }
     <div class="anchor-label">▸ Anchor</div>
     <div class="anchor-desc">Every offbeat plays the same fixed note — all main beats form the melody</div>
     <div class="anchor-controls">
+      <label style="font-family:monospace;font-size:10px;color:var(--muted)">MELODY RANGE</label>
+      <select id="anchorMelodyPos">
+        <option value="above" selected>Above Anchor</option>
+        <option value="below">Below Anchor</option>
+        <option value="around">Around Anchor</option>
+      </select>
       <label style="font-family:monospace;font-size:10px;color:var(--muted)">ANCHOR NOTE</label>
       <select id="anchorNote">
         <option value="36">C2</option>
@@ -1108,6 +1114,7 @@ details[open] summary::before { content: '− '; }
                       <li><span style="color: var(--amber);">Anchor Note:</span> The fixed pitch that "locks" the rhythm. This is usually a bass note.</li>
                       <li><span style="color: var(--amber);">Pattern:</span> Defines where the anchor sits. <span style="color:var(--amber)">offbeat</span> creates the classic "push-pull" feel by placing the fixed note on every second step.</li>
                       <li><span style="color: var(--amber);">Onbeat:</span> Instead of placing the anchor note offbeat we place it onbeat.</li>
+                      <li><span style="color: var(--amber);">Melody Range:</span> Controls the register of the moving notes relative to the anchor. <span style="color:var(--amber)">Above/Below Anchor</span> shift the whole melody palette by octaves so it stays cleanly above or below the pedal note. <span style="color:var(--amber)">Around Anchor</span> re-octaves each palette tone individually to whichever octave sits closest to the anchor, so the melody surrounds it - some notes above, some below.</li>
                     </ul>
                   </span>
                 </li>
@@ -1297,7 +1304,60 @@ function buildPalette(rng, scale, size, root, toneRange) {
   return result.sort((a, b) => a - b);
 }
 
-// --- CORE PSEUDO-RANDOM NUMBER GENERATOR (PRNG) ---
+/**
+ * Shifts an entire palette by whole octaves so it sits above, below, or
+ * straddling ("around") a given anchor pitch. Used for Offbeat Anchor mode
+ * so the melody's register can be controlled relative to the pedal-point
+ * anchor note, independent of the scale's global root.
+ */
+/**
+ * Computes the actual MIDI pitch to use for the Offbeat Anchor note, based
+ * on the (untouched) melody palette's pitch range and the chosen position
+ * (above/below/around). The palette itself is never modified - only the
+ * anchor's octave is chosen so the melody ends up above, below, or
+ * straddling it. The anchor's pitch CLASS (e.g. "G") is preserved; only the
+ * octave is adjusted.
+ */
+function computeAnchorPitch(anchorMidi, palette, position) {
+  if (!palette || palette.length === 0 || !position || position === 'none') return anchorMidi;
+
+  const lo = 24, hi = 84;
+  const pitchClass = ((anchorMidi % 12) + 12) % 12;
+
+  // All octave-transpositions of the anchor's pitch class within range.
+  const candidates = [];
+  for (let oct = 0; oct <= 8; oct++) {
+    const m = pitchClass + oct * 12;
+    if (m >= lo && m <= hi) candidates.push(m);
+  }
+  if (candidates.length === 0) return anchorMidi;
+
+  const min = Math.min(...palette);
+  const max = Math.max(...palette);
+
+  if (position === 'above') {
+    // "Melody plays above the anchor" -> anchor sits below the melody's range.
+    const below = candidates.filter(c => c < min);
+    return below.length > 0 ? below[below.length - 1] : candidates[0];
+  }
+
+  if (position === 'below') {
+    // "Melody plays below the anchor" -> anchor sits above the melody's range.
+    const above = candidates.filter(c => c > max);
+    return above.length > 0 ? above[0] : candidates[candidates.length - 1];
+  }
+
+  if (position === 'around') {
+    // Simply the midpoint of the melody's pitch range, rounded. The anchor's
+    // pitch class is not preserved here - if the midpoint coincides with a
+    // palette note, that's fine.
+    return Math.round((min + max) / 2);
+  }
+
+  return anchorMidi;
+}
+
+
 
 class RNG {
   constructor(seed) { this.s = seed>>>0 || (Date.now()&0xffffffff); }
@@ -1804,9 +1864,13 @@ function generateSequence() {
   const noteCount  = parseInt(document.getElementById('noteCount').value) || 2;
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
-  const palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
+  let palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
       ? buildPalette(rng, scale, paletteSize, root, toneRange)
       : null;
+
+  const effectiveAnchorMidi = (mode === 'offbeat' && palette)
+      ? computeAnchorPitch(anchorMidi, palette, document.getElementById('anchorMelodyPos')?.value)
+      : anchorMidi;
 
   const params = {
     scale,
@@ -1835,7 +1899,7 @@ function generateSequence() {
         if(s.noteStart) currentEvents.push({start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave});
       });
     } else if (mode === 'offbeat') {
-      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart }, anchorMidi, anchorPattern, anchorOnbeat);
+      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart }, effectiveAnchorMidi, anchorPattern, anchorOnbeat);
     } else if (mode === 'arp') {
       currentEvents = buildArpPhrase(rng, { phraseLen, density, maxNoteLen }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
     } else if (mode === 'motivic') {
@@ -1844,7 +1908,7 @@ function generateSequence() {
       currentEvents = buildPhrase(rng, { ...params, octaveStart });
     }
 
-    const full = createFullBlock(rng, currentEvents, params, repeats, mode, anchorMidi, anchorPattern, arpParams, anchorOnbeat, uiVariation);
+    const full = createFullBlock(rng, currentEvents, params, repeats, mode, effectiveAnchorMidi, anchorPattern, arpParams, anchorOnbeat, uiVariation);
 
     sequence = full;
     renderSequence();
@@ -2031,6 +2095,10 @@ function generateEvolutionaryChain() {
   const minNoteLen = +document.getElementById('minNoteLen').value;
   const maxNoteLen = +document.getElementById('maxNoteLen').value;
 
+  const anchorMidi = parseInt(document.getElementById('anchorNote').value);
+  const anchorPattern = document.getElementById('anchorPattern').value;
+  const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
+
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
   let palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
@@ -2044,6 +2112,10 @@ function generateEvolutionaryChain() {
     if (!palette.includes(fallback)) palette = [...palette, fallback].sort((a, b) => a - b);
   }
 
+  const effectiveAnchorMidi = (mode === 'offbeat' && palette)
+      ? computeAnchorPitch(anchorMidi, palette, document.getElementById('anchorMelodyPos')?.value)
+      : anchorMidi;
+
   const params = {
     scale, root, phraseLen,
     maxInterval: +document.getElementById('maxInterval').value,
@@ -2055,15 +2127,13 @@ function generateEvolutionaryChain() {
     palette
   };
 
-  const anchorMidi = parseInt(document.getElementById('anchorNote').value);
-  const anchorPattern = document.getElementById('anchorPattern').value;
-  const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
   const arpParams = {
     root: parseInt(document.getElementById('arpRoot').value),
     chord: document.getElementById('arpChord').value,
     pattern: document.getElementById('arpPattern').value,
     octaves: document.getElementById('arpOctaves').value
   };
+
 
   const uiVariation = +document.getElementById('variation').value / 100;
   let fullCompositionSteps = [];
@@ -2114,7 +2184,7 @@ function generateEvolutionaryChain() {
       currentEvents = [];
       expanded.forEach((s, idx) => { if(s.noteStart) currentEvents.push({start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave}); });
     } else if (mode === 'offbeat') {
-      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart: 0 }, anchorMidi, anchorPattern, anchorOnbeat);
+      currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart: 0 }, effectiveAnchorMidi, anchorPattern, anchorOnbeat);
     } else if (mode === 'arp') {
       currentEvents = buildArpPhrase(rng, { phraseLen, density: params.density, maxNoteLen }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
     } else if (mode === 'motivic') {
@@ -3045,7 +3115,7 @@ document.getElementById('exportEvoBtn').addEventListener('click', async () => {
   }
 });
 
-['scale','root','anchorNote','anchorPattern','anchorOnbeat','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+['scale','root','anchorNote','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change',generateSequence);
 });
 
@@ -3110,7 +3180,7 @@ document.getElementById('evoPanel')?.addEventListener('change', scheduleEvoPrevi
 
 // Auto-refresh preview when the underlying sequence is (re)generated
 document.getElementById('genBtn')?.addEventListener('click', scheduleEvoPreview);
-['scale','root','anchorNote','anchorPattern','anchorOnbeat','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+['scale','root','anchorNote','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change', scheduleEvoPreview);
 });
 document.getElementById('presetSelect')?.addEventListener('change', () => setTimeout(scheduleEvoPreview, 0));
