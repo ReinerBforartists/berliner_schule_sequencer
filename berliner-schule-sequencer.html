@@ -1003,7 +1003,12 @@ details[open] summary::before { content: '− '; }
             <li><span style="color: var(--amber);">Presets:</span> <span style="color: var(--text-bright);">Quickly load curated settings. Use these as a baseline and then tweak the parameters to find your own sound.</span></li>
             <li><span style="color: var(--amber);">Classic:</span> <span style="color: var(--text-bright);">A "Random Walk" within the scale. It creates fluid, unpredictable melodies that still feel harmonically grounded. Perfect for classic cosmic background textures.</span></li>
             <li><span style="color: var(--amber);">Klaus Schulze:</span> <span style="color: var(--text-bright);">Focuses on sparse, long-held notes and drones. Instead of rhythmic density, it uses "Note Count" to define how many melodic events occur per phrase, creating a meditative, atmospheric feel.</span></li>
-            <li><span style="color: var(--amber);">Offbeat Anchor:</span> <span style="color: var(--text-bright);">Creates a rhythmic tension by locking specific steps (usually the offbeats) to one fixed note. This acts as a "pedal point," allowing the other notes to dance around it without losing the pulse.</span></li>
+            <li><span style="color: var(--amber);">Offbeat Anchor:</span> <span style="color: var(--text-bright);">Creates a rhythmic tension by locking specific steps (usually the offbeats) to one fixed note. This acts as a "pedal point," allowing the other notes to dance around it without losing the pulse.
+              <ul style="margin-left: 15px; margin-top: 5px; list-style: circle;">
+                <li><strong style="color: var(--amber);">Onbeat Toggle:</strong> When enabled, the anchor note is placed on the beat instead of the offbeat, fundamentally changing the rhythmic feel.</li>
+                <li><strong style="color: var(--amber);">Melody Range:</strong> "Above", "Below", or "Around" shifts the active melody palette relative to the anchor's pitch class, controlling register without altering the harmonic content.</li>
+              </ul>
+            </li>
             <li><span style="color: var(--amber);">Arpeggiator:</span> <span style="color: var(--text-bright);">Strictly cycles through chord tones. Unlike a standard synth arp, this can be mutated and evolved over time, turning a simple chord into a complex rhythmic pattern.</span></li>
             <li><span style="color: var(--amber);">Motivic:</span> <span style="color: var(--text-bright);">The most "musical" mode. It generates a short 4-note DNA motif and then applies classical transformations (Inversion, Retrograde). This results in patterns that feel like they have a conscious theme or melody.</span></li>
           </ul>
@@ -1029,6 +1034,7 @@ details[open] summary::before { content: '− '; }
             <li><span style="color: var(--amber);">Standard MIDI Export:</span> <span style="color: var(--text-bright);">Exports the current loop exactly as you hear it in the sequencer. Ideal for short loops in your DAW.</span></li>
             <li><span style="color: var(--amber);">🧬 Evolution Export:</span> <span style="color: var(--text-bright);">Instead of a loop, this creates a long-form composition. It takes your current sequence and "mutates" it over several blocks. This mimics how old modular sequencers would slowly drift and change over 20 minutes.</span>
               <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
+                <li><span style="color: var(--amber);">Evolution Preview Canvas:</span> <span style="color: var(--text-bright);">A real-time piano roll visualization of the generated evolutionary chain. It updates automatically when parameters change. Use "Refresh Evolution" to force a new seed and regenerate the preview.</span></li>
                 <li><span style="color: var(--amber);">Iterations:</span> <span style="color: var(--text-bright);">How many blocks are generated. More iterations = a longer MIDI file.</span></li>
                 <li><span style="color: var(--amber);">Mutation:</span> <span style="color: var(--text-bright);">The "chaos" factor. High values mean each block will differ significantly from the previous one. Low values create a very subtle, slow evolution.</span></li>
                 <li><span style="color: var(--amber);">Drift:</span> <span style="color: var(--text-bright);">Adds sudden octave jumps between blocks, creating dramatic shifts in energy and register.</span></li>
@@ -1036,12 +1042,19 @@ details[open] summary::before { content: '− '; }
                 <li><span style="color: var(--amber);">Octave Drift:</span> <span style="color: var(--text-bright);">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
                   <li><span style="color: var(--amber);">Root Shift:</span> <span style="color: var(--text-bright);">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).
                   <ul style="margin-left: 15px; margin-top: 5px; font-size: 11px; color: var(--text-bright); list-style: circle;">
+                    <li><strong style="color: var(--amber);">Root Shift Interval:</strong> "Every X Blocks" controls how frequently the root changes. Lower values = faster harmonic movement.</li>
                     <li><span style="color: var(--amber);">Root Constraints (for 'Free' mode):</span> When using Random root shifts, you can constrain the harmonic wanderlust:
                       <br>— <strong>Palette:</strong> Limits the number of allowed root notes available for selection.
                       <br>— <strong>Range:</strong> Restricts the maximum distance the root can jump away from the original starting key.</li>
                   </ul>
                 </li>
-                <li><span style="color: var(--amber);">Evolution Curve:</span> <span style="color: var(--text-bright);">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, or "Ease" functions for organic transitions.</span></li>
+                <li><span style="color: var(--amber);">Evolution Curve:</span> <span style="color: var(--text-bright);">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, "Valley" for a dip, or "Ease" functions for organic transitions.</span></li>
+                <li><span style="color: var(--amber);">Mutation Style:</span> <span style="color: var(--text-bright);">Determines how notes are altered during mutation:
+                  <br>— <strong>Palette Walk:</strong> Moves to adjacent tones in the current palette (stepwise motion).
+                  <br>— <strong>Palette Random:</strong> Jumps to any random tone in the palette.
+                  <br>— <strong>Mix:</strong> Alternates between Walk and Random for balanced variation.</span></li>
+                <li><span style="color: var(--amber);">Evo Seed Mode:</span> <span style="color: var(--text-bright);">"Fixed" locks the evolution chain to the current seed. "Random" generates a new chain each time you refresh or export.</span></li>
+                <li><span style="color: var(--amber);">Export Stretch:</span> <span style="color: var(--text-bright);">Defines the grid alignment for the evolution export (Steps per Bar). Matches the standard export for consistent DAW integration.</span></li>
               </ul>
             </li>
           </ul>
@@ -1096,6 +1109,7 @@ details[open] summary::before { content: '− '; }
               <li><span style="color: var(--amber);">Repeats:</span> <span style="color: var(--text-bright);">How many times the phrase is played to form one full sequence loop. More repeats give the "Variation" slider more room to work.</span></li>
               <li><span style="color: var(--amber);">Density:</span> <span style="color: var(--text-bright);">The probability of a note occurring on any given step. 100% = a constant stream of notes; 30% = many rests, creating a sparse, rhythmic pattern.</span></li>
               <li><span style="color: var(--amber);">Intervall:</span> <span style="color: var(--text-bright);">Limits the "jump" between two consecutive notes. Low values (1-2) create smooth, step-wise melodies; high values allow wide leaps, creating more dramatic and erratic movements.</span></li>
+              <li><span style="color: var(--amber);">Note Count (Klaus Schulze Mode):</span> <span style="color: var(--text-bright);">Defines how many simultaneous/sequential melodic events are placed in the phrase. Higher values create denser, more active textures; lower values emphasize space and drones.</span></li>
             </ul></p>
 
             <!-- PART D: Mode-Specific Settings -->
@@ -1136,13 +1150,13 @@ details[open] summary::before { content: '− '; }
 
         <!-- SECTION 5: DISPLAY LEGEND -->
         <div style="margin-bottom: 10px;">
-          <strong style="color: var(--text-bright); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">🔍 Sequencer Display Legend</strong><br>
+          <strong style="color: var(--text-bright); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">🔍 Sequence Contour & Display Legend</strong><br>
           <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
-            <li><span style="color: var(--cyan);">Blue cell:</span> <span style="color: var(--text-bright);">Standard generated note.</span></li>
-            <li><span style="color: var(--anchor);">Pink cell:</span> <span style="color: var(--text-bright);">Anchor note (fixed pitch).</span></li>
-            <li><span style="color: #fff;">Dark/empty cell:</span> <span style="color: var(--text-bright);">A rest.</span></li>
-            <li><span style="color: #fff;">Semi-transparent blue:</span> <span style="color: var(--text-bright);">A tie (the previous note is being held).</span></li>
-            <li><span style="color: #fff;">Blue height bar:</span> <span style="color: var(--text-bright);">Visual pitch indicator. Higher bar = higher note relative to the current sequence range.</span></li>
+            <li><span style="color: var(--cyan);">Blue bar:</span> <span style="color: var(--text-bright);">Standard generated note. Height = pitch, Width = duration.</span></li>
+            <li><span style="color: var(--anchor);">Pink bar:</span> <span style="color: var(--text-bright);">Anchor note (fixed pitch). Height = pitch, Width = duration.</span></li>
+            <li><span style="color: #fff;">Empty space:</span> <span style="color: var(--text-bright);">A rest.</span></li>
+            <li><span style="color: #fff;">Vertical grid lines:</span> <span style="color: var(--text-bright);">Phrase/Block boundaries for structural reference.</span></li>
+            <li><strong style="color: var(--text-bright);">Stat Pills:</strong> <span style="color: var(--text-bright);">Top-right metrics show current Root, Scale, Note Count vs Total Steps, Anchor Count, and Pitch Range (↓/↑).</span></li>
           </ul>
         </div>
 
