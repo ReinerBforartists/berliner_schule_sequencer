@@ -55,6 +55,26 @@
   --text-bright: #f8fafc;
   --r: 3px;
 }
+/* =========================================
+   UTILITY CLASSES (Layout & Common Patterns)
+   ========================================= */
+.flex-center    { display: flex; align-items: center; justify-content: center; }
+.flex-between   { display: flex; align-items: center; justify-content: space-between; }
+.flex-col       { display: flex; flex-direction: column; }
+.gap-4          { gap: 4px; }
+.gap-8          { gap: 8px; }
+.gap-10         { gap: 10px; }
+.gap-16         { gap: 16px; }
+.border-muted   { border: 1px solid var(--border); }
+.border-amber   { border: 1px solid var(--amber); }
+.text-amber     { color: var(--amber); }
+.text-muted     { color: var(--muted); }
+.text-bright    { color: var(--text-bright); }
+.shrink-0       { flex-shrink: 0; }
+.grow           { flex-grow: 1; }
+.overflow-hidden{ overflow: hidden; }
+.whitespace-nowrap{ white-space: nowrap; }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { min-height: 100%; background: var(--bg); color: var(--text); overflow-y: auto; }
 
