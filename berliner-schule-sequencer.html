@@ -314,8 +314,6 @@ body {
 
 /* ── Sequencer Canvas Container (FIXED HEIGHT) ── */
 .seq-canvas-container {
-  /* CHANGE: Fixed to 200px to match Evolution Preview inner area.
-     flex: 0 0 200px prevents the container from stretching to fill available space. */
   flex: 0 0 200px;
   background: var(--bg);
   border: none;
@@ -622,7 +620,6 @@ details[open] summary::before { content: '− '; }
 
         <div class="ctrl" style="min-width:70px; flex:1;">
           <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">12</span></div>
-          <!-- Erhöht auf 12 für einen längeren, fließenderen Verlauf -->
           <input type="range" id="evoIterations" min="1" max="64" value="12" style="width:100%;">
         </div>
 
@@ -631,19 +628,16 @@ details[open] summary::before { content: '− '; }
 
         <div class="ctrl" style="min-width:70px; flex:1;">
           <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
-          <!-- Gesenkt auf 10%: Nur sehr wenige Noten ändern sich pro Block -->
           <input type="range" id="evoMutation" min="0" max="100" value="20" style="width:100%;">
         </div>
 
         <div class="ctrl" style="min-width:70px; flex:1;">
           <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">5%</span></div>
-          <!-- Stark gesenkt auf 5%: Oktavsprünge passieren nur noch selten -->
           <input type="range" id="evoDrift" min="0" max="100" value="5" style="width:100%;">
         </div>
 
         <div class="ctrl" style="min-width:70px; flex:1;">
           <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
-          <!-- Erhöht auf 70%: Der Großteil der ursprünglichen Phrase bleibt erhalten -->
           <input type="range" id="evoGrip" min="0" max="100" value="50" style="width:100%;">
         </div>
       </div>
@@ -1164,10 +1158,12 @@ details[open] summary::before { content: '− '; }
 <style>.hidden { display: none !important; }</style>
 
 <script>
-// --- UI HELPERS & TABS ---
+// =========================================
+// UI HELPERS & TABS
+// =========================================
 
 /**
- * Helper to update DOM text without blocking the UI thread (prevents stuttering)
+ * Updates DOM text without blocking the UI thread.
  */
 function fastUpdateText(id, value, isPercent = false) {
   requestAnimationFrame(() => {
@@ -1177,8 +1173,9 @@ function fastUpdateText(id, value, isPercent = false) {
     }
   });
 }
+
 /**
- * Handles the switching between MIDI and Evolution export panels.
+ * Handles switching between MIDI and Evolution export panels.
  */
 function initExportTabs() {
   const tabs = document.querySelectorAll('.export-tab');
@@ -1199,12 +1196,10 @@ function initExportTabs() {
     });
   });
 }
-
-// Call this in your init sequence
 initExportTabs();
 
 /**
- * Toggles the visibility of the Root Interval dropdown based on the selected Root Mode.
+ * Toggles visibility of the Root Interval dropdown based on selected Root Mode.
  */
 function updateEvoRootUI() {
   const mode = document.getElementById('evoRootMode').value;
@@ -1225,7 +1220,9 @@ document.getElementById('evoRootMode').addEventListener('change', updateEvoRootU
 // Initialize on load
 updateEvoRootUI();
 
-// --- MUSIC THEORY & SCALE DEFINITIONS ---
+// =========================================
+// MUSIC THEORY & SCALE DEFINITIONS
+// =========================================
 
 const SCALES = {
   dorian:     [0,2,3,5,7,9,10],
@@ -1243,8 +1240,7 @@ function midiToName(m) {
 }
 
 /**
- * Calculates weights for scale degrees to favor tonic (0) and dominant/subdominant,
- * ensuring the generated melodies feel more "musical" and grounded.
+ * Calculates weights for scale degrees to favor tonic, dominant, and subdominant.
  */
 function getWeights(len) {
   const w = new Array(len).fill(1);
@@ -1257,8 +1253,7 @@ function getWeights(len) {
 }
 
 /**
- * Calculates a multiplier between 0.0 and 1.0 based on the selected
- * evolution curve and the current iteration progress.
+ * Calculates a multiplier between 0.0 and 1.0 based on the selected evolution curve.
  */
 function getCurveMultiplier(curve, i, total) {
   const t = i / Math.max(1, total - 1);
@@ -1270,14 +1265,13 @@ function getCurveMultiplier(curve, i, total) {
     case 'easeIn':   return t * t;
     case 'easeOut':  return 1 - (1 - t) * (1 - t);
     case 'easeInOut': return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
-    default:         return 1; // linear
+    default:         return 1;
   }
 }
 
 /**
- * Builds a corridor of allowed MIDI notes: root + up to toneRange scale steps.
- * Then picks `size` of them as the palette. All phrase builders and mutations
- * operate exclusively within this corridor, preventing octave sprawl.
+ * Builds a corridor of allowed MIDI notes and selects a subset as the palette.
+ * Ensures all phrase builders operate within a controlled harmonic range.
  */
 function buildPalette(rng, scale, size, root, toneRange) {
   // Build the corridor: concrete MIDI values within range
@@ -1292,7 +1286,6 @@ function buildPalette(rng, scale, size, root, toneRange) {
     }
     oct++;
   }
-
   if (corridor.length === 0) return [root];
 
   // Pick `size` notes from corridor, always including root
@@ -1357,7 +1350,9 @@ function computeAnchorPitch(anchorMidi, palette, position) {
   return anchorMidi;
 }
 
-
+// =========================================
+// PSEUDO-RANDOM NUMBER GENERATOR
+// =========================================
 
 class RNG {
   constructor(seed) { this.s = seed>>>0 || (Date.now()&0xffffffff); }
@@ -1380,10 +1375,12 @@ function scaleDegreeToMidi(root, scale, deg, oct) {
 
 function isNoteStep(s) { return s&&!s.rest&&!s.tie&&s.midi!=null; }
 
-// --- GENERATIVE ENGINES ---
+// =========================================
+// GENERATIVE ENGINES
+// =========================================
 
 /**
- * Motivic Logic: Creates a short "DNA" motif and then builds the phrase
+ * Motivic Logic: Creates a short "DNA" motif and builds the phrase
  * using classical transformations: Original, Inversion, Retrograde, and Transposition.
  */
 function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, density, minNoteLen, maxNoteLen, palette})
@@ -1402,7 +1399,6 @@ function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, 
 
   const fullEvents = [];
   let currentStep = 0;
-
   while (currentStep < phraseLen) {
     const roll = rng.next();
     const transformType = roll < 0.70 ? 0 : roll < 0.80 ? 1 : roll < 0.90 ? 2 : 3;
@@ -1410,9 +1406,7 @@ function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, 
 
     for (let i = 0; i < motifLen && currentStep < phraseLen; i++) {
       let midi = motifMidi[i];
-
       if (transformType === 1) {
-        // Inversion: mirror around first tone, snap to nearest palette tone
         const diff = motifMidi[i] - motifMidi[0];
         const target = motifMidi[0] - diff;
         midi = tones.reduce((a, b) => Math.abs(b - target) < Math.abs(a - target) ? b : a);
@@ -1504,9 +1498,7 @@ function mutatePhrase(rng, events, variation, params) {
       // DYNAMIC CLAMPING: Prevents rng.int(a, b) where a > b
       const effMin = Math.min(params.minNoteLen, available);
       const effMax = Math.max(effMin, Math.min(params.maxNoteLen, available));
-
       if (effMin > effMax) continue;
-
       if (!copy.find(e => e.start === start)) {
         const midi = tones[rng.int(0, tones.length - 1)];
         copy.push({
@@ -1584,7 +1576,6 @@ function mutateSchulzePhrase(rng, phrase, variation, params) {
   if (events.length === 0) return phrase;
 
   const tones = params.palette && params.palette.length > 0 ? params.palette : [params.root];
-
   const n = Math.max(1, Math.floor(events.length * variation * 2));
   for (let m = 0; m < n; m++) {
     const ev = events[rng.int(0, events.length - 1)];
@@ -1615,7 +1606,7 @@ function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, 
     } else if (rng.chance(density)) {
       const midi = usePalette ? palette[paletteIdx] : scaleDegreeToMidi(root, scale, degree, octave);
       const available = phraseLen - i;
-      if (available < minNoteLen) continue; // Sicherstellen, dass genug Platz ist
+      if (available < minNoteLen) continue; // Make sure there is enough space
       const dur = rng.int(minNoteLen, Math.min(maxNoteLen, available));
       events.push({start: i, duration: dur, midi, degree, octave});
       i += dur - 1;
@@ -1653,7 +1644,6 @@ function mutateOffbeatPhrase(rng, events, variation, params, anchorMidi, anchorP
   for (let m=0; m<n; m++) {
     const idx = rng.int(0, copy.length - 1);
     const ev = copy[idx];
-
     if (ev.isAnchor) continue;
 
     if (rng.chance(0.3)) {
@@ -1701,7 +1691,6 @@ function buildArpPhrase(rng, {phraseLen, density, maxNoteLen}, arpRoot, arpChord
   const intervals = CHORD_TYPES[arpChord] || [0,4,7];
   const octaves = parseInt(arpOctaves);
   const baseOct = 4; // Starting octave C4
-
   const tones = [];
   for (let o = 0; o < octaves; o++) {
     for (const iv of intervals) {
@@ -1719,7 +1708,7 @@ function buildArpPhrase(rng, {phraseLen, density, maxNoteLen}, arpRoot, arpChord
     ordered = [...tones];
   }
 
-const events = [];
+  const events = [];
   let pos = 0;
   for (let i = 0; i < phraseLen; i++) {
     if (!rng.chance(density)) continue;
@@ -1755,7 +1744,9 @@ function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpP
   return copy;
 }
 
-// --- STATE MANAGEMENT ---
+// =========================================
+// SEQUENCE STATE & BLOCK MANAGEMENT
+// =========================================
 
 let sequence=[];
 let currentEvoChain = []; // Stores the result of the last evolution generation for instant export
@@ -1805,7 +1796,10 @@ function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, an
   return block;
 }
 
-// ─── Generate ───
+// =========================================
+// SEQUENCE GENERATION
+// =========================================
+
 /**
  * Main generation entry point.
  * Orchestrates the creation of the sequence based on current UI settings.
@@ -1909,15 +1903,12 @@ function generateSequence() {
     }
 
     const full = createFullBlock(rng, currentEvents, params, repeats, mode, effectiveAnchorMidi, anchorPattern, arpParams, anchorOnbeat, uiVariation);
-
     sequence = full;
     renderSequence();
     updatePills();
     setStatus('ready', false);
-
     refreshEvolutionData();
     renderEvolutionPreview();
-
   } catch (err) {
     console.error("Generation failed:", err);
     setStatus('Error generating', false);
@@ -1930,7 +1921,10 @@ function generateSequence() {
 // even when "Evo Seed: Random" is selected.
 let evoForcedSeed = null;
 
-// --- EVOLUTION PREVIEW (Piano-Roll style) ---
+// =========================================
+// EVOLUTION & MUTATION SYSTEM
+// =========================================
+
 /**
  * Renders a graphical piano-roll style preview of the full evolution chain
  * onto the evoPreviewCanvas, without touching playback or export.
@@ -2042,7 +2036,6 @@ let evoPreviewTimer = null;
 function scheduleEvoPreview() {
   const evoPanel = document.getElementById('evoPanel');
   if (!evoPanel || !evoPanel.classList.contains('active')) return;
-
   clearTimeout(evoPreviewTimer);
   evoPreviewTimer = setTimeout(() => {
     refreshEvolutionData(); // 1. Recalculate the music
@@ -2105,7 +2098,7 @@ function generateEvolutionaryChain() {
     ? buildPalette(rng, scale, paletteSize, root, toneRange)
     : null;
 
-  // FIX: guarantee at least 2 distinct tones, otherwise mutation degenerates
+  // Guarantee at least 2 distinct tones, otherwise mutation degenerates
   // into a permanent no-op (tones[newIdx] always resolves to the same value).
   if (palette && palette.length < 2) {
     const fallback = Math.max(24, Math.min(84, root + (scale[1] !== undefined ? scale[1] : 2)));
@@ -2134,19 +2127,17 @@ function generateEvolutionaryChain() {
     octaves: document.getElementById('arpOctaves').value
   };
 
-
   const uiVariation = +document.getElementById('variation').value / 100;
   let fullCompositionSteps = [];
   let currentEvents = [];
   let currentRoot = root;
-
   const clampMidi = (m) => Math.max(24, Math.min(84, m));
 
-  // 1. Start-Block initialisieren
+  // 1. Start-Block initialising
   if (sequence && sequence.length > 0) {
     fullCompositionSteps = [...sequence];
 
-    // FIX: `sequence` consists of `repeats` copies of one phrase, each carrying
+    // `sequence` consists of `repeats` copies of one phrase, each carrying
     // its own internal variation (mutate*Phrase). Repeat #1 isn't necessarily
     // representative - pick the copy with the most note events as the
     // evolution seed, so variation already present in `sequence` isn't lost.
@@ -2158,7 +2149,6 @@ function generateEvolutionaryChain() {
       const count = candidate.filter(s => s.noteStart && !s.rest).length;
       if (count > bestCount) { bestCount = count; bestPhraseSteps = candidate; }
     }
-
     currentEvents = [];
     bestPhraseSteps.forEach((s, idx) => {
       if (s.noteStart && !s.rest) {
@@ -2166,7 +2156,7 @@ function generateEvolutionaryChain() {
       }
     });
 
-    // FIX: Build the evolution palette from the pitches actually present in the
+    // Build the evolution palette from the pitches actually present in the
     // seed phrase, instead of an independently-built palette from the current
     // UI root/scale/paletteSize/toneRange (which may not match `sequence` at
     // all and can degenerate to a single tone, making mutation a no-op).
@@ -2228,7 +2218,7 @@ function generateEvolutionaryChain() {
   const mutationStyle = document.getElementById('evoMutationStyle')?.value || 'walk';
 
   for (let i = 1; i < iterations; i++) {
-    // FIXED: Generate Arp-specific tones so mutation/grip work in Arp mode.
+    // Generate Arp-specific tones so mutation/grip work in Arp mode.
     let arpTones = null;
     if (mode === 'arp') {
       const intervals = CHORD_TYPES[arpParams.chord] || [0, 4, 7];
@@ -2246,7 +2236,6 @@ function generateEvolutionaryChain() {
 
     // Unified tones variable for mutation/grip/drift logic
     const tones = mode === 'arp' ? arpTones : (params.palette && params.palette.length > 0 ? params.palette : null);
-
     const curveMult = getCurveMultiplier(curve, i - 1, iterations - 1);
     const effectiveMutationRate = mutationRate * curveMult;
 
@@ -2280,7 +2269,6 @@ function generateEvolutionaryChain() {
       if (driftDir !== null) {
         // Plain addition is injective - no clamping, no possible duplicates.
         currentEvents = currentEvents.map(e => ({...e, midi: e.midi + driftDir}));
-
         if (mode === 'arp' && arpTones) {
           arpTones.forEach((t, idx) => arpTones[idx] = t + driftDir);
         } else if (params.palette) {
@@ -2291,11 +2279,9 @@ function generateEvolutionaryChain() {
 
     // MUTATION & GRIP
     const perRepeatMutationRate = effectiveMutationRate / Math.max(1, repeats);
-
     const mutateTone = (ev) => {
       if (!tones) return ev.midi;
       const currentIdx = tones.indexOf(ev.midi);
-
       if (currentIdx === -1) {
         let nearestIdx = 0, minDist = Infinity;
         for (let k = 0; k < tones.length; k++) {
@@ -2313,7 +2299,6 @@ function generateEvolutionaryChain() {
         do { newIdx = rng.int(0, tones.length - 1); } while (newIdx === currentIdx);
         return tones[newIdx];
       }
-
       let step = rng.chance(0.5) ? 1 : -1;
       const newIdx = Math.max(0, Math.min(tones.length - 1, currentIdx + step));
       return tones[newIdx];
@@ -2337,7 +2322,6 @@ function generateEvolutionaryChain() {
       if (tones && rng.chance(effectiveMutationRate)) return {...ev, midi: mutateTone(ev)};
       return ev;
     });
-
     currentEvents = enforcePaletteCoverage(currentEvents);
 
     // Repeat the block with gradual mutation spread across repeats
@@ -2390,13 +2374,13 @@ function generateEvolutionaryChain() {
       });
       rootShiftHappened = true;
     }
-  } // End of evolution loop
-
+  }
   return fullCompositionSteps;
 }
 
-
-// --- UI RENDERING ENGINE ---
+// =========================================
+// UI RENDERING & CANVAS ENGINE
+// =========================================
 
 /**
  * Redraws the entire sequence on the canvas.
@@ -2404,7 +2388,6 @@ function generateEvolutionaryChain() {
  */
 function renderSequence() {
   if (!sequence || sequence.length === 0) return;
-
   const canvas = document.getElementById('mainSeqCanvas');
   if (!canvas) return;
 
@@ -2445,11 +2428,10 @@ function renderSequence() {
 
   // Draw notes ONLY on noteStart to prevent overlap.
   // Math.round() ensures pixel-perfect alignment and kills subpixel bleeding.
-  const GAP = 2; // Fixed horizontal gap between individual notes
+  const GAP = 2; // Horizontal gap between individual notes
   for (let i = 0; i < totalSteps; i++) {
     const s = sequence[i];
     if (!s || s.rest || s.midi === undefined || !s.noteStart) continue;
-
     const hold = s.holdSteps || 1;
     const startX = Math.round(i * pxPerStep) + (GAP / 2);
     const width = Math.max(1, Math.round(hold * pxPerStep) - GAP);
@@ -2467,16 +2449,14 @@ function renderSequence() {
  */
 function highlightStep(idx) {
   if (!sequence.length) return;
-
   const canvas = document.getElementById('mainSeqCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const totalSteps = sequence.length;
   const pxPerStep = canvas.width / totalSteps;
 
-  // Komplette Szene neu zeichnen, um alten Cursor zu löschen
+  // Redraw
   renderSequence();
-
   if (idx === -1) return;
 
   const x = idx * pxPerStep;
@@ -2490,7 +2470,7 @@ function highlightStep(idx) {
   ctx.lineTo(x, canvas.height);
   ctx.stroke();
 
-  // Glow-Effekt für den Cursor
+  // Glow-Effect
   ctx.shadowBlur = 10;
   ctx.shadowColor = cursorColor;
   ctx.stroke();
@@ -2507,7 +2487,6 @@ function updatePills() {
 
   const pills = document.getElementById('statPills');
   const p = (...t) => `<span class="pill">${t.join('')}</span>`;
-
   pills.innerHTML = [
     p(rootEl, ' <strong>', scaleEl, '</strong>'),
     p('Notes: <strong>', notes.length, '</strong>/', sequence.length),
@@ -2517,7 +2496,9 @@ function updatePills() {
   ].filter(Boolean).join('');
 }
 
-// --- AUDIO ENGINE (WEB AUDIO API) ---
+// =========================================
+// AUDIO ENGINE (WEB AUDIO API)
+// =========================================
 
 function getAudio() {
   if (!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
@@ -2543,7 +2524,6 @@ function playNote(ctx, midi, dur, velocity) {
 
   const t0 = ctx.currentTime;
   osc.frequency.setValueAtTime(freq, t0);
-
   gain.gain.setValueAtTime(0, t0);
   gain.gain.linearRampToValueAtTime(currentMax, t0 + 0.02);
   gain.gain.setValueAtTime(currentMax * 0.8, t0 + Math.max(0.03, dur - 0.06));
@@ -2551,14 +2531,12 @@ function playNote(ctx, midi, dur, velocity) {
 
   osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
   osc.start(t0); osc.stop(t0 + dur + 0.02);
-
   activeGains.push(gain);
   osc.onended = () => { activeGains = activeGains.filter(g => g !== gain); };
 }
 
 async function playSequence() {
   if (!sequence.length) generateSequence();
-
   const ctx = getAudio();
   if (ctx.state === 'suspended') await ctx.resume().catch(() => { });
 
@@ -2584,7 +2562,6 @@ async function playSequence() {
     const stepsPerBeat = +document.getElementById('stepsPerBeat').value;
     const stepDur      = 60 / bpm / stepsPerBeat;
     const swingFraction = (+document.getElementById('swing').value) / 100;
-
     const swingOffset = (i % 2 === 1) ? stepDur * swingFraction * 0.5 : 0;
     const targetTime = nextStepTime + swingOffset;
 
@@ -2593,14 +2570,12 @@ async function playSequence() {
 
     if (i >= sequence.length) i = i % sequence.length;
     highlightStep(i);
-
     const s = sequence[i];
 
     if (!s.tie && (isNoteStep(s) || s.isAnchor)) {
       const vel = 100;
       playNote(ctx, s.midi, stepDur * (s.holdSteps || 1) * 0.9, vel);
     }
-
     nextStepTime += stepDur;
     i++;
 
@@ -2751,7 +2726,6 @@ function exportMidi(customSequence = null) {
 
   // Sort events by tick, then ensure 'off' comes before 'on' for the same tick
   noteEvts.sort((a, b) => a.tick - b.tick || (a.type === 'off' ? -1 : 1));
-
   const noteTrack = [...eventsToTrack(noteEvts), ...vlq(0), 0xff, 0x2f, 0x00];
   const smf = buildSmf([metaTrack, noteTrack]);
   const a   = document.createElement('a');
@@ -2762,16 +2736,14 @@ function exportMidi(customSequence = null) {
   setStatus('MIDI exported', false);
 }
 
-/**
- * Validates and synchronizes minNoteLen and maxNoteLen.
- * Prevents the minimum value from exceeding the maximum value.
- */
+// =========================================
+// UI HELPERS & PARAMETER SYNC
+// =========================================
+
 function syncNoteLengths() {
   const minEl = document.getElementById('minNoteLen');
   const maxEl = document.getElementById('maxNoteLen');
-
   if (!minEl || !maxEl) return;
-
   let minVal = parseInt(minEl.value);
   let maxVal = parseInt(maxEl.value);
 
@@ -2793,7 +2765,6 @@ function syncPaletteRange() {
   const paletteEl = document.getElementById('paletteSize');
   const rangeEl   = document.getElementById('toneRange');
   if (!paletteEl || !rangeEl) return;
-
   const paletteVal = parseInt(paletteEl.value);
   const rangeVal   = parseInt(rangeEl.value);
 
@@ -2840,7 +2811,9 @@ function syncRootConstraints() {
   }
 }
 
-// --- UI EVENT WIRING ---
+// =========================================
+// EVENT WIRING & INITIALIZATION
+// =========================================
 
 document.getElementById('minNoteLen')?.addEventListener('input', () => {
   syncNoteLengths();
@@ -3093,11 +3066,10 @@ document.getElementById('playBtn').addEventListener('click',()=>playSequence().c
 document.getElementById('stopBtn').addEventListener('click',stopPlayback);
 document.getElementById('exportBtn').addEventListener('click',() => exportMidi());
 
-// New Evolutionary Export Trigger - FIXED to export the current preview
+// Evolutionary Export Trigger
 document.getElementById('exportEvoBtn').addEventListener('click', async () => {
   setStatus('exporting...', true);
   await new Promise(resolve => setTimeout(resolve, 10));
-
   try {
     // Use the buffered chain from the preview.
     // If it's empty for some reason, generate it once.
@@ -3151,7 +3123,6 @@ document.getElementById('evoRootPalette')?.addEventListener('input', (e) => {
   document.getElementById('evoRootPalVal').textContent = e.target.value;
   syncRootConstraints();
 });
-
 document.getElementById('evoRootRange')?.addEventListener('input', (e) => {
   document.getElementById('evoRootRangeVal').textContent = e.target.value;
   syncRootConstraints();
