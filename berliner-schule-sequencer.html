@@ -55,26 +55,6 @@
   --text-bright: #f8fafc;
   --r: 3px;
 }
-/* =========================================
-   UTILITY CLASSES (Layout & Common Patterns)
-   ========================================= */
-.flex-center    { display: flex; align-items: center; justify-content: center; }
-.flex-between   { display: flex; align-items: center; justify-content: space-between; }
-.flex-col       { display: flex; flex-direction: column; }
-.gap-4          { gap: 4px; }
-.gap-8          { gap: 8px; }
-.gap-10         { gap: 10px; }
-.gap-16         { gap: 16px; }
-.border-muted   { border: 1px solid var(--border); }
-.border-amber   { border: 1px solid var(--amber); }
-.text-amber     { color: var(--amber); }
-.text-muted     { color: var(--muted); }
-.text-bright    { color: var(--text-bright); }
-.shrink-0       { flex-shrink: 0; }
-.grow           { flex-grow: 1; }
-.overflow-hidden{ overflow: hidden; }
-.whitespace-nowrap{ white-space: nowrap; }
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { min-height: 100%; background: var(--bg); color: var(--text); overflow-y: auto; }
 
@@ -84,6 +64,114 @@ body {
   font-weight: 500;
 }
 .mono { font-family: 'Share Tech Mono', monospace; }
+
+/* ── Utility classes ──
+   Common layout/spacing/typography patterns that were previously
+   repeated as inline styles throughout the markup. */
+.flex-center { display: flex; align-items: center; }
+.flex-col    { display: flex; flex-direction: column; }
+.flex-wrap   { flex-wrap: wrap; }
+.flex-1      { flex: 1; }
+.shrink-0    { flex-shrink: 0; }
+.ml-auto     { margin-left: auto; }
+.mr-auto     { margin-right: auto; }
+.nowrap      { white-space: nowrap; }
+
+.gap-sm { gap: 8px; }
+.gap-md { gap: 10px; }
+.gap-lg { gap: 12px; }
+.gap-xl { gap: 16px; }
+.gap-xs { gap: 6px; }
+.row-gap-md { row-gap: 10px; }
+.mt-sm { margin-top: 6px; }
+.mb-sm { margin-bottom: 6px; }
+.mb-md { margin-bottom: 8px; }
+.muted-10 { font-size: 10px; color: var(--muted); }
+
+/* Howto documentation: nested bullet lists */
+.list-square { margin-left: 20px; margin-top: 8px; list-style: square; }
+.list-circle { margin-left: 20px; margin-top: 5px; list-style: circle; }
+
+/* Section labels above control groups (e.g. "Timing & Rhythm", "Phrase & Notes").
+   Previously referenced in HTML but never actually defined - every usage
+   re-specified the full style inline. */
+.group-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+}
+.group-label.live-text { color: var(--green); border-left-color: var(--green); }
+.group-label.pushed-right { margin-left: auto; margin-right: 30%; width: fit-content; }
+.panel-row {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 8px 12px;
+}
+
+/* Vertical / horizontal divider lines used between control groups */
+.v-sep   { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+.v-sep-m { margin: 0 8px; }
+.h-sep   { flex: 1; height: 1px; background: var(--muted); opacity: 0.5; }
+
+/* Small uppercase field labels (used in anchor/arp side panels) */
+.field-label { font-family: monospace; font-size: 10px; color: var(--muted); }
+
+/* Section heading style for the Howto block, combine with .hl-* for color */
+.section-heading { text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; }
+
+/* Inline text-highlight colors used throughout the Howto documentation */
+.hl-amber   { color: var(--amber); }
+.hl-text    { color: var(--text-bright); }
+.hl-green   { color: var(--green); }
+.hl-cyan    { color: var(--cyan); }
+.hl-anchor  { color: var(--anchor); }
+.hl-white   { color: #fff; }
+.hl-white-b { color: #fff; font-weight: bold; }
+
+/* Standalone select fields that sit outside .ctrl / .seed-bar / .anchor-controls
+   but should still look like the standard form controls */
+.select-field {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.select-field.amber { color: var(--amber); }
+
+/* Wrapper + canvas element for the evo preview piano-roll */
+.canvas-frame { border-radius: 2px; background: var(--bg); }
+.canvas-fill { display: block; width: 100%; }
+
+/* Wrapper around a labeled set of .ctrl boxes (e.g. "Timing & Rhythm" section) */
+.controls-group { margin-bottom: 15px; }
+
+/* "—— Section Label ——" style divider between major page sections */
+.divider-row { margin: 20px 0 10px; }
+.divider-label { font-size: 9px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; }
+
+/* Modifier for a <summary> toggle that should stand out (amber, bold) instead
+   of the default muted summary style */
+.summary-highlight { color: var(--amber); font-weight: bold; }
+
+/* .ctrl box that grows to fill space, with a 70px floor (evo iter/mutation/drift/grip sliders) */
+.ctrl-grow { min-width: 70px; flex: 1; }
+
+/* A .ctrl box stripped down to a plain flex layout container
+   (no panel background/border/padding) */
+.ctrl-bare { background: transparent; border: none; padding: 0; }
+
+/* Checkbox inside label/control grids (anchor-controls etc.) where the
+   default 100% width from .ctrl-style selectors must not apply */
+.checkbox-field { width: auto; margin-top: 4px; }
 
 /* ── Layout ── */
 .app {
@@ -102,6 +190,7 @@ body {
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
@@ -468,7 +557,8 @@ details[open] summary::before { content: '− '; }
 .preset-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  margin-left: auto;
   flex-shrink: 0;
   flex-wrap: wrap;
 }
@@ -500,8 +590,8 @@ details[open] summary::before { content: '− '; }
 <div class="app">
 
   <!-- Header -->
-  <div class="header" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-    <div style="display: flex; align-items: center; gap: 16px;">
+  <div class="header">
+    <div class="flex-center gap-xl">
       <div class="logo mono">BSS<span>/</span>0.9.1</div>
       <div class="mode-tabs">
         <button class="mode-tab active" data-mode="classic">Classic</button>
@@ -513,9 +603,9 @@ details[open] summary::before { content: '− '; }
     </div>
 
     <!-- Presets moved here to the top right -->
-    <div class="preset-bar" style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+    <div class="preset-bar">
       <span class="preset-label">Preset:</span>
-      <select id="presetSelect" style="font-family: 'Share Tech Mono', monospace; font-size: 11px; background: var(--bg); border: 1px solid var(--border2); color: var(--amber); padding: 5px 8px; border-radius: 2px; cursor: pointer; min-width: 160px;">
+      <select id="presetSelect">
         <option value="" disabled selected>-- Select Preset --</option>
         <optgroup label="Classic Mode">
           <option value="phaedra">Phaedra</option>
@@ -550,43 +640,43 @@ details[open] summary::before { content: '− '; }
   </div>
 
 <!-- Transport & MIDI/Evo Station -->
-<div class="transport-section" style="display: flex; flex-direction: column; gap: 10px;">
+<div class="transport-section flex-col gap-md">
 
   <!-- Row 1: Playback Controls + Seed Integration -->
-  <div class="transport" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+  <div class="transport">
     <button class="btn primary" id="playBtn">▶ Play</button>
     <button class="btn stop-btn" id="stopBtn" disabled>■ Stop</button>
 
     <!-- Volume Control for Monitoring only -->
-    <div class="ctrl" style="border: none; background: transparent; padding: 0; display: flex; align-items: center; gap: 8px; min-width: 140px;">
-      <span class="seed-label" style="white-space: nowrap;">VOL</span>
-      <input type="range" id="masterVol" min="0" max="100" value="100" style="flex: 1; cursor: pointer;">
-      <span class="val mono" id="volVal" style="color: var(--amber); font-size: 10px; width: 30px;">100%</span>
+    <div class="ctrl ctrl-bare flex-center gap-sm" style="min-width: 140px;">
+      <span class="seed-label nowrap">VOL</span>
+      <input type="range" id="masterVol" min="0" max="100" value="100" class="flex-1">
+      <span class="val mono hl-amber" id="volVal" style="font-size: 10px; width: 30px;">100%</span>
     </div>
 
     <button class="btn" id="genBtn">↻ Generate</button>
 
     <!-- Vertical Separator -->
-    <div style="width: 1px; height: 24px; background: var(--border); margin: 0 8px; flex-shrink: 0;"></div>
+    <div class="v-sep v-sep-m"></div>
 
     <!-- Seed Controls -->
-    <div class="seed-bar" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+    <div class="seed-bar">
       <span class="seed-label">SEED</span>
-      <input type="number" id="seedValue" value="0" min="0" max="9999999" style="font-family:'Share Tech Mono',monospace;font-size:12px;background:var(--bg);border:1px solid var(--border2);color:var(--amber);padding:5px 9px;border-radius:2px;width:100px;">
-      <select id="seedMode" style="font-family:'Share Tech Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:2px;cursor:pointer;">
+      <input type="number" id="seedValue" value="0" min="0" max="9999999">
+      <select id="seedMode">
         <option value="random">Random</option>
         <option value="fixed">Fixed</option>
       </select>
     </div>
 
-    <div class="status-area" id="statusArea" style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+    <div class="status-area" id="statusArea">
       <div class="dot"></div>
       <span id="statusText">ready</span>
     </div>
   </div> <!-- End of Row 1 / transport -->
 
   <!-- Row 2: MIDI & Evolution Station -->
-  <div style="display: flex; flex-direction: column; gap: 8px;">
+  <div class="flex-col gap-sm">
     <!-- Export Mode Tabs -->
     <div class="export-tabs">
       <button class="export-tab active" data-target="midiPanel">MIDI Export</button>
@@ -595,67 +685,67 @@ details[open] summary::before { content: '− '; }
 
     <!-- Panel 1: Standard MIDI Export -->
     <div id="midiPanel" class="export-panel active">
-      <div style="display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px;">
-        <span class="seed-label" style="white-space: nowrap;">STEPS PER BAR</span>
-        <select id="exportStretch" style="font-family:'Share Tech Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:2px;cursor:pointer;">
+      <div class="flex-center gap-lg panel-row">
+        <span class="seed-label nowrap">STEPS PER BAR</span>
+        <select id="exportStretch" class="select-field">
           <option value="2">2</option>
           <option value="4">4</option>
           <option value="8">8</option>
           <option value="16" selected>16</option>
           <option value="32">32</option>
         </select>
-        <button class="btn" id="exportBtn" style="white-space: nowrap; margin-right: auto;">↓ EXPORT MIDI</button>
+        <button class="btn nowrap mr-auto" id="exportBtn">↓ EXPORT MIDI</button>
       </div>
     </div>
 
     <!-- Panel 2: Evolution Export -->
     <div id="evoPanel" class="export-panel">
       <!-- Evo Row 1: Core Mutation Settings -->
-      <div style="display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px; margin-bottom: 6px;">
-        <span class="seed-label" style="white-space: nowrap;">STEPS PER BAR</span>
-        <select id="exportStretchEvo" style="font-family:'Share Tech Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:2px;cursor:pointer;">
+      <div class="flex-center gap-sm panel-row mb-sm">
+        <span class="seed-label nowrap">STEPS PER BAR</span>
+        <select id="exportStretchEvo" class="select-field">
           <option value="2">2</option>
           <option value="4">4</option>
           <option value="8">8</option>
           <option value="16" selected>16</option>
           <option value="32">32</option>
         </select>
-        <button class="btn evo-btn" id="exportEvoBtn" style="white-space: nowrap; margin-right: auto;">🧬 EXPORT EVOLUTION</button>
+        <button class="btn evo-btn nowrap mr-auto" id="exportEvoBtn">🧬 EXPORT EVOLUTION</button>
 
         <!-- Visual Separator -->
-        <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+        <div class="v-sep"></div>
 
-        <div class="ctrl" style="min-width:70px; flex:1;">
+        <div class="ctrl ctrl-grow">
           <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">12</span></div>
-          <input type="range" id="evoIterations" min="1" max="64" value="12" style="width:100%;">
+          <input type="range" id="evoIterations" min="1" max="64" value="12">
         </div>
 
         <!-- Visual Separator -->
-        <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+        <div class="v-sep"></div>
 
-        <div class="ctrl" style="min-width:70px; flex:1;">
+        <div class="ctrl ctrl-grow">
           <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
-          <input type="range" id="evoMutation" min="0" max="100" value="20" style="width:100%;">
+          <input type="range" id="evoMutation" min="0" max="100" value="20">
         </div>
 
-        <div class="ctrl" style="min-width:70px; flex:1;">
+        <div class="ctrl ctrl-grow">
           <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">5%</span></div>
-          <input type="range" id="evoDrift" min="0" max="100" value="5" style="width:100%;">
+          <input type="range" id="evoDrift" min="0" max="100" value="5">
         </div>
 
-        <div class="ctrl" style="min-width:70px; flex:1;">
+        <div class="ctrl ctrl-grow">
           <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
-          <input type="range" id="evoGrip" min="0" max="100" value="50" style="width:100%;">
+          <input type="range" id="evoGrip" min="0" max="100" value="50">
         </div>
       </div>
 
       <!-- Evo Row 2: Root & Octave Drift -->
-      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 6px; row-gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px;">
+      <div class="flex-center flex-wrap gap-xs row-gap-md panel-row">
 
       <!-- Evolution curve dropdown -->
-      <div class="ctrl" style="width: 160px; flex-shrink: 0;">
+      <div class="ctrl shrink-0" style="width: 160px;">
         <div class="ctrl-label">Evolution Curve</div>
-        <select id="evolutionCurve" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%;">
+        <select id="evolutionCurve">
           <option value="linear">Linear</option>
           <option value="rampUp">Ramp Up</option>
           <option value="rampDown">Ramp Down</option>
@@ -668,9 +758,9 @@ details[open] summary::before { content: '− '; }
       </div>
 
       <!-- Mutation Style dropdown -->
-      <div class="ctrl" style="width: 170px; flex-shrink: 0;">
+      <div class="ctrl shrink-0" style="width: 170px;">
         <div class="ctrl-label">Mutation Style</div>
-        <select id="evoMutationStyle" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%;">
+        <select id="evoMutationStyle">
           <option value="walk" selected>Palette Walk</option>
           <option value="random">Palette Random</option>
           <option value="mix">Mix (Walk + Random)</option>
@@ -679,18 +769,18 @@ details[open] summary::before { content: '− '; }
 
 
         <!-- Octave Drift: Fixed width to prevent jumping -->
-        <div class="ctrl" style="width: 140px; flex-shrink: 0;">
+        <div class="ctrl shrink-0" style="width: 140px;">
           <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
-          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0" style="width:100%;">
+          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0">
         </div>
 
         <!-- Visual Separator -->
-        <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+        <div class="v-sep"></div>
 
         <!-- Root Mode Dropdown -->
-        <div class="ctrl" style="width: 180px; flex-shrink: 0;">
+        <div class="ctrl shrink-0" style="width: 180px;">
           <div class="ctrl-label">Root</div>
-          <select id="evoRootMode" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%; overflow: hidden; text-overflow: ellipsis;">
+          <select id="evoRootMode" style="overflow: hidden; text-overflow: ellipsis;">
             <option value="none" selected>None (Static)</option>
             <option value="free">Free (Random)</option>
             <option value="thirds">Thirds (3rd/4th)</option>
@@ -718,9 +808,9 @@ details[open] summary::before { content: '− '; }
         </div>
 
         <!-- Interval Container: appears next to Root Mode without pushing everything -->
-        <div id="evoIntervalContainer" class="ctrl" style="display: none; width: 110px; flex-shrink: 0;">
+        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 110px;">
           <div class="ctrl-label">Every</div>
-          <select id="evoRootInterval" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%;">
+          <select id="evoRootInterval">
             <option value="1">1 Block</option>
             <option value="2" selected>2 Blocks</option>
             <option value="4">4 Blocks</option>
@@ -729,27 +819,27 @@ details[open] summary::before { content: '− '; }
         </div>
 
         <!-- Visual Separator -->
-        <div style="width: 1px; height: 24px; background: var(--border); flex-shrink: 0;"></div>
+        <div class="v-sep"></div>
 
         <!-- Seed Mode Dropdown -->
-        <div class="ctrl" style="width: 110px; flex-shrink: 0;">
+        <div class="ctrl shrink-0" style="width: 110px;">
           <div class="ctrl-label">Evo Seed</div>
-          <select id="evoSeedMode" style="font-family:'Share Tech Mono',monospace; font-size:11px; background:var(--bg); border:1px solid var(--border2); color:var(--text); padding:5px 8px; border-radius:2px; cursor:pointer; width: 100%;">
+          <select id="evoSeedMode">
             <option value="random">Random</option>
             <option value="fixed">Fixed</option>
           </select>
         </div>
       </div>
         <!-- Evo Row 3: Root Constraints (Only for Random Mode) -->
-      <div id="evoRootConstraintRow" style="display: none; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px; margin-top: 6px;">
-        <span class="seed-label" style="white-space: nowrap;">ROOT CONSTRAINTS:</span>
+      <div id="evoRootConstraintRow" class="flex-center gap-sm panel-row mt-sm" style="display: none;">
+        <span class="seed-label nowrap">ROOT CONSTRAINTS:</span>
         <!-- Palette first -->
-        <div class="ctrl" style="width: 120px; flex-shrink: 0;">
+        <div class="ctrl shrink-0" style="width: 120px;">
           <div class="ctrl-label">Palette <span class="val" id="evoRootPalVal">4</span></div>
           <input type="range" id="evoRootPalette" min="1" max="12" value="4">
         </div>
         <!-- Range second -->
-        <div class="ctrl" style="width: 120px; flex-shrink: 0;">
+        <div class="ctrl shrink-0" style="width: 120px;">
           <div class="ctrl-label">Range <span class="val" id="evoRootRangeVal">7</span></div>
           <input type="range" id="evoRootRange" min="0" max="24" value="7">
         </div>
@@ -757,13 +847,13 @@ details[open] summary::before { content: '− '; }
       </div>
 
       <!-- Evo Preview -->
-      <div id="evoPreviewSection" style="margin-top: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-          <button class="btn" id="evoPreviewBtn" style="white-space: nowrap;">↻ Refresh Evolution</button>
-          <span style="font-family:'Share Tech Mono',monospace; font-size: 10px; color: var(--muted);" id="evoPreviewInfo"></span>
+      <div id="evoPreviewSection" class="panel-row mt-sm">
+        <div class="flex-center gap-sm mb-sm">
+          <button class="btn nowrap" id="evoPreviewBtn">↻ Refresh Evolution</button>
+          <span class="mono muted-10" id="evoPreviewInfo"></span>
         </div>
-        <div style="border: none; border-radius: 2px; background: var(--bg);">
-          <canvas id="evoPreviewCanvas" height="160" style="display: block; width: 100%;"></canvas>
+        <div class="canvas-frame">
+          <canvas id="evoPreviewCanvas" height="160" class="canvas-fill"></canvas>
         </div>
       </div>
     </div> <!-- End of evoPanel -->
@@ -771,20 +861,20 @@ details[open] summary::before { content: '− '; }
 </div> <!-- End of transport-section -->
 
 <!-- SECTION SEPARATOR: Between MIDI Export and Settings -->
-<div style="display: flex; align-items: center; gap: 12px; margin: 20px 0 10px;">
-  <div style="flex: 1; height: 1px; background: var(--muted); opacity: 0.5;"></div>
-  <span style="font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; white-space: nowrap;">
+<div class="flex-center gap-lg divider-row">
+  <div class="h-sep"></div>
+  <span class="mono nowrap divider-label">
     Sequencer Parameters
   </span>
-  <div style="flex: 1; height: 1px; background: var(--muted); opacity: 0.5;"></div>
+  <div class="h-sep"></div>
 </div>
 
 <!-- GROUP 1: TIMING & RHYTHM + EXPRESSION -->
-<div class="controls-group" style="margin-bottom: 15px;">
-  <div style="display: flex; align-items: center; margin-bottom: 8px;">
-    <div class="group-label live-text" style="font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--green); letter-spacing:0.1em; text-transform:uppercase; border-left: 2px solid var(--green); padding-left: 8px;">Timing & Rhythm</div>
+<div class="controls-group">
+  <div class="flex-center mb-md">
+    <div class="group-label live-text">Timing & Rhythm</div>
     <!-- Label shifted to align with the Variation slider (approx 62.5% of width) -->
-    <div class="group-label" style="font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; border-left: 2px solid var(--border); padding-left: 8px; margin-left: auto; margin-right: 30%; width: fit-content;">Expression</div>
+    <div class="group-label pushed-right">Expression</div>
   </div>
   <div class="controls">
     <div class="ctrl">
@@ -823,8 +913,8 @@ details[open] summary::before { content: '− '; }
 </div>
 
 <!-- GROUP 2: PHRASE & NOTES (Structural) -->
-<div class="controls-group" style="margin-bottom: 15px;">
-  <div class="group-label" style="font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; border-left: 2px solid var(--border); padding-left: 8px;">Phrase & Notes</div>
+<div class="controls-group">
+  <div class="group-label mb-md">Phrase & Notes</div>
   <div class="controls">
     <div class="ctrl w2">
       <div class="ctrl-label">Scale</div>
@@ -878,13 +968,13 @@ details[open] summary::before { content: '− '; }
     <div class="anchor-label">▸ Anchor</div>
     <div class="anchor-desc">Every offbeat plays the same fixed note — all main beats form the melody</div>
     <div class="anchor-controls">
-      <label style="font-family:monospace;font-size:10px;color:var(--muted)">MELODY RANGE</label>
+      <label class="field-label">MELODY RANGE</label>
       <select id="anchorMelodyPos">
         <option value="above" selected>Above Anchor</option>
         <option value="below">Below Anchor</option>
         <option value="around">Around Anchor</option>
       </select>
-      <label style="font-family:monospace;font-size:10px;color:var(--muted)">ANCHOR NOTE</label>
+      <label class="field-label">ANCHOR NOTE</label>
       <select id="anchorNote">
         <option value="36">C2</option>
         <option value="38">D2</option>
@@ -899,7 +989,7 @@ details[open] summary::before { content: '− '; }
         <option value="57">A3</option>
         <option value="60">C4</option>
       </select>
-      <label style="font-family:monospace;font-size:10px;color:var(--muted)">PATTERN</label>
+      <label class="field-label">PATTERN</label>
       <select id="anchorPattern">
         <option value="offbeat">Every 2nd Step (Classic)</option>
         <option value="every3">Every 3rd Step</option>
@@ -907,8 +997,8 @@ details[open] summary::before { content: '− '; }
         <option value="every5">Every 5th Step</option>
         <option value="offbeat16">16th-Note Offbeats</option>
       </select>
-      <label style="font-family:monospace;font-size:10px;color:var(--muted)">ONBEAT</label>
-      <input type="checkbox" id="anchorOnbeat" style="width:auto;margin-top:4px;">
+      <label class="field-label">ONBEAT</label>
+      <input type="checkbox" id="anchorOnbeat" class="checkbox-field">
     </div>
   </div>
 
@@ -916,7 +1006,7 @@ details[open] summary::before { content: '− '; }
   <div class="anchor-panel" id="arpPanel">
     <div class="anchor-label">▸ Arp</div>
     <div class="anchor-controls">
-      <label style="font-family:monospace;font-size:10px;color:var(--muted)">ROOT NOTE</label>
+      <label class="field-label">ROOT NOTE</label>
       <select id="arpRoot">
         <option value="0">C</option>
         <option value="1">C#</option>
@@ -931,7 +1021,7 @@ details[open] summary::before { content: '− '; }
         <option value="10">A#</option>
         <option value="11">B</option>
       </select>
-      <label style="font-family:monospace;font-size:10px;color:var(--muted)">CHORD</label>
+      <label class="field-label">CHORD</label>
       <select id="arpChord">
         <optgroup label="Triads">
           <option value="maj">Major</option>
@@ -960,14 +1050,14 @@ details[open] summary::before { content: '− '; }
           <option value="dom13">13</option>
         </optgroup>
       </select>
-      <label style="font-family:monospace;font-size:10px;color:var(--muted)">PATTERN</label>
+      <label class="field-label">PATTERN</label>
       <select id="arpPattern">
         <option value="up">Ascending</option>
         <option value="down">Descending</option>
         <option value="updown">Up/Down</option>
         <option value="random">Random</option>
       </select>
-      <label style="font-family:monospace;font-size:10px;color:var(--muted)">OCTAVES</label>
+      <label class="field-label">OCTAVES</label>
       <select id="arpOctaves">
         <option value="1">1</option>
         <option value="2" selected>2</option>
@@ -989,7 +1079,7 @@ details[open] summary::before { content: '− '; }
 
   <!-- Howto -->
   <details>
-      <summary style="color: var(--amber); font-weight: bold; cursor: pointer;">Howto & Technical Logic</summary>
+      <summary class="summary-highlight">Howto & Technical Logic</summary>
       <div style="padding: 15px 0; color: var(--text-bright); font-size: 12px; line-height: 1.6; max-width: 800px;">
 
         <!-- MAIN TITLE -->
@@ -1004,64 +1094,64 @@ details[open] summary::before { content: '− '; }
 
         <!-- SECTION 1: MODES & PRESETS -->
         <div style="margin-bottom: 25px;">
-          <strong style="color: var(--anchor); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">1. Modes & Presets</strong><br>
+          <strong class="section-heading hl-anchor">1. Modes & Presets</strong><br>
           Choose the compositional approach and starting point:
-          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
-            <li><span style="color: var(--amber);">Presets:</span> <span style="color: var(--text-bright);">Quickly load curated settings. Use these as a baseline and then tweak the parameters to find your own sound.</span></li>
-            <li><span style="color: var(--amber);">Classic:</span> <span style="color: var(--text-bright);">A "Random Walk" within the scale. It creates fluid, unpredictable melodies that still feel harmonically grounded. Perfect for classic cosmic background textures.</span></li>
-            <li><span style="color: var(--amber);">Klaus Schulze:</span> <span style="color: var(--text-bright);">Focuses on sparse, long-held notes and drones. Instead of rhythmic density, it uses "Note Count" to define how many melodic events occur per phrase, creating a meditative, atmospheric feel.</span></li>
-            <li><span style="color: var(--amber);">Offbeat Anchor:</span> <span style="color: var(--text-bright);">Creates a rhythmic tension by locking specific steps (usually the offbeats) to one fixed note. This acts as a "pedal point," allowing the other notes to dance around it without losing the pulse.
+          <ul class="list-square">
+            <li><span class="hl-amber">Presets:</span> <span class="hl-text">Quickly load curated settings. Use these as a baseline and then tweak the parameters to find your own sound.</span></li>
+            <li><span class="hl-amber">Classic:</span> <span class="hl-text">A "Random Walk" within the scale. It creates fluid, unpredictable melodies that still feel harmonically grounded. Perfect for classic cosmic background textures.</span></li>
+            <li><span class="hl-amber">Klaus Schulze:</span> <span class="hl-text">Focuses on sparse, long-held notes and drones. Instead of rhythmic density, it uses "Note Count" to define how many melodic events occur per phrase, creating a meditative, atmospheric feel.</span></li>
+            <li><span class="hl-amber">Offbeat Anchor:</span> <span class="hl-text">Creates a rhythmic tension by locking specific steps (usually the offbeats) to one fixed note. This acts as a "pedal point," allowing the other notes to dance around it without losing the pulse.
               <ul style="margin-left: 15px; margin-top: 5px; list-style: circle;">
-                <li><strong style="color: var(--amber);">Onbeat Toggle:</strong> When enabled, the anchor note is placed on the beat instead of the offbeat, fundamentally changing the rhythmic feel.</li>
-                <li><strong style="color: var(--amber);">Melody Range:</strong> "Above", "Below", or "Around" shifts the active melody palette relative to the anchor's pitch class, controlling register without altering the harmonic content.</li>
+                <li><strong class="hl-amber">Onbeat Toggle:</strong> When enabled, the anchor note is placed on the beat instead of the offbeat, fundamentally changing the rhythmic feel.</li>
+                <li><strong class="hl-amber">Melody Range:</strong> "Above", "Below", or "Around" shifts the active melody palette relative to the anchor's pitch class, controlling register without altering the harmonic content.</li>
               </ul>
             </li>
-            <li><span style="color: var(--amber);">Arpeggiator:</span> <span style="color: var(--text-bright);">Strictly cycles through chord tones. Unlike a standard synth arp, this can be mutated and evolved over time, turning a simple chord into a complex rhythmic pattern.</span></li>
-            <li><span style="color: var(--amber);">Motivic:</span> <span style="color: var(--text-bright);">The most "musical" mode. It generates a short 4-note DNA motif and then applies classical transformations (Inversion, Retrograde). This results in patterns that feel like they have a conscious theme or melody.</span></li>
+            <li><span class="hl-amber">Arpeggiator:</span> <span class="hl-text">Strictly cycles through chord tones. Unlike a standard synth arp, this can be mutated and evolved over time, turning a simple chord into a complex rhythmic pattern.</span></li>
+            <li><span class="hl-amber">Motivic:</span> <span class="hl-text">The most "musical" mode. It generates a short 4-note DNA motif and then applies classical transformations (Inversion, Retrograde). This results in patterns that feel like they have a conscious theme or melody.</span></li>
           </ul>
         </div>
 
         <!-- SECTION 2: TRANSPORT & SEED -->
         <div style="margin-bottom: 25px;">
-          <strong style="color: var(--cyan); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">2. Transport & Seed System</strong><br>
+          <strong class="section-heading hl-cyan">2. Transport & Seed System</strong><br>
           The primary playback controls and the PRNG (Pseudo-Random Number Generator) for reproducible results:
-          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
-            <li><span style="color: var(--amber);">Play/Stop/Generate:</span> <span style="color: var(--text-bright);">Basic transport controls. <span style="color:#fff; font-weight:bold;">Spacebar</span> toggles playback. Use "Generate" whenever you change a generative parameter to apply the changes.</span></li>
-            <li><span style="color: var(--amber);">VOL:</span> <span style="color: var(--text-bright);">Controls only the internal monitoring synth volume. It does not affect your external MIDI hardware or DAW.</span></li>
-            <li><span style="color: var(--amber);">Fixed Seed:</span> <span style="color: var(--text-bright);">If you find a sequence you love, note the seed number. Entering it again will recreate that exact same pattern perfectly.</span></li>
-            <li><span style="color: var(--amber);">Random Seed:</span> <span style="color: var(--text-bright);">Every time you click "Generate", a new random seed is used, giving you an infinite variety of patterns.</span></li>
+          <ul class="list-square">
+            <li><span class="hl-amber">Play/Stop/Generate:</span> <span class="hl-text">Basic transport controls. <span style="color:#fff; font-weight:bold;">Spacebar</span> toggles playback. Use "Generate" whenever you change a generative parameter to apply the changes.</span></li>
+            <li><span class="hl-amber">VOL:</span> <span class="hl-text">Controls only the internal monitoring synth volume. It does not affect your external MIDI hardware or DAW.</span></li>
+            <li><span class="hl-amber">Fixed Seed:</span> <span class="hl-text">If you find a sequence you love, note the seed number. Entering it again will recreate that exact same pattern perfectly.</span></li>
+            <li><span class="hl-amber">Random Seed:</span> <span class="hl-text">Every time you click "Generate", a new random seed is used, giving you an infinite variety of patterns.</span></li>
           </ul>
         </div>
 
         <!-- SECTION 3: MIDI EXPORT & EVOLUTION -->
         <div style="margin-bottom: 25px;">
-          <strong style="color: var(--amber); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">3. MIDI Export & Evolutionary Chain (🧬)</strong><br>
+          <strong class="section-heading hl-amber">3. MIDI Export & Evolutionary Chain (🧬)</strong><br>
           Switch between the two export tabs to choose your output method:
-          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
-            <li><span style="color: var(--amber);">Standard MIDI Export:</span> <span style="color: var(--text-bright);">Exports the current loop exactly as you hear it in the sequencer. Ideal for short loops in your DAW.</span></li>
-            <li><span style="color: var(--amber);">🧬 Evolution Export:</span> <span style="color: var(--text-bright);">Instead of a loop, this creates a long-form composition. It takes your current sequence and "mutates" it over several blocks. This mimics how old modular sequencers would slowly drift and change over 20 minutes.</span>
-              <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
-                <li><span style="color: var(--amber);">Evolution Preview Canvas:</span> <span style="color: var(--text-bright);">A real-time piano roll visualization of the generated evolutionary chain. It updates automatically when parameters change. Use "Refresh Evolution" to force a new seed and regenerate the preview.</span></li>
-                <li><span style="color: var(--amber);">Iterations:</span> <span style="color: var(--text-bright);">How many blocks are generated. More iterations = a longer MIDI file.</span></li>
-                <li><span style="color: var(--amber);">Mutation:</span> <span style="color: var(--text-bright);">The "chaos" factor. High values mean each block will differ significantly from the previous one. Low values create a very subtle, slow evolution.</span></li>
-                <li><span style="color: var(--amber);">Drift:</span> <span style="color: var(--text-bright);">Adds sudden octave jumps between blocks, creating dramatic shifts in energy and register.</span></li>
-                <li><span style="color: var(--amber);">Grip:</span> <span style="color: var(--text-bright);">The "anchor" to the original theme. High grip prevents the evolution from wandering too far away from your starting phrase.</span></li>
-                <li><span style="color: var(--amber);">Octave Drift:</span> <span style="color: var(--text-bright);">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
-                  <li><span style="color: var(--amber);">Root Shift:</span> <span style="color: var(--text-bright);">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).
+          <ul class="list-square">
+            <li><span class="hl-amber">Standard MIDI Export:</span> <span class="hl-text">Exports the current loop exactly as you hear it in the sequencer. Ideal for short loops in your DAW.</span></li>
+            <li><span class="hl-amber">🧬 Evolution Export:</span> <span class="hl-text">Instead of a loop, this creates a long-form composition. It takes your current sequence and "mutates" it over several blocks. This mimics how old modular sequencers would slowly drift and change over 20 minutes.</span>
+              <ul class="list-circle">
+                <li><span class="hl-amber">Evolution Preview Canvas:</span> <span class="hl-text">A real-time piano roll visualization of the generated evolutionary chain. It updates automatically when parameters change. Use "Refresh Evolution" to force a new seed and regenerate the preview.</span></li>
+                <li><span class="hl-amber">Iterations:</span> <span class="hl-text">How many blocks are generated. More iterations = a longer MIDI file.</span></li>
+                <li><span class="hl-amber">Mutation:</span> <span class="hl-text">The "chaos" factor. High values mean each block will differ significantly from the previous one. Low values create a very subtle, slow evolution.</span></li>
+                <li><span class="hl-amber">Drift:</span> <span class="hl-text">Adds sudden octave jumps between blocks, creating dramatic shifts in energy and register.</span></li>
+                <li><span class="hl-amber">Grip:</span> <span class="hl-text">The "anchor" to the original theme. High grip prevents the evolution from wandering too far away from your starting phrase.</span></li>
+                <li><span class="hl-amber">Octave Drift:</span> <span class="hl-text">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
+                  <li><span class="hl-amber">Root Shift:</span> <span class="hl-text">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).
                   <ul style="margin-left: 15px; margin-top: 5px; font-size: 11px; color: var(--text-bright); list-style: circle;">
-                    <li><strong style="color: var(--amber);">Root Shift Interval:</strong> "Every X Blocks" controls how frequently the root changes. Lower values = faster harmonic movement.</li>
-                    <li><span style="color: var(--amber);">Root Constraints (for 'Free' mode):</span> When using Random root shifts, you can constrain the harmonic wanderlust:
+                    <li><strong class="hl-amber">Root Shift Interval:</strong> "Every X Blocks" controls how frequently the root changes. Lower values = faster harmonic movement.</li>
+                    <li><span class="hl-amber">Root Constraints (for 'Free' mode):</span> When using Random root shifts, you can constrain the harmonic wanderlust:
                       <br>— <strong>Palette:</strong> Limits the number of allowed root notes available for selection.
                       <br>— <strong>Range:</strong> Restricts the maximum distance the root can jump away from the original starting key.</li>
                   </ul>
                 </li>
-                <li><span style="color: var(--amber);">Evolution Curve:</span> <span style="color: var(--text-bright);">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, "Valley" for a dip, or "Ease" functions for organic transitions.</span></li>
-                <li><span style="color: var(--amber);">Mutation Style:</span> <span style="color: var(--text-bright);">Determines how notes are altered during mutation:
+                <li><span class="hl-amber">Evolution Curve:</span> <span class="hl-text">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, "Valley" for a dip, or "Ease" functions for organic transitions.</span></li>
+                <li><span class="hl-amber">Mutation Style:</span> <span class="hl-text">Determines how notes are altered during mutation:
                   <br>— <strong>Palette Walk:</strong> Moves to adjacent tones in the current palette (stepwise motion).
                   <br>— <strong>Palette Random:</strong> Jumps to any random tone in the palette.
                   <br>— <strong>Mix:</strong> Alternates between Walk and Random for balanced variation.</span></li>
-                <li><span style="color: var(--amber);">Evo Seed Mode:</span> <span style="color: var(--text-bright);">"Fixed" locks the evolution chain to the current seed. "Random" generates a new chain each time you refresh or export.</span></li>
-                <li><span style="color: var(--amber);">Export Stretch:</span> <span style="color: var(--text-bright);">Defines the grid alignment for the evolution export (Steps per Bar). Matches the standard export for consistent DAW integration.</span></li>
+                <li><span class="hl-amber">Evo Seed Mode:</span> <span class="hl-text">"Fixed" locks the evolution chain to the current seed. "Random" generates a new chain each time you refresh or export.</span></li>
+                <li><span class="hl-amber">Export Stretch:</span> <span class="hl-text">Defines the grid alignment for the evolution export (Steps per Bar). Matches the standard export for consistent DAW integration.</span></li>
               </ul>
             </li>
           </ul>
@@ -1071,75 +1161,75 @@ details[open] summary::before { content: '− '; }
         <div style="margin-bottom: 20px; border-left: 3px solid var(--amber); padding-left: 15px; background: rgba(251, 191, 36, 0.15); padding-top: 10px; padding-bottom: 10px;">
           <strong style="color: #fff; font-size: 13px;">⚠️ IMPORTANT: Live vs. Generation</strong><br>
           Not every control changes the sound immediately:
-          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
-            <li><strong style="color: var(--green);">Live Parameters</strong> <span style="color: var(--text-bright);"> (green labels): These affect the playback engine in real-time. You will hear the change immediately without stopping the music.</span></li>
-            <li><strong style="color: var(--amber);">Generative Parameters:</strong> <span style="color: var(--text-bright);"> These define the "blueprint" of the sequence. To apply these changes, you must click <span style="color: #fff; font-weight: bold;">"↻ Generate"</span> to rebuild the pattern.</span></li>
+          <ul class="list-square">
+            <li><strong style="color: var(--green);">Live Parameters</strong> <span class="hl-text"> (green labels): These affect the playback engine in real-time. You will hear the change immediately without stopping the music.</span></li>
+            <li><strong class="hl-amber">Generative Parameters:</strong> <span class="hl-text"> These define the "blueprint" of the sequence. To apply these changes, you must click <span style="color: #fff; font-weight: bold;">"↻ Generate"</span> to rebuild the pattern.</span></li>
             <!-- node length variation warning -->
-            <li><strong style="color: var(--amber);">Note Interruption (Modular Priority):</strong> High values of the <span style="color: #fff; font-weight: bold;">Variation</span> slider can cause new notes to be placed over existing ones. In these cases, the previous note is instantly interrupted (Hard Cut) to make room for the new one. This mimics the behavior of classic analog modular systems and may result in notes appearing shorter than your specified   <strong>Min Length</strong>.</li>
+            <li><strong class="hl-amber">Note Interruption (Modular Priority):</strong> High values of the <span style="color: #fff; font-weight: bold;">Variation</span> slider can cause new notes to be placed over existing ones. In these cases, the previous note is instantly interrupted (Hard Cut) to make room for the new one. This mimics the behavior of classic analog modular systems and may result in notes appearing shorter than your specified   <strong>Min Length</strong>.</li>
           </ul>
         </div>
 
         <!-- SECTION 4: SEQUENCER PARAMETERS -->
         <div style="margin-bottom: 25px;">
-          <strong style="color: var(--green); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">4. Sequencer Parameters</strong><br>
+          <strong class="section-heading hl-green">4. Sequencer Parameters</strong><br>
 
           <div style="margin-top: 10px; padding-left: 15px; border-left: 1px solid var(--border);">
             <!-- PART A: Timing & Rhythm -->
-            <p><strong style="color:var(--text-bright)">A. Timing & Rhythm:</strong>
-            <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
-              <li><span style="color: var(--green);">BPM:</span> <span style="color: var(--text-bright);">The overall speed. Higher = faster pulse.</span></li>
-              <li><span style="color: var(--green);">Swing:</span> <span style="color: var(--text-bright);">Delays every second step. 0% is a robotic, straight grid; higher values create a "shuffle" or humanized feel common in electronic music.</span></li>
-              <li><span style="color: var(--green);">Steps/Beat:</span> <span style="color: var(--text-bright);">Defines the rhythmic resolution. 4 = standard 16th notes (most common). 2 = 8th notes (slower, more spacious). 8 = 32nd notes (very fast, glitchy bursts). Changing this changes how "dense" the timing feels relative to the BPM.</span></li>
-              <li><span style="color: var(--amber);">Min/Max Length:</span> <span style="color: var(--text-bright);">Controls note duration. If Min is high, you get long, legato notes (smooth). If Max is low, you get short, staccato plucks (percussive).</span></li>
+            <p><strong class="hl-text">A. Timing & Rhythm:</strong>
+            <ul class="list-circle">
+              <li><span style="color: var(--green);">BPM:</span> <span class="hl-text">The overall speed. Higher = faster pulse.</span></li>
+              <li><span style="color: var(--green);">Swing:</span> <span class="hl-text">Delays every second step. 0% is a robotic, straight grid; higher values create a "shuffle" or humanized feel common in electronic music.</span></li>
+              <li><span style="color: var(--green);">Steps/Beat:</span> <span class="hl-text">Defines the rhythmic resolution. 4 = standard 16th notes (most common). 2 = 8th notes (slower, more spacious). 8 = 32nd notes (very fast, glitchy bursts). Changing this changes how "dense" the timing feels relative to the BPM.</span></li>
+              <li><span class="hl-amber">Min/Max Length:</span> <span class="hl-text">Controls note duration. If Min is high, you get long, legato notes (smooth). If Max is low, you get short, staccato plucks (percussive).</span></li>
             </ul></p>
 
             <!-- PART B: Expression -->
-            <p><strong style="color:var(--text-bright)">B. Expression:</strong>
-            <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
-              <li><span style="color: var(--amber);">Variation:</span> <span style="color: var(--text-bright);">The "organic" factor within a loop. A Sequence consists of several repeats of a Phrase. Variation determines how much each repeat differs from the first one. 0% = perfect repetition (robotic); High % = the pattern evolves slightly every time it loops, preventing listener fatigue.</span></li>
+            <p><strong class="hl-text">B. Expression:</strong>
+            <ul class="list-circle">
+              <li><span class="hl-amber">Variation:</span> <span class="hl-text">The "organic" factor within a loop. A Sequence consists of several repeats of a Phrase. Variation determines how much each repeat differs from the first one. 0% = perfect repetition (robotic); High % = the pattern evolves slightly every time it loops, preventing listener fatigue.</span></li>
             </ul></p>
 
             <!-- PART C: Phrase & Notes (Structural) -->
-            <p><strong style="color:var(--text-bright)">C. Phrase & Notes (Structural):</strong></p>
-            <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
-              <li><span style="color: var(--amber);">Root Note:</span> <span style="color: var(--text-bright);">The root defines the key.</span></li>
-              <li><span style="color: var(--amber);">Scale:</span> The harmonic palette. It defines the emotional character and tension of the sequence:
+            <p><strong class="hl-text">C. Phrase & Notes (Structural):</strong></p>
+            <ul class="list-circle">
+              <li><span class="hl-amber">Root Note:</span> <span class="hl-text">The root defines the key.</span></li>
+              <li><span class="hl-amber">Scale:</span> The harmonic palette. It defines the emotional character and tension of the sequence:
                 <ul style="margin-left: 15px; margin-top: 5px; font-size: 11px; color: var(--text-bright); list-style: none;">
-                  <li><strong style="color:var(--amber)">Dorian:</strong> Mystical and soulful. It has a "cool" jazz-like tension, perfect for mid-tempo cosmic journeys.</li>
-                  <li><strong style="color:var(--amber)">Phrygian:</strong> Dark, heavy, and unsettling. Its characteristic minor second creates an intense, cinematic atmosphere.</li>
-                  <li><strong style="color:var(--amber)">Aeolian:</strong> Deeply melancholic and classic. It provides a sense of gravity and emotional weight.</li>
-                  <li><strong style="color:var(--amber)">Mixolydian:</strong> Bright yet slightly unstable. It offers an open, driving energy with a touch of psychedelic flair.</li>
-                  <li><strong style="color:var(--amber)">Pentatonic:</strong> Pure and rhythmic. It avoids heavy tension, focusing on fluid, effortless melodic movement.</li>
+                  <li><strong class="hl-amber">Dorian:</strong> Mystical and soulful. It has a "cool" jazz-like tension, perfect for mid-tempo cosmic journeys.</li>
+                  <li><strong class="hl-amber">Phrygian:</strong> Dark, heavy, and unsettling. Its characteristic minor second creates an intense, cinematic atmosphere.</li>
+                  <li><strong class="hl-amber">Aeolian:</strong> Deeply melancholic and classic. It provides a sense of gravity and emotional weight.</li>
+                  <li><strong class="hl-amber">Mixolydian:</strong> Bright yet slightly unstable. It offers an open, driving energy with a touch of psychedelic flair.</li>
+                  <li><strong class="hl-amber">Pentatonic:</strong> Pure and rhythmic. It avoids heavy tension, focusing on fluid, effortless melodic movement.</li>
                 </ul>
               </li>
-              <li><span style="color: var(--amber);">Steps:</span> <span style="color: var(--text-bright);">The length of one musical "idea" before it repeats. 16 is standard; shorter values feel like tight loops, longer values feel like evolving melodies.</span></li>
-              <li><span style="color: var(--amber);">Repeats:</span> <span style="color: var(--text-bright);">How many times the phrase is played to form one full sequence loop. More repeats give the "Variation" slider more room to work.</span></li>
-              <li><span style="color: var(--amber);">Density:</span> <span style="color: var(--text-bright);">The probability of a note occurring on any given step. 100% = a constant stream of notes; 30% = many rests, creating a sparse, rhythmic pattern.</span></li>
-              <li><span style="color: var(--amber);">Intervall:</span> <span style="color: var(--text-bright);">Limits the "jump" between two consecutive notes. Low values (1-2) create smooth, step-wise melodies; high values allow wide leaps, creating more dramatic and erratic movements.</span></li>
-              <li><span style="color: var(--amber);">Note Count (Klaus Schulze Mode):</span> <span style="color: var(--text-bright);">Defines how many simultaneous/sequential melodic events are placed in the phrase. Higher values create denser, more active textures; lower values emphasize space and drones.</span></li>
+              <li><span class="hl-amber">Steps:</span> <span class="hl-text">The length of one musical "idea" before it repeats. 16 is standard; shorter values feel like tight loops, longer values feel like evolving melodies.</span></li>
+              <li><span class="hl-amber">Repeats:</span> <span class="hl-text">How many times the phrase is played to form one full sequence loop. More repeats give the "Variation" slider more room to work.</span></li>
+              <li><span class="hl-amber">Density:</span> <span class="hl-text">The probability of a note occurring on any given step. 100% = a constant stream of notes; 30% = many rests, creating a sparse, rhythmic pattern.</span></li>
+              <li><span class="hl-amber">Intervall:</span> <span class="hl-text">Limits the "jump" between two consecutive notes. Low values (1-2) create smooth, step-wise melodies; high values allow wide leaps, creating more dramatic and erratic movements.</span></li>
+              <li><span class="hl-amber">Note Count (Klaus Schulze Mode):</span> <span class="hl-text">Defines how many simultaneous/sequential melodic events are placed in the phrase. Higher values create denser, more active textures; lower values emphasize space and drones.</span></li>
             </ul></p>
 
             <!-- PART D: Mode-Specific Settings -->
-            <p><strong style="color:var(--text-bright)">D. Mode-Specific Settings:</strong>
-              <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
+            <p><strong class="hl-text">D. Mode-Specific Settings:</strong>
+              <ul class="list-circle">
                 <li>
-                  <span style="color: var(--amber);">Offbeat Anchor Panel:</span>
-                  <span style="color: var(--text-bright);">
+                  <span class="hl-amber">Offbeat Anchor Panel:</span>
+                  <span class="hl-text">
                     <ul style="margin-left: 15px; margin-top: 5px; list-style: none; font-size: 12px; line-height: 1.6;">
-                      <li><span style="color: var(--amber);">Anchor Note:</span> The fixed pitch that "locks" the rhythm. This is usually a bass note.</li>
-                      <li><span style="color: var(--amber);">Pattern:</span> Defines where the anchor sits. <span style="color:var(--amber)">offbeat</span> creates the classic "push-pull" feel by placing the fixed note on every second step.</li>
-                      <li><span style="color: var(--amber);">Onbeat:</span> Instead of placing the anchor note offbeat we place it onbeat.</li>
-                      <li><span style="color: var(--amber);">Melody Range:</span> Controls the register of the moving notes relative to the anchor. <span style="color:var(--amber)">Above/Below Anchor</span> shift the whole melody palette by octaves so it stays cleanly above or below the pedal note. <span style="color:var(--amber)">Around Anchor</span> re-octaves each palette tone individually to whichever octave sits closest to the anchor, so the melody surrounds it - some notes above, some below.</li>
+                      <li><span class="hl-amber">Anchor Note:</span> The fixed pitch that "locks" the rhythm. This is usually a bass note.</li>
+                      <li><span class="hl-amber">Pattern:</span> Defines where the anchor sits. <span class="hl-amber">offbeat</span> creates the classic "push-pull" feel by placing the fixed note on every second step.</li>
+                      <li><span class="hl-amber">Onbeat:</span> Instead of placing the anchor note offbeat we place it onbeat.</li>
+                      <li><span class="hl-amber">Melody Range:</span> Controls the register of the moving notes relative to the anchor. <span class="hl-amber">Above/Below Anchor</span> shift the whole melody palette by octaves so it stays cleanly above or below the pedal note. <span class="hl-amber">Around Anchor</span> re-octaves each palette tone individually to whichever octave sits closest to the anchor, so the melody surrounds it - some notes above, some below.</li>
                     </ul>
                   </span>
                 </li>
                 <li style="margin-top: 10px;">
-                  <span style="color: var(--amber);">Arpeggiator Panel:</span>
-                  <span style="color: var(--text-bright);">
+                  <span class="hl-amber">Arpeggiator Panel:</span>
+                  <span class="hl-text">
                     <ul style="margin-left: 15px; margin-top: 5px; list-style: none; font-size: 12px; line-height: 1.6;">
-                      <li><span style="color: var(--amber);">Root Note & Chord Type:</span> Defines the harmony. Changing from "Minor" to "Maj7" completely changes the emotional quality of the arp.</li>
-                      <li><span style="color: var(--amber);">Pattern:</span> <span style="color:var(--amber)">updown</span> (Ping-pong) is a staple of 70s synth music, creating a wave-like motion.</li>
-                      <li><span style="color: var(--amber);">Octaves:</span> Expands the vertical range. More octaves make the sequence feel more expansive and cinematic.</li>
+                      <li><span class="hl-amber">Root Note & Chord Type:</span> Defines the harmony. Changing from "Minor" to "Maj7" completely changes the emotional quality of the arp.</li>
+                      <li><span class="hl-amber">Pattern:</span> <span class="hl-amber">updown</span> (Ping-pong) is a staple of 70s synth music, creating a wave-like motion.</li>
+                      <li><span class="hl-amber">Octaves:</span> Expands the vertical range. More octaves make the sequence feel more expansive and cinematic.</li>
                     </ul>
                   </span>
                 </li>
@@ -1147,23 +1237,23 @@ details[open] summary::before { content: '− '; }
             </p>
 
             <!-- PART E: Palette & Harmonic Corridor -->
-            <p><strong style="color:var(--text-bright)">E. Palette & Harmonic Corridor:</strong>
-            <ul style="margin-left: 20px; margin-top: 5px; list-style: circle;">
-              <li><span style="color: var(--amber);">Range:</span> <span style="color: var(--text-bright);">Defines the size of the "corridor" (in scale steps) from the root note. A smaller range keeps the melody tighter and more focused.</span></li>
-              <li><span style="color: var(--amber);">Palette:</span> <span style="color: var(--text-bright);">The number of notes randomly selected from the corridor to be used in the sequence. By limiting the available notes, the sequencer avoids dissonant jumps and maintains a more cohesive harmonic character.</span></li>
+            <p><strong class="hl-text">E. Palette & Harmonic Corridor:</strong>
+            <ul class="list-circle">
+              <li><span class="hl-amber">Range:</span> <span class="hl-text">Defines the size of the "corridor" (in scale steps) from the root note. A smaller range keeps the melody tighter and more focused.</span></li>
+              <li><span class="hl-amber">Palette:</span> <span class="hl-text">The number of notes randomly selected from the corridor to be used in the sequence. By limiting the available notes, the sequencer avoids dissonant jumps and maintains a more cohesive harmonic character.</span></li>
             </ul></p>
           </div>
         </div>
 
         <!-- SECTION 5: DISPLAY LEGEND -->
         <div style="margin-bottom: 10px;">
-          <strong style="color: var(--text-bright); text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em;">🔍 Sequence Contour & Display Legend</strong><br>
-          <ul style="margin-left: 20px; margin-top: 8px; list-style: square;">
-            <li><span style="color: var(--cyan);">Blue bar:</span> <span style="color: var(--text-bright);">Standard generated note. Height = pitch, Width = duration.</span></li>
-            <li><span style="color: var(--anchor);">Pink bar:</span> <span style="color: var(--text-bright);">Anchor note (fixed pitch). Height = pitch, Width = duration.</span></li>
-            <li><span style="color: #fff;">Empty space:</span> <span style="color: var(--text-bright);">A rest.</span></li>
-            <li><span style="color: #fff;">Vertical grid lines:</span> <span style="color: var(--text-bright);">Phrase/Block boundaries for structural reference.</span></li>
-            <li><strong style="color: var(--text-bright);">Stat Pills:</strong> <span style="color: var(--text-bright);">Top-right metrics show current Root, Scale, Note Count vs Total Steps, Anchor Count, and Pitch Range (↓/↑).</span></li>
+          <strong class="section-heading hl-text">🔍 Sequence Contour & Display Legend</strong><br>
+          <ul class="list-square">
+            <li><span style="color: var(--cyan);">Blue bar:</span> <span class="hl-text">Standard generated note. Height = pitch, Width = duration.</span></li>
+            <li><span style="color: var(--anchor);">Pink bar:</span> <span class="hl-text">Anchor note (fixed pitch). Height = pitch, Width = duration.</span></li>
+            <li><span style="color: #fff;">Empty space:</span> <span class="hl-text">A rest.</span></li>
+            <li><span style="color: #fff;">Vertical grid lines:</span> <span class="hl-text">Phrase/Block boundaries for structural reference.</span></li>
+            <li><strong class="hl-text">Stat Pills:</strong> <span class="hl-text">Top-right metrics show current Root, Scale, Note Count vs Total Steps, Anchor Count, and Pitch Range (↓/↑).</span></li>
           </ul>
         </div>
 
