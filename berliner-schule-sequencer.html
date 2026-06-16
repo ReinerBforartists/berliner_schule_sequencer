@@ -2180,6 +2180,7 @@ function generateEvolutionaryChain() {
   const scaleKey = document.getElementById('scale').value;
   const scale = SCALES[scaleKey];
   const root = parseInt(document.getElementById('root').value);
+  const initialRoot = root; // Base root for absolute cycling
   const phraseLen = +document.getElementById('phraseLen').value;
   const repeats = +document.getElementById('repeats').value;
   const iterations = +document.getElementById('evoIterations').value;
@@ -2208,8 +2209,6 @@ function generateEvolutionaryChain() {
     ? buildPalette(rng, scale, paletteSize, root, toneRange)
     : null;
 
-  // Guarantee at least 2 distinct tones, otherwise mutation degenerates
-  // into a permanent no-op (tones[newIdx] always resolves to the same value).
   if (palette && palette.length < 2) {
     const fallback = Math.max(24, Math.min(84, root + (scale[1] !== undefined ? scale[1] : 2)));
     if (!palette.includes(fallback)) palette = [...palette, fallback].sort((a, b) => a - b);
@@ -2237,20 +2236,13 @@ function generateEvolutionaryChain() {
     octaves: document.getElementById('arpOctaves').value
   };
 
-  const uiVariation = +document.getElementById('variation').value / 100;
   let fullCompositionSteps = [];
   let currentEvents = [];
-  let currentRoot = root;
+  let currentRoot = root; // This will track the root of the PREVIOUS block
   const clampMidi = (m) => Math.max(24, Math.min(84, m));
 
-  // 1. Start-Block initialising
+  // 1. Setup the starting seed events (the "DNA")
   if (sequence && sequence.length > 0) {
-    fullCompositionSteps = [...sequence];
-
-    // `sequence` consists of `repeats` copies of one phrase, each carrying
-    // its own internal variation (mutate*Phrase). Repeat #1 isn't necessarily
-    // representative - pick the copy with the most note events as the
-    // evolution seed, so variation already present in `sequence` isn't lost.
     let bestPhraseSteps = sequence.slice(0, phraseLen);
     let bestCount = bestPhraseSteps.filter(s => s.noteStart && !s.rest).length;
     for (let r = 1; r < repeats; r++) {
@@ -2265,18 +2257,9 @@ function generateEvolutionaryChain() {
         currentEvents.push({ start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave });
       }
     });
-
-    // Build the evolution palette from the pitches actually present in the
-    // seed phrase, instead of an independently-built palette from the current
-    // UI root/scale/paletteSize/toneRange (which may not match `sequence` at
-    // all and can degenerate to a single tone, making mutation a no-op).
     if (params.palette) {
       const distinctTones = [...new Set(currentEvents.map(e => e.midi))].sort((a, b) => a - b);
-      if (distinctTones.length >= 2) {
-        params.palette = distinctTones;
-      }
-      // else: fewer than 2 distinct tones in the seed -> keep the
-      // freshly-built `palette` fallback (guarantees mutation is possible).
+      if (distinctTones.length >= 2) params.palette = distinctTones;
     }
   } else {
     if (mode === 'schulze') {
@@ -2292,10 +2275,6 @@ function generateEvolutionaryChain() {
     } else {
       currentEvents = buildPhrase(rng, { ...params, octaveStart: 0 });
     }
-    const firstExpanded = expandEvents(currentEvents, params.phraseLen);
-    for (let r = 0; r < repeats; r++) {
-      fullCompositionSteps = fullCompositionSteps.concat(firstExpanded);
-    }
   }
 
   const ROOT_SHIFTS = {
@@ -2303,20 +2282,20 @@ function generateEvolutionaryChain() {
     thirds:     { type: 'random', vals: [3, -3, 4, -4] },
     fourths:    { type: 'random', vals: [5, -5] },
     fifths:     { type: 'random', vals: [7, -7] },
-    alt_whole:  { type: 'cycle',  vals: [2, -2, 2, -2] },
-    alt_semi:   { type: 'cycle',  vals: [1, -1, 1, -1] },
-    modal_iii:  { type: 'cycle',  vals: [4] },
-    modal_iv:   { type: 'cycle',  vals: [5] },
-    circulating:{ type: 'cycle',  vals: [7, 2, 2, -4, -4, -5, 5, 5] },
-    slow_osc:   { type: 'cycle',  vals: [5, -5, 7, -7] },
-    pop_standard: { type: 'cycle', vals: [7, 2, -5, 5] },
-    fifties:      { type: 'cycle', vals: [-3, 4, 2, 3] },
-    andalusian:   { type: 'cycle', vals: [-1, -3, -2] },
-    minor_common: { type: 'cycle', vals: [3, -5, 2, 3] },
-    jazz_standard:{ type: 'cycle', vals: [5, -5, 5, -1, 5, 2, -3, 5] },
-    pachelbel:    { type: 'cycle', vals: [7, 2, -4, 1, -5, 5, 2] },
-    chromatic:    { type: 'cycle', vals: [1, 1, 1, 1] },
-    pentatonic:   { type: 'cycle', vals: [3, 2, 2, 3, 2] }
+    alt_whole:  { type: 'cycle',  vals: [0, 2, 0, 2] },
+    alt_semi:   { type: 'cycle',  vals: [0, 1, 0, 1] },
+    modal_iii:  { type: 'cycle',  vals: [0, 4] },
+    modal_iv:   { type: 'cycle',  vals: [0, 5] },
+    circulating:{ type: 'cycle',  vals: [0, 7, 2, 9, 4, 11, 6, 0] },
+    slow_osc:   { type: 'cycle',  vals: [0, 5, 0, 7] },
+    pop_standard: { type: 'cycle', vals: [0, 7, 9, 5] },
+    fifties:      { type: 'cycle', vals: [9, 5, 0, 7] },
+    andalusian:   { type: 'cycle', vals: [0, -2, -3, -5] },
+    minor_common: { type: 'cycle', vals: [9, 4, 5, 7] },
+    jazz_standard:{ type: 'cycle', vals: [2, 7, 0, 5, 11, 4, 9, 0] },
+    pachelbel:    { type: 'cycle', vals: [0, 7, 4, 2, 0, 7, 4, 2] },
+    chromatic:    { type: 'cycle', vals: [0, 1, 2, 3, 4, 5, 6, 7] },
+    pentatonic:   { type: 'cycle', vals: [0, 3, 5, 7, 10] }
   };
 
   const snapToPalette = (midi, tones) => {
@@ -2327,8 +2306,47 @@ function generateEvolutionaryChain() {
   const curve = document.getElementById('evolutionCurve').value;
   const mutationStyle = document.getElementById('evoMutationStyle')?.value || 'walk';
 
-  for (let i = 1; i < iterations; i++) {
-    // Generate Arp-specific tones so mutation/grip work in Arp mode.
+  // MAIN LOOP - Now starts from 0 to ensure Block 0 is also part of the root pattern
+  for (let i = 0; i < iterations; i++) {
+
+    // 1. ROOT CALCULATION (Happens for every block)
+    if (rootShiftMode !== 'none') {
+      const config = ROOT_SHIFTS[rootShiftMode] || ROOT_SHIFTS.free;
+      let targetRoot;
+
+      if (config.type === 'cycle') {
+        // Absolute offset from initial root
+        const interval = config.vals[Math.floor(i / rootShiftInterval) % config.vals.length];
+        targetRoot = initialRoot + interval;
+      } else {
+        // Relative walk for random mode
+        const interval = config.vals[rng.int(0, config.vals.length - 1)];
+        targetRoot = currentRoot + interval;
+      }
+
+      if (rootShiftMode === 'free') {
+        const rRange = parseInt(document.getElementById('evoRootRange').value) || 7;
+        const rPalSize = parseInt(document.getElementById('evoRootPalette').value) || 4;
+        const rootPalette = buildRootPalette(rng, root, rPalSize, rRange);
+        const snappedRoot = rootPalette.reduce((prev, curr) => Math.abs(curr - targetRoot) < Math.abs(prev - targetRoot) ? curr : prev);
+        if (Math.abs(snappedRoot - root) <= rRange) targetRoot = snappedRoot;
+      }
+
+      const shift = targetRoot - currentRoot;
+      currentRoot = targetRoot;
+      params.root = currentRoot;
+
+      // Shift the palette and current events linearly
+      if (params.palette) {
+        params.palette = params.palette.map(p => clampMidi(p + shift));
+      }
+      currentEvents = currentEvents.map(e => {
+        const shifted = clampMidi(e.midi + shift);
+        return {...e, midi: params.palette ? snapToPalette(shifted, params.palette) : shifted};
+      });
+    }
+
+    // 2. ARPEGGIO PALETTE UPDATE
     let arpTones = null;
     if (mode === 'arp') {
       const intervals = CHORD_TYPES[arpParams.chord] || [0, 4, 7];
@@ -2344,22 +2362,11 @@ function generateEvolutionaryChain() {
       arpTones = [...new Set(arpTones)].sort((a, b) => a - b);
     }
 
-    // Unified tones variable for mutation/grip/drift logic
     const tones = mode === 'arp' ? arpTones : (params.palette && params.palette.length > 0 ? params.palette : null);
-    const curveMult = getCurveMultiplier(curve, i - 1, iterations - 1);
+    const curveMult = getCurveMultiplier(curve, i, iterations);
     const effectiveMutationRate = mutationRate * curveMult;
 
-    // OCTAVE DRIFT
-    // Root-cause fix: drift must never push the palette (or events) outside
-    // [24, 84]. Previously, drift always shifted by +/-12 and then clamped
-    // out-of-range values back into [24, 84]. Near a boundary, clamping can
-    // map two different tones onto the same value, producing a duplicate.
-    // Deduping that duplicate permanently shrinks the palette by one tone
-    // (and can cascade down to a single tone over repeated drifts) -
-    // reintroducing the original "collapse to one note" problem via a
-    // different path. Instead, only drift in a direction that is provably
-    // safe (no clamping needed at all); if neither direction is safe, skip
-    // drift for this iteration. This keeps palette.length constant forever.
+    // 3. OCTAVE DRIFT
     const rawDriftValue = +document.getElementById('octaveDriftEvo')?.value || 0;
     const octaveDriftProbability = Math.max(0, Math.min(1, rawDriftValue / 100));
 
@@ -2368,26 +2375,19 @@ function generateEvolutionaryChain() {
       const allValues = [...refTones, ...currentEvents.map(e => e.midi)];
       const canGoUp   = allValues.length > 0 && allValues.every(m => m + 12 <= 84);
       const canGoDown = allValues.length > 0 && allValues.every(m => m - 12 >= 24);
-
       let driftDir = null;
       if (canGoUp && canGoDown) driftDir = rng.chance(0.5) ? 12 : -12;
       else if (canGoUp) driftDir = 12;
       else if (canGoDown) driftDir = -12;
-      // else: no safe direction (palette already spans the full range) ->
-      // skip drift this iteration rather than clamp.
 
       if (driftDir !== null) {
-        // Plain addition is injective - no clamping, no possible duplicates.
         currentEvents = currentEvents.map(e => ({...e, midi: e.midi + driftDir}));
-        if (mode === 'arp' && arpTones) {
-          arpTones.forEach((t, idx) => arpTones[idx] = t + driftDir);
-        } else if (params.palette) {
-          params.palette.forEach((t, idx) => params.palette[idx] = t + driftDir);
-        }
+        if (mode === 'arp' && arpTones) arpTones.forEach((t, idx) => arpTones[idx] = t + driftDir);
+        else if (params.palette) params.palette.forEach((t, idx) => params.palette[idx] = t + driftDir);
       }
     }
 
-    // MUTATION & GRIP
+    // 4. MUTATION & GRIP
     const perRepeatMutationRate = effectiveMutationRate / Math.max(1, repeats);
     const mutateTone = (ev) => {
       if (!tones) return ev.midi;
@@ -2400,18 +2400,13 @@ function generateEvolutionaryChain() {
         }
         return tones[nearestIdx];
       }
-
-      const useRandom = mutationStyle === 'random'
-        || (mutationStyle === 'mix' && rng.chance(0.5));
-
+      const useRandom = mutationStyle === 'random' || (mutationStyle === 'mix' && rng.chance(0.5));
       if (useRandom && tones.length > 1) {
-        let newIdx;
-        do { newIdx = rng.int(0, tones.length - 1); } while (newIdx === currentIdx);
+        let newIdx; do { newIdx = rng.int(0, tones.length - 1); } while (newIdx === currentIdx);
         return tones[newIdx];
       }
       let step = rng.chance(0.5) ? 1 : -1;
-      const newIdx = Math.max(0, Math.min(tones.length - 1, currentIdx + step));
-      return tones[newIdx];
+      return tones[Math.max(0, Math.min(tones.length - 1, currentIdx + step))];
     };
 
     const enforcePaletteCoverage = (events) => {
@@ -2434,7 +2429,7 @@ function generateEvolutionaryChain() {
     });
     currentEvents = enforcePaletteCoverage(currentEvents);
 
-    // Repeat the block with gradual mutation spread across repeats
+    // 5. ADD BLOCK TO COMPOSITION
     for (let r = 0; r < repeats; r++) {
       if (r > 0 && tones) {
         currentEvents = currentEvents.map((ev) => {
@@ -2445,44 +2440,6 @@ function generateEvolutionaryChain() {
       }
       fullCompositionSteps = fullCompositionSteps.concat(expandEvents(currentEvents, params.phraseLen));
     }
-
-    // ROOT SHIFTS
-    if (rootShiftMode !== 'none' && i > 0 && i % rootShiftInterval === 0) {
-      const config = ROOT_SHIFTS[rootShiftMode] || ROOT_SHIFTS.free;
-      let interval = (config.type === 'cycle')
-        ? config.vals[Math.floor(i / rootShiftInterval) % config.vals.length]
-        : config.vals[rng.int(0, config.vals.length - 1)];
-
-      let targetRoot = currentRoot + interval;
-      if (rootShiftMode === 'free') {
-        const rRange = parseInt(document.getElementById('evoRootRange').value) || 7;
-        const rPalSize = parseInt(document.getElementById('evoRootPalette').value) || 4;
-        const rootPalette = buildRootPalette(rng, root, rPalSize, rRange);
-        const snappedRoot = rootPalette.reduce((prev, curr) => Math.abs(curr - targetRoot) < Math.abs(prev - targetRoot) ? curr : prev);
-        if (Math.abs(snappedRoot - root) <= rRange) targetRoot = snappedRoot;
-      }
-
-      const shift = targetRoot - currentRoot;
-      currentRoot = targetRoot;
-      params.root = currentRoot;
-
-      // FIX: Instead of building a NEW random palette, we shift the EXISTING palette.
-      // This ensures that the internal melodic structure is preserved
-      // and only the overall pitch (transposition) changes.
-      if (params.palette) {
-        params.palette = params.palette.map(p => clampMidi(p + shift));
-      }
-
-      const newTones = params.palette || null;
-      currentEvents = currentEvents.map(e => {
-        const shifted = clampMidi(e.midi + shift);
-        // Since we shifted the palette linearly, snapping to the shifted palette
-        // will maintain the exact same relative intervals.
-        return {...e, midi: newTones ? snapToPalette(shifted, newTones) : shifted};
-      });
-      rootShiftHappened = true;
-    }
-
   }
   return fullCompositionSteps;
 }
