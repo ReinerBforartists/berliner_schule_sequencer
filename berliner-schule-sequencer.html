@@ -2175,6 +2175,16 @@ function buildRootPalette(rng, root, size, range) {
  * ROOT_SHIFTS moved outside the loop to prevent re-declaration and ensure correct harmonic progression.
  * Return statement moved outside the loop to complete the full evolution chain.
  */
+/**
+ * Generates a long evolutionary chain of phrases for MIDI export.
+ * Now uses the FULL current sequence (including all repeats) as the seed DNA,
+ * ensuring that the evolution starts from the exact state of the sequencer.
+ */
+/**
+ * Generates a long evolutionary chain of phrases for MIDI export.
+ * The first block is guaranteed to be an exact copy of the current sequence.
+ * Evolution (mutation, root shifts, etc.) starts from the second block onwards.
+ */
 function generateEvolutionaryChain() {
   const mode = currentMode;
   const scaleKey = document.getElementById('scale').value;
@@ -2183,6 +2193,7 @@ function generateEvolutionaryChain() {
   const initialRoot = root; // Base root for absolute cycling
   const phraseLen = +document.getElementById('phraseLen').value;
   const repeats = +document.getElementById('repeats').value;
+  const blockLen = phraseLen * repeats; // The full length of one sequence loop
   const iterations = +document.getElementById('evoIterations').value;
   const mutationRate = +document.getElementById('evoMutation').value / 100;
   const driftProb = +document.getElementById('evoDrift').value / 100;
@@ -2236,32 +2247,29 @@ function generateEvolutionaryChain() {
     octaves: document.getElementById('arpOctaves').value
   };
 
+  // 1. STARTING STATE
   let fullCompositionSteps = [];
   let currentEvents = [];
-  let currentRoot = root; // This will track the root of the PREVIOUS block
+  let currentRoot = root;
   const clampMidi = (m) => Math.max(24, Math.min(84, m));
 
-  // 1. Setup the starting seed events (the "DNA")
+  // Use the current active sequence as the absolute source for Block 0
   if (sequence && sequence.length > 0) {
-    let bestPhraseSteps = sequence.slice(0, phraseLen);
-    let bestCount = bestPhraseSteps.filter(s => s.noteStart && !s.rest).length;
-    for (let r = 1; r < repeats; r++) {
-      const candidate = sequence.slice(r * phraseLen, (r + 1) * phraseLen);
-      if (candidate.length < phraseLen) break;
-      const count = candidate.filter(s => s.noteStart && !s.rest).length;
-      if (count > bestCount) { bestCount = count; bestPhraseSteps = candidate; }
-    }
-    currentEvents = [];
-    bestPhraseSteps.forEach((s, idx) => {
+    fullCompositionSteps = [...sequence]; // BLOCK 0: Exact copy of current sequence
+
+    // Extract events from sequence to use as seed for subsequent mutations
+    sequence.forEach((s, idx) => {
       if (s.noteStart && !s.rest) {
         currentEvents.push({ start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave });
       }
     });
+    // Update palette to match the actual notes used in the full sequence
     if (params.palette) {
       const distinctTones = [...new Set(currentEvents.map(e => e.midi))].sort((a, b) => a - b);
       if (distinctTones.length >= 2) params.palette = distinctTones;
     }
   } else {
+    // Fallback if no sequence is active
     if (mode === 'schulze') {
       const expanded = buildSchulzePhrase(rng, { ...params, octaveStart: 0 });
       currentEvents = [];
@@ -2275,6 +2283,7 @@ function generateEvolutionaryChain() {
     } else {
       currentEvents = buildPhrase(rng, { ...params, octaveStart: 0 });
     }
+    fullCompositionSteps = expandEvents(currentEvents, blockLen);
   }
 
   const ROOT_SHIFTS = {
@@ -2306,14 +2315,13 @@ function generateEvolutionaryChain() {
   const curve = document.getElementById('evolutionCurve').value;
   const mutationStyle = document.getElementById('evoMutationStyle')?.value || 'walk';
 
-  // MAIN LOOP - Now starts from 0 to ensure Block 0 is also part of the root pattern
-  for (let i = 0; i < iterations; i++) {
+  // MAIN LOOP starts from 1 because Block 0 is already the original sequence
+  for (let i = 1; i < iterations; i++) {
 
-    // 1. ROOT CALCULATION (Happens for every block)
+    // 1. ROOT CALCULATION
     if (rootShiftMode !== 'none') {
       const config = ROOT_SHIFTS[rootShiftMode] || ROOT_SHIFTS.free;
       let targetRoot;
-
       if (config.type === 'cycle') {
         // Absolute offset from initial root
         const interval = config.vals[Math.floor(i / rootShiftInterval) % config.vals.length];
@@ -2323,7 +2331,6 @@ function generateEvolutionaryChain() {
         const interval = config.vals[rng.int(0, config.vals.length - 1)];
         targetRoot = currentRoot + interval;
       }
-
       if (rootShiftMode === 'free') {
         const rRange = parseInt(document.getElementById('evoRootRange').value) || 7;
         const rPalSize = parseInt(document.getElementById('evoRootPalette').value) || 4;
@@ -2331,11 +2338,9 @@ function generateEvolutionaryChain() {
         const snappedRoot = rootPalette.reduce((prev, curr) => Math.abs(curr - targetRoot) < Math.abs(prev - targetRoot) ? curr : prev);
         if (Math.abs(snappedRoot - root) <= rRange) targetRoot = snappedRoot;
       }
-
       const shift = targetRoot - currentRoot;
       currentRoot = targetRoot;
       params.root = currentRoot;
-
       // Shift the palette and current events linearly
       if (params.palette) {
         params.palette = params.palette.map(p => clampMidi(p + shift));
@@ -2388,7 +2393,6 @@ function generateEvolutionaryChain() {
     }
 
     // 4. MUTATION & GRIP
-    const perRepeatMutationRate = effectiveMutationRate / Math.max(1, repeats);
     const mutateTone = (ev) => {
       if (!tones) return ev.midi;
       const currentIdx = tones.indexOf(ev.midi);
@@ -2429,17 +2433,8 @@ function generateEvolutionaryChain() {
     });
     currentEvents = enforcePaletteCoverage(currentEvents);
 
-    // 5. ADD BLOCK TO COMPOSITION
-    for (let r = 0; r < repeats; r++) {
-      if (r > 0 && tones) {
-        currentEvents = currentEvents.map((ev) => {
-          if (rng.chance(gripStrength)) return ev;
-          if (rng.chance(perRepeatMutationRate)) return {...ev, midi: mutateTone(ev)};
-          return ev;
-        });
-      }
-      fullCompositionSteps = fullCompositionSteps.concat(expandEvents(currentEvents, params.phraseLen));
-    }
+    // 5. ADD EVOLVED BLOCK TO COMPOSITION
+    fullCompositionSteps = fullCompositionSteps.concat(expandEvents(currentEvents, blockLen));
   }
   return fullCompositionSteps;
 }
