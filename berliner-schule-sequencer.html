@@ -654,8 +654,6 @@ details[open] summary::before { content: '− '; }
       <span class="val mono hl-amber" id="volVal" style="font-size: 10px; width: 30px;">100%</span>
     </div>
 
-    <button class="btn" id="genBtn">↻ Generate</button>
-
     <!-- Vertical Separator -->
     <div class="v-sep v-sep-m"></div>
 
@@ -674,8 +672,6 @@ details[open] summary::before { content: '− '; }
       <span id="statusText">ready</span>
     </div>
   </div> <!-- End of Row 1 / transport -->
-
-
 
 <!-- SECTION SEPARATOR: Between MIDI Export and Settings -->
 <div class="flex-center gap-lg divider-row">
@@ -886,7 +882,7 @@ details[open] summary::before { content: '− '; }
   <!-- Sequencer display -->
   <section class="seq-section">
     <div class="seq-header">
-      <span class="seq-title">Sequence Contour</span>
+      <button class="btn" id="genBtn">↻ Refresh Sequence</button>
       <div class="stat-pills" id="statPills"></div>
     </div>
     <div class="seq-canvas-container">
@@ -3246,6 +3242,8 @@ window.addEventListener('resize', renderEvolutionPreview);
 window.addEventListener('resize', () => {
   renderSequence();
 });
+// ── Sequencer Refresh Button ──
+document.getElementById('refreshSeqBtn')?.addEventListener('click', generateSequence);
 </script>
 </body>
 </html>
