@@ -2065,6 +2065,10 @@ function refreshEvolutionData() {
  * View: Only handles the drawing of the existing buffer onto the canvas.
  * This is safe to call during window resize/zoom.
  */
+/**
+ * View: Only handles the drawing of the existing buffer onto the canvas.
+ * This is safe to call during window resize/zoom.
+ */
 function renderEvolutionPreview() {
   const canvas = document.getElementById('evoPreviewCanvas');
   const info = document.getElementById('evoPreviewInfo');
@@ -2116,15 +2120,26 @@ function renderEvolutionPreview() {
     ctx.stroke();
   }
 
+  // --- UPDATE START: Match main sequencer gap (GAP=2) and increase height ---
+  // Constants to match the main sequencer's visual style
+  const GAP = 2;
+  const BLOCK_HEIGHT = 5; // Increased height for better visibility
+
   ctx.fillStyle = noteColor;
   for (let i = 0; i < chain.length; i++) {
     const s = chain[i];
     if (s && s.noteStart && !s.rest && typeof s.midi === 'number') {
       const y = height - ((s.midi - minMidi) / range) * height;
-      const w = Math.max((s.holdSteps || 1) * pxPerStep - 0.5, 0.5);
-      ctx.fillRect(i * pxPerStep, y - 2, w, 4);
+
+      // Calculate start X and width using the same logic as the main sequencer
+      const startX = Math.round(i * pxPerStep) + (GAP / 2);
+      const w = Math.max(1, Math.round((s.holdSteps || 1) * pxPerStep) - GAP);
+
+      // Draw with increased height, centered vertically
+      ctx.fillRect(startX, y - BLOCK_HEIGHT / 2, w, BLOCK_HEIGHT);
     }
   }
+  // --- UPDATE END ---
 
   ctx.fillStyle = accentColor;
   for (let b = 0; b < iterations; b++) {
@@ -2447,6 +2462,10 @@ function generateEvolutionaryChain() {
  * Redraws the entire sequence on the canvas.
  * This handles the piano-roll visualization for the main loop.
  */
+/**
+ * Redraws the entire sequence on the canvas.
+ * This handles the piano-roll visualization for the main loop.
+ */
 function renderSequence() {
   if (!sequence || sequence.length === 0) return;
   const canvas = document.getElementById('mainSeqCanvas');
@@ -2490,6 +2509,10 @@ function renderSequence() {
   // Draw notes ONLY on noteStart to prevent overlap.
   // Math.round() ensures pixel-perfect alignment and kills subpixel bleeding.
   const GAP = 2; // Horizontal gap between individual notes
+  // --- UPDATE START: Increased block height from 3 to 5 to match evolution preview ---
+  const blockHeight = 5;
+  // --- UPDATE END ---
+
   for (let i = 0; i < totalSteps; i++) {
     const s = sequence[i];
     if (!s || s.rest || s.midi === undefined || !s.noteStart) continue;
@@ -2498,7 +2521,6 @@ function renderSequence() {
     const width = Math.max(1, Math.round(hold * pxPerStep) - GAP);
     const norm = (s.midi - midiMin) / midiRange;
     const y = canvas.height - (norm * canvas.height);
-    const blockHeight = 3;
 
     ctx.fillStyle = s.isAnchor ? anchorColor : noteColor;
     ctx.fillRect(startX, y - blockHeight/2, width, blockHeight);
