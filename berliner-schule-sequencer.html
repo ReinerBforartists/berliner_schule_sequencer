@@ -675,190 +675,7 @@ details[open] summary::before { content: '− '; }
     </div>
   </div> <!-- End of Row 1 / transport -->
 
-  <!-- Row 2: MIDI & Evolution Station -->
-  <div class="flex-col gap-sm">
-    <!-- Export Mode Tabs -->
-    <div class="export-tabs">
-      <button class="export-tab active" data-target="midiPanel">MIDI Export</button>
-      <button class="export-tab" data-target="evoPanel">Evolution Export</button>
-    </div>
 
-    <!-- Panel 1: Standard MIDI Export -->
-    <div id="midiPanel" class="export-panel active">
-      <div class="flex-center gap-lg panel-row">
-        <span class="seed-label nowrap">STEPS PER BAR</span>
-        <select id="exportStretch" class="select-field">
-          <option value="2">2</option>
-          <option value="4">4</option>
-          <option value="8">8</option>
-          <option value="16" selected>16</option>
-          <option value="32">32</option>
-        </select>
-        <button class="btn nowrap mr-auto" id="exportBtn">↓ EXPORT MIDI</button>
-      </div>
-    </div>
-
-    <!-- Panel 2: Evolution Export -->
-    <div id="evoPanel" class="export-panel">
-      <!-- Evo Row 1: Core Mutation Settings -->
-      <div class="flex-center gap-sm panel-row mb-sm">
-        <span class="seed-label nowrap">STEPS PER BAR</span>
-        <select id="exportStretchEvo" class="select-field">
-          <option value="2">2</option>
-          <option value="4">4</option>
-          <option value="8">8</option>
-          <option value="16" selected>16</option>
-          <option value="32">32</option>
-        </select>
-        <button class="btn evo-btn nowrap mr-auto" id="exportEvoBtn">🧬 EXPORT EVOLUTION</button>
-
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <div class="ctrl ctrl-grow">
-          <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">12</span></div>
-          <input type="range" id="evoIterations" min="1" max="64" value="12">
-        </div>
-
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <div class="ctrl ctrl-grow">
-          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
-          <input type="range" id="evoMutation" min="0" max="100" value="20">
-        </div>
-
-        <div class="ctrl ctrl-grow">
-          <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">5%</span></div>
-          <input type="range" id="evoDrift" min="0" max="100" value="5">
-        </div>
-
-        <div class="ctrl ctrl-grow">
-          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
-          <input type="range" id="evoGrip" min="0" max="100" value="50">
-        </div>
-      </div>
-
-      <!-- Evo Row 2: Root & Octave Drift -->
-      <div class="flex-center flex-wrap gap-xs row-gap-md panel-row">
-
-      <!-- Evolution curve dropdown -->
-      <div class="ctrl shrink-0" style="width: 160px;">
-        <div class="ctrl-label">Evolution Curve</div>
-        <select id="evolutionCurve">
-          <option value="linear">Linear</option>
-          <option value="rampUp">Ramp Up</option>
-          <option value="rampDown">Ramp Down</option>
-          <option value="arch">Arch</option>
-          <option value="valley">Valley</option>
-          <option value="easeIn">Ease In</option>
-          <option value="easeOut">Ease Out</option>
-          <option value="easeInOut">Ease In/Out</option>
-        </select>
-      </div>
-
-      <!-- Mutation Style dropdown -->
-      <div class="ctrl shrink-0" style="width: 170px;">
-        <div class="ctrl-label">Mutation Style</div>
-        <select id="evoMutationStyle">
-          <option value="walk" selected>Palette Walk</option>
-          <option value="random">Palette Random</option>
-          <option value="mix">Mix (Walk + Random)</option>
-        </select>
-      </div>
-
-
-        <!-- Octave Drift: Fixed width to prevent jumping -->
-        <div class="ctrl shrink-0" style="width: 140px;">
-          <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
-          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0">
-        </div>
-
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <!-- Root Mode Dropdown -->
-        <div class="ctrl shrink-0" style="width: 180px;">
-          <div class="ctrl-label">Root</div>
-          <select id="evoRootMode" style="overflow: hidden; text-overflow: ellipsis;">
-            <option value="none" selected>None (Static)</option>
-            <option value="free">Free (Random)</option>
-            <option value="thirds">Thirds (3rd/4th)</option>
-            <option value="fourths">4ths/5ths</option>
-            <option value="fifths">Cycle of 5ths</option>
-            <option value="alt_whole">Alt. Whole Tones (+2/-2)</option>
-            <option value="alt_semi">Alt. Semitones (+1/-1)</option>
-            <optgroup label="Berliner Schule / Ambient">
-              <option value="modal_iii">Modal I → III</option>
-              <option value="modal_iv">Modal I → IV</option>
-              <option value="circulating">Circulating Fifths/Fourths</option>
-              <option value="slow_osc">Slow Oscillation (I-IV-I-V)</option>
-            </optgroup>
-            <optgroup label="Pop / Rock / Standards">
-              <option value="pop_standard">Pop Standard (I-V-vi-IV)</option>
-              <option value="fifties">50s Progression (vi-IV-I-V)</option>
-              <option value="andalusian">Andalusian / Hollywood (i-bVII-bVI-bV)</option>
-              <option value="minor_common">Minor Common (vi-III-IV-V)</option>
-              <option value="jazz_standard">Jazz Standard (ii-V-I-IV-III-VI-II-V)</option>
-              <option value="pachelbel">Pachelbel's Canon</option>
-              <option value="chromatic">Chromatic Descent</option>
-              <option value="pentatonic">Minor Pentatonic</option>
-            </optgroup>
-          </select>
-        </div>
-
-        <!-- Interval Container: appears next to Root Mode without pushing everything -->
-        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 110px;">
-          <div class="ctrl-label">Every</div>
-          <select id="evoRootInterval">
-            <option value="1">1 Block</option>
-            <option value="2" selected>2 Blocks</option>
-            <option value="4">4 Blocks</option>
-            <option value="8">8 Blocks</option>
-          </select>
-        </div>
-
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <!-- Seed Mode Dropdown -->
-        <div class="ctrl shrink-0" style="width: 110px;">
-          <div class="ctrl-label">Evo Seed</div>
-          <select id="evoSeedMode">
-            <option value="random">Random</option>
-            <option value="fixed">Fixed</option>
-          </select>
-        </div>
-      </div>
-        <!-- Evo Row 3: Root Constraints (Only for Random Mode) -->
-      <div id="evoRootConstraintRow" class="flex-center gap-sm panel-row mt-sm" style="display: none;">
-        <span class="seed-label nowrap">ROOT CONSTRAINTS:</span>
-        <!-- Palette first -->
-        <div class="ctrl shrink-0" style="width: 120px;">
-          <div class="ctrl-label">Palette <span class="val" id="evoRootPalVal">4</span></div>
-          <input type="range" id="evoRootPalette" min="1" max="12" value="4">
-        </div>
-        <!-- Range second -->
-        <div class="ctrl shrink-0" style="width: 120px;">
-          <div class="ctrl-label">Range <span class="val" id="evoRootRangeVal">7</span></div>
-          <input type="range" id="evoRootRange" min="0" max="24" value="7">
-        </div>
-        <span class="anchor-desc" style="font-size: 11px;">Limits the allowed root notes for Random mode.</span>
-      </div>
-
-      <!-- Evo Preview -->
-      <div id="evoPreviewSection" class="panel-row mt-sm">
-        <div class="flex-center gap-sm mb-sm">
-          <button class="btn nowrap" id="evoPreviewBtn">↻ Refresh Evolution</button>
-          <span class="mono muted-10" id="evoPreviewInfo"></span>
-        </div>
-        <div class="canvas-frame">
-          <canvas id="evoPreviewCanvas" height="160" class="canvas-fill"></canvas>
-        </div>
-      </div>
-    </div> <!-- End of evoPanel -->
-  </div> <!-- End of Row 2 / Export Station -->
-</div> <!-- End of transport-section -->
 
 <!-- SECTION SEPARATOR: Between MIDI Export and Settings -->
 <div class="flex-center gap-lg divider-row">
@@ -1077,6 +894,191 @@ details[open] summary::before { content: '− '; }
     </div>
   </section>
 
+    <!-- Row 2: MIDI & Evolution Station -->
+  <div class="flex-col gap-sm">
+    <!-- Export Mode Tabs -->
+    <div class="export-tabs">
+      <button class="export-tab active" data-target="midiPanel">MIDI Export</button>
+      <button class="export-tab" data-target="evoPanel">Evolution Export</button>
+    </div>
+
+    <!-- Panel 1: Standard MIDI Export -->
+    <div id="midiPanel" class="export-panel active">
+      <div class="flex-center gap-lg panel-row">
+        <span class="seed-label nowrap">STEPS PER BAR</span>
+        <select id="exportStretch" class="select-field">
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="8">8</option>
+          <option value="16" selected>16</option>
+          <option value="32">32</option>
+        </select>
+        <button class="btn nowrap mr-auto" id="exportBtn">↓ EXPORT MIDI</button>
+      </div>
+    </div>
+
+    <!-- Panel 2: Evolution Export -->
+    <div id="evoPanel" class="export-panel">
+      <!-- Evo Row 1: Core Mutation Settings -->
+      <div class="flex-center gap-sm panel-row mb-sm">
+        <span class="seed-label nowrap">STEPS PER BAR</span>
+        <select id="exportStretchEvo" class="select-field">
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="8">8</option>
+          <option value="16" selected>16</option>
+          <option value="32">32</option>
+        </select>
+        <button class="btn evo-btn nowrap mr-auto" id="exportEvoBtn">🧬 EXPORT EVOLUTION</button>
+
+        <!-- Visual Separator -->
+        <div class="v-sep"></div>
+
+        <div class="ctrl ctrl-grow">
+          <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">12</span></div>
+          <input type="range" id="evoIterations" min="1" max="64" value="12">
+        </div>
+
+        <!-- Visual Separator -->
+        <div class="v-sep"></div>
+
+        <div class="ctrl ctrl-grow">
+          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
+          <input type="range" id="evoMutation" min="0" max="100" value="20">
+        </div>
+
+        <div class="ctrl ctrl-grow">
+          <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">5%</span></div>
+          <input type="range" id="evoDrift" min="0" max="100" value="5">
+        </div>
+
+        <div class="ctrl ctrl-grow">
+          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
+          <input type="range" id="evoGrip" min="0" max="100" value="50">
+        </div>
+      </div>
+
+      <!-- Evo Row 2: Root & Octave Drift -->
+      <div class="flex-center flex-wrap gap-xs row-gap-md panel-row">
+
+      <!-- Evolution curve dropdown -->
+      <div class="ctrl shrink-0" style="width: 160px;">
+        <div class="ctrl-label">Evolution Curve</div>
+        <select id="evolutionCurve">
+          <option value="linear">Linear</option>
+          <option value="rampUp">Ramp Up</option>
+          <option value="rampDown">Ramp Down</option>
+          <option value="arch">Arch</option>
+          <option value="valley">Valley</option>
+          <option value="easeIn">Ease In</option>
+          <option value="easeOut">Ease Out</option>
+          <option value="easeInOut">Ease In/Out</option>
+        </select>
+      </div>
+
+      <!-- Mutation Style dropdown -->
+      <div class="ctrl shrink-0" style="width: 170px;">
+        <div class="ctrl-label">Mutation Style</div>
+        <select id="evoMutationStyle">
+          <option value="walk" selected>Palette Walk</option>
+          <option value="random">Palette Random</option>
+          <option value="mix">Mix (Walk + Random)</option>
+        </select>
+      </div>
+
+
+        <!-- Octave Drift: Fixed width to prevent jumping -->
+        <div class="ctrl shrink-0" style="width: 140px;">
+          <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
+          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0">
+        </div>
+
+        <!-- Visual Separator -->
+        <div class="v-sep"></div>
+
+        <!-- Root Mode Dropdown -->
+        <div class="ctrl shrink-0" style="width: 180px;">
+          <div class="ctrl-label">Root</div>
+          <select id="evoRootMode" style="overflow: hidden; text-overflow: ellipsis;">
+            <option value="none" selected>None (Static)</option>
+            <option value="free">Free (Random)</option>
+            <option value="thirds">Thirds (3rd/4th)</option>
+            <option value="fourths">4ths/5ths</option>
+            <option value="fifths">Cycle of 5ths</option>
+            <option value="alt_whole">Alt. Whole Tones (+2/-2)</option>
+            <option value="alt_semi">Alt. Semitones (+1/-1)</option>
+            <optgroup label="Berliner Schule / Ambient">
+              <option value="modal_iii">Modal I → III</option>
+              <option value="modal_iv">Modal I → IV</option>
+              <option value="circulating">Circulating Fifths/Fourths</option>
+              <option value="slow_osc">Slow Oscillation (I-IV-I-V)</option>
+            </optgroup>
+            <optgroup label="Pop / Rock / Standards">
+              <option value="pop_standard">Pop Standard (I-V-vi-IV)</option>
+              <option value="fifties">50s Progression (vi-IV-I-V)</option>
+              <option value="andalusian">Andalusian / Hollywood (i-bVII-bVI-bV)</option>
+              <option value="minor_common">Minor Common (vi-III-IV-V)</option>
+              <option value="jazz_standard">Jazz Standard (ii-V-I-IV-III-VI-II-V)</option>
+              <option value="pachelbel">Pachelbel's Canon</option>
+              <option value="chromatic">Chromatic Descent</option>
+              <option value="pentatonic">Minor Pentatonic</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Interval Container: appears next to Root Mode without pushing everything -->
+        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 110px;">
+          <div class="ctrl-label">Every</div>
+          <select id="evoRootInterval">
+            <option value="1">1 Block</option>
+            <option value="2" selected>2 Blocks</option>
+            <option value="4">4 Blocks</option>
+            <option value="8">8 Blocks</option>
+          </select>
+        </div>
+
+        <!-- Visual Separator -->
+        <div class="v-sep"></div>
+
+        <!-- Seed Mode Dropdown -->
+        <div class="ctrl shrink-0" style="width: 110px;">
+          <div class="ctrl-label">Evo Seed</div>
+          <select id="evoSeedMode">
+            <option value="random">Random</option>
+            <option value="fixed">Fixed</option>
+          </select>
+        </div>
+      </div>
+        <!-- Evo Row 3: Root Constraints (Only for Random Mode) -->
+      <div id="evoRootConstraintRow" class="flex-center gap-sm panel-row mt-sm" style="display: none;">
+        <span class="seed-label nowrap">ROOT CONSTRAINTS:</span>
+        <!-- Palette first -->
+        <div class="ctrl shrink-0" style="width: 120px;">
+          <div class="ctrl-label">Palette <span class="val" id="evoRootPalVal">4</span></div>
+          <input type="range" id="evoRootPalette" min="1" max="12" value="4">
+        </div>
+        <!-- Range second -->
+        <div class="ctrl shrink-0" style="width: 120px;">
+          <div class="ctrl-label">Range <span class="val" id="evoRootRangeVal">7</span></div>
+          <input type="range" id="evoRootRange" min="0" max="24" value="7">
+        </div>
+        <span class="anchor-desc" style="font-size: 11px;">Limits the allowed root notes for Random mode.</span>
+      </div>
+
+      <!-- Evo Preview -->
+      <div id="evoPreviewSection" class="panel-row mt-sm">
+        <div class="flex-center gap-sm mb-sm">
+          <button class="btn nowrap" id="evoPreviewBtn">↻ Refresh Evolution</button>
+          <span class="mono muted-10" id="evoPreviewInfo"></span>
+        </div>
+        <div class="canvas-frame">
+          <canvas id="evoPreviewCanvas" height="160" class="canvas-fill"></canvas>
+        </div>
+      </div>
+    </div> <!-- End of evoPanel -->
+  </div> <!-- End of Row 2 / Export Station -->
+</div> <!-- End of transport-section -->
+
   <!-- Howto -->
   <details>
       <summary class="summary-highlight">Howto & Technical Logic</summary>
@@ -1120,40 +1122,6 @@ details[open] summary::before { content: '− '; }
             <li><span class="hl-amber">VOL:</span> <span class="hl-text">Controls only the internal monitoring synth volume. It does not affect your external MIDI hardware or DAW.</span></li>
             <li><span class="hl-amber">Fixed Seed:</span> <span class="hl-text">If you find a sequence you love, note the seed number. Entering it again will recreate that exact same pattern perfectly.</span></li>
             <li><span class="hl-amber">Random Seed:</span> <span class="hl-text">Every time you click "Generate", a new random seed is used, giving you an infinite variety of patterns.</span></li>
-          </ul>
-        </div>
-
-        <!-- SECTION 3: MIDI EXPORT & EVOLUTION -->
-        <div style="margin-bottom: 25px;">
-          <strong class="section-heading hl-amber">3. MIDI Export & Evolutionary Chain (🧬)</strong><br>
-          Switch between the two export tabs to choose your output method:
-          <ul class="list-square">
-            <li><span class="hl-amber">Standard MIDI Export:</span> <span class="hl-text">Exports the current loop exactly as you hear it in the sequencer. Ideal for short loops in your DAW.</span></li>
-            <li><span class="hl-amber">🧬 Evolution Export:</span> <span class="hl-text">Instead of a loop, this creates a long-form composition. It takes your current sequence and "mutates" it over several blocks. This mimics how old modular sequencers would slowly drift and change over 20 minutes.</span>
-              <ul class="list-circle">
-                <li><span class="hl-amber">Evolution Preview Canvas:</span> <span class="hl-text">A real-time piano roll visualization of the generated evolutionary chain. It updates automatically when parameters change. Use "Refresh Evolution" to force a new seed and regenerate the preview.</span></li>
-                <li><span class="hl-amber">Iterations:</span> <span class="hl-text">How many blocks are generated. More iterations = a longer MIDI file.</span></li>
-                <li><span class="hl-amber">Mutation:</span> <span class="hl-text">The "chaos" factor. High values mean each block will differ significantly from the previous one. Low values create a very subtle, slow evolution.</span></li>
-                <li><span class="hl-amber">Drift:</span> <span class="hl-text">Adds sudden octave jumps between blocks, creating dramatic shifts in energy and register.</span></li>
-                <li><span class="hl-amber">Grip:</span> <span class="hl-text">The "anchor" to the original theme. High grip prevents the evolution from wandering too far away from your starting phrase.</span></li>
-                <li><span class="hl-amber">Octave Drift:</span> <span class="hl-text">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
-                  <li><span class="hl-amber">Root Shift:</span> <span class="hl-text">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).
-                  <ul style="margin-left: 15px; margin-top: 5px; font-size: 11px; color: var(--text-bright); list-style: circle;">
-                    <li><strong class="hl-amber">Root Shift Interval:</strong> "Every X Blocks" controls how frequently the root changes. Lower values = faster harmonic movement.</li>
-                    <li><span class="hl-amber">Root Constraints (for 'Free' mode):</span> When using Random root shifts, you can constrain the harmonic wanderlust:
-                      <br>— <strong>Palette:</strong> Limits the number of allowed root notes available for selection.
-                      <br>— <strong>Range:</strong> Restricts the maximum distance the root can jump away from the original starting key.</li>
-                  </ul>
-                </li>
-                <li><span class="hl-amber">Evolution Curve:</span> <span class="hl-text">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, "Valley" for a dip, or "Ease" functions for organic transitions.</span></li>
-                <li><span class="hl-amber">Mutation Style:</span> <span class="hl-text">Determines how notes are altered during mutation:
-                  <br>— <strong>Palette Walk:</strong> Moves to adjacent tones in the current palette (stepwise motion).
-                  <br>— <strong>Palette Random:</strong> Jumps to any random tone in the palette.
-                  <br>— <strong>Mix:</strong> Alternates between Walk and Random for balanced variation.</span></li>
-                <li><span class="hl-amber">Evo Seed Mode:</span> <span class="hl-text">"Fixed" locks the evolution chain to the current seed. "Random" generates a new chain each time you refresh or export.</span></li>
-                <li><span class="hl-amber">Export Stretch:</span> <span class="hl-text">Defines the grid alignment for the evolution export (Steps per Bar). Matches the standard export for consistent DAW integration.</span></li>
-              </ul>
-            </li>
           </ul>
         </div>
 
@@ -1243,6 +1211,40 @@ details[open] summary::before { content: '− '; }
               <li><span class="hl-amber">Palette:</span> <span class="hl-text">The number of notes randomly selected from the corridor to be used in the sequence. By limiting the available notes, the sequencer avoids dissonant jumps and maintains a more cohesive harmonic character.</span></li>
             </ul></p>
           </div>
+        </div>
+
+        <!-- SECTION 3: MIDI EXPORT & EVOLUTION -->
+        <div style="margin-bottom: 25px;">
+          <strong class="section-heading hl-amber">3. MIDI Export & Evolutionary Chain (🧬)</strong><br>
+          Switch between the two export tabs to choose your output method:
+          <ul class="list-square">
+            <li><span class="hl-amber">Standard MIDI Export:</span> <span class="hl-text">Exports the current loop exactly as you hear it in the sequencer. Ideal for short loops in your DAW.</span></li>
+            <li><span class="hl-amber">🧬 Evolution Export:</span> <span class="hl-text">Instead of a loop, this creates a long-form composition. It takes your current sequence and "mutates" it over several blocks. This mimics how old modular sequencers would slowly drift and change over 20 minutes.</span>
+              <ul class="list-circle">
+                <li><span class="hl-amber">Evolution Preview Canvas:</span> <span class="hl-text">A real-time piano roll visualization of the generated evolutionary chain. It updates automatically when parameters change. Use "Refresh Evolution" to force a new seed and regenerate the preview.</span></li>
+                <li><span class="hl-amber">Iterations:</span> <span class="hl-text">How many blocks are generated. More iterations = a longer MIDI file.</span></li>
+                <li><span class="hl-amber">Mutation:</span> <span class="hl-text">The "chaos" factor. High values mean each block will differ significantly from the previous one. Low values create a very subtle, slow evolution.</span></li>
+                <li><span class="hl-amber">Drift:</span> <span class="hl-text">Adds sudden octave jumps between blocks, creating dramatic shifts in energy and register.</span></li>
+                <li><span class="hl-amber">Grip:</span> <span class="hl-text">The "anchor" to the original theme. High grip prevents the evolution from wandering too far away from your starting phrase.</span></li>
+                <li><span class="hl-amber">Octave Drift:</span> <span class="hl-text">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
+                  <li><span class="hl-amber">Root Shift:</span> <span class="hl-text">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).
+                  <ul style="margin-left: 15px; margin-top: 5px; font-size: 11px; color: var(--text-bright); list-style: circle;">
+                    <li><strong class="hl-amber">Root Shift Interval:</strong> "Every X Blocks" controls how frequently the root changes. Lower values = faster harmonic movement.</li>
+                    <li><span class="hl-amber">Root Constraints (for 'Free' mode):</span> When using Random root shifts, you can constrain the harmonic wanderlust:
+                      <br>— <strong>Palette:</strong> Limits the number of allowed root notes available for selection.
+                      <br>— <strong>Range:</strong> Restricts the maximum distance the root can jump away from the original starting key.</li>
+                  </ul>
+                </li>
+                <li><span class="hl-amber">Evolution Curve:</span> <span class="hl-text">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, "Valley" for a dip, or "Ease" functions for organic transitions.</span></li>
+                <li><span class="hl-amber">Mutation Style:</span> <span class="hl-text">Determines how notes are altered during mutation:
+                  <br>— <strong>Palette Walk:</strong> Moves to adjacent tones in the current palette (stepwise motion).
+                  <br>— <strong>Palette Random:</strong> Jumps to any random tone in the palette.
+                  <br>— <strong>Mix:</strong> Alternates between Walk and Random for balanced variation.</span></li>
+                <li><span class="hl-amber">Evo Seed Mode:</span> <span class="hl-text">"Fixed" locks the evolution chain to the current seed. "Random" generates a new chain each time you refresh or export.</span></li>
+                <li><span class="hl-amber">Export Stretch:</span> <span class="hl-text">Defines the grid alignment for the evolution export (Steps per Bar). Matches the standard export for consistent DAW integration.</span></li>
+              </ul>
+            </li>
+          </ul>
         </div>
 
         <!-- SECTION 5: DISPLAY LEGEND -->
