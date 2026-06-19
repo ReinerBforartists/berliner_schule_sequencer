@@ -179,7 +179,7 @@ body {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  max-width: 980px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 14px 16px 14px;
   gap: 10px;
@@ -232,27 +232,10 @@ body {
 
 /* ── Controls grid ── */
 .controls {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   flex-shrink: 0;
-}
-.ctrl {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 8px 10px 9px;
-  min-width: 0;
-}
-.ctrl-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 5px;
-  display: flex;
-  justify-content: space-between;
 }
 .ctrl-label.live { color: var(--green); }
 .ctrl-label .val {
@@ -272,17 +255,128 @@ body {
   appearance: none;
   -webkit-appearance: none;
 }
-.ctrl select:focus, .ctrl input:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
-.ctrl input[type="range"] {
+/* --- Updated Control Layout for Rotary Knobs --- */
+.ctrl {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 7px 4px;
+  min-width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  text-align: center;
+  position: relative;
+}
+
+.ctrl-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 0;
+  display: block; /* Changed from flex to block to center text */
   width: 100%;
+  white-space: nowrap;
+}
+
+/* Only the actual knob (rotary visual + its label + value) should be
+   non-selectable, since dragging happens there. Plain controls like
+   selects, number inputs, and the volume slider stay normal. */
+.ctrl:has(.knob-visual) .ctrl-label,
+.ctrl:has(.knob-visual) .knob-visual,
+.ctrl:has(.knob-visual) .val {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* While dragging a knob, prevent text selection anywhere on the page */
+body.knob-dragging {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: ns-resize;
+}
+
+/* Hide the default slider but keep it functional for interaction */
+.ctrl input[type="range"] {
+  width: 32px;
+  height: 32px;
+  opacity: 0;
+  cursor: ns-resize;
+  position: absolute;
+  z-index: 2;
   -webkit-appearance: none;
+  appearance: none;
+  touch-action: none;
+}
+
+/* Visual representation of the Knob */
+.knob-visual {
+  width: 32px;
+  height: 32px;
+  background: var(--raised);
+  border: 2px solid var(--border2);
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.1s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The indicator line on the knob */
+.knob-visual::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 2px;
+  height: 8px;
+  background: var(--amber);
+  border-radius: 1px;
+  transform-origin: center 14px;
+}
+
+/* Style for the value span now positioned below the knob */
+.ctrl .val {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 10px;
+  display: block;
+  margin-top: 0;
+}
+
+/* Select/non-knob ctrl boxes match knob-box height so rows align */
+.ctrl:has(select),
+.ctrl:has(input[type="number"]) {
+  justify-content: center;
+  padding: 13px 6px;
+}
+
+.ctrl.active { border-color: var(--amber); }
+
+/* Master volume: plain horizontal slider, outside the .ctrl/knob system */
+#masterVol {
   height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
   background: var(--border2);
   border-radius: 2px;
   accent-color: var(--amber);
   cursor: pointer;
-  margin-top: 2px;
 }
+#masterVol::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--amber);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--amber-dim);
+}
+.ctrl select:focus, .ctrl input:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
 .ctrl input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 12px; height: 12px;
@@ -293,7 +387,7 @@ body {
 }
 
 /* span 2 cols */
-.ctrl.w2 { grid-column: span 2; }
+.ctrl.w2 { min-width: 130px; }
 
 /* ── Anchor panel ── */
 .anchor-panel {
@@ -648,7 +742,7 @@ details[open] summary::before { content: '− '; }
     <button class="btn stop-btn" id="stopBtn" disabled>■ Stop</button>
 
     <!-- Volume Control for Monitoring only -->
-    <div class="ctrl ctrl-bare flex-center gap-sm" style="min-width: 140px;">
+    <div class="flex-center gap-sm" style="min-width: 140px;">
       <span class="seed-label nowrap">VOL</span>
       <input type="range" id="masterVol" min="0" max="100" value="100" class="flex-1">
       <span class="val mono hl-amber" id="volVal" style="font-size: 10px; width: 30px;">100%</span>
@@ -682,12 +776,12 @@ details[open] summary::before { content: '− '; }
   <div class="h-sep"></div>
 </div>
 
-<!-- GROUP 1: TIMING & RHYTHM + EXPRESSION -->
+<!-- GROUP 1: TIMING & RHYTHM + EXPRESSION + PHRASE & NOTES (one shared row) -->
 <div class="controls-group">
-  <div class="flex-center mb-md">
+  <div class="flex-center gap-lg mb-md">
     <div class="group-label live-text">Timing & Rhythm</div>
-    <!-- Label shifted to align with the Variation slider (approx 62.5% of width) -->
-    <div class="group-label pushed-right">Expression</div>
+    <div class="group-label">Expression</div>
+    <div class="group-label">Phrase & Notes</div>
   </div>
   <div class="controls">
     <div class="ctrl">
@@ -710,6 +804,7 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label">Max Length <span class="val" id="maxNoteLenVal">2</span></div>
       <input type="range" id="maxNoteLen" min="1" max="32" value="2">
     </div>
+    <div class="v-sep v-sep-m"></div>
     <div class="ctrl">
       <div class="ctrl-label">Variation <span class="val" id="varVal">25%</span></div>
       <input type="range" id="variation" min="0" max="60" value="25">
@@ -722,13 +817,7 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label">Range <span class="val" id="rangeVal">4</span></div>
       <input type="range" id="toneRange" min="2" max="12" value="4">
     </div>
-  </div>
-</div>
-
-<!-- GROUP 2: PHRASE & NOTES (Structural) -->
-<div class="controls-group">
-  <div class="group-label mb-md">Phrase & Notes</div>
-  <div class="controls">
+    <div class="v-sep v-sep-m"></div>
     <div class="ctrl w2">
       <div class="ctrl-label">Scale</div>
       <select id="scale">
@@ -768,12 +857,13 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label">Intervall <span class="val" id="intervalVal">3</span></div>
       <input type="range" id="maxInterval" min="1" max="5" value="3">
     </div>
-    <!-- NoteCount remains hidden/visible via JS -->
+    <!-- Notes (hidden/visible via JS) -->
     <div class="ctrl hidden" id="noteCountCtrl">
       <div class="ctrl-label">Notes <span class="val" id="noteCountVal">2</span></div>
       <input type="range" id="noteCount" min="1" max="3" value="2">
     </div>
   </div>
+</div>
 </div>
 
   <!-- Offbeat anchor panel -->
@@ -3209,9 +3299,118 @@ document.getElementById('evoRootRange')?.addEventListener('input', (e) => {
   syncRootConstraints();
 });
 
+/**
+ * Converts standard range inputs into visual rotary knobs.
+ * It moves the .val span below the input and adds a visual rotation element.
+ * Interaction is vertical drag (up = increase, down = decrease), matching
+ * the rotary knob visual instead of the native horizontal slider drag.
+ */
+function initKnobs() {
+  const sliders = document.querySelectorAll('input[type="range"]:not(#masterVol)');
+
+  sliders.forEach(slider => {
+    const ctrlBox = slider.closest('.ctrl');
+    if (!ctrlBox) return;
+
+    // 1. Move the .val span to be a sibling after the slider for "Value Bottom" layout
+    const label = ctrlBox.querySelector('.ctrl-label');
+    const valSpan = label ? label.querySelector('.val') : null;
+    if (valSpan) {
+      slider.after(valSpan);
+    }
+
+    // 2. Create the visual knob element
+    const visual = document.createElement('div');
+    visual.className = 'knob-visual';
+
+    // Insert the visual element before the slider
+    slider.parentNode.insertBefore(visual, slider);
+
+    // 3. Function to update rotation based on slider value
+    const updateRotation = () => {
+      const min = +slider.min || 0;
+      const max = +slider.max || 100;
+      const val = +slider.value;
+      const percent = (val - min) / (max - min);
+
+      // Map 0-1 to -135deg to 135deg for a classic synth knob feel
+      const rotation = (percent * 270) - 135;
+      visual.style.transform = `rotate(${rotation}deg)`;
+    };
+
+    // Initial position
+    updateRotation();
+
+    // Sync on input (covers programmatic changes, e.g. from presets)
+    slider.addEventListener('input', updateRotation);
+
+    // 4. Custom vertical-drag interaction replacing the native horizontal
+    //    range-slider drag. The native input stays for value storage and
+    //    for firing 'input'/'change' events that the rest of the app relies on.
+    let dragging = false;
+    let startY = 0;
+    let startVal = 0;
+
+    const step = parseFloat(slider.step) || 1;
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const PIXELS_PER_FULL_RANGE = 150; // drag distance (px) to go from min to max
+
+    const setValueFromDelta = (deltaY) => {
+      // deltaY negative = dragged up = increase
+      const range = max - min;
+      const rawVal = startVal + (-deltaY / PIXELS_PER_FULL_RANGE) * range;
+      const stepped = Math.round(rawVal / step) * step;
+      const clamped = Math.min(max, Math.max(min, stepped));
+      if (+slider.value !== clamped) {
+        slider.value = clamped;
+        slider.dispatchEvent(new Event('input'));
+      }
+    };
+
+    const onPointerMove = (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      setValueFromDelta(e.clientY - startY);
+    };
+
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      ctrlBox.classList.remove('active');
+      document.body.classList.remove('knob-dragging');
+      try { slider.releasePointerCapture(e.pointerId); } catch (_) {}
+      slider.dispatchEvent(new Event('change'));
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+    };
+
+    slider.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); // stop text selection on labels while dragging
+      dragging = true;
+      startY = e.clientY;
+      startVal = +slider.value;
+      ctrlBox.classList.add('active');
+      document.body.classList.add('knob-dragging');
+      // Pointer capture ensures we keep receiving move/up events even if
+      // the cursor leaves the small 32px knob hit-area mid-drag.
+      try { slider.setPointerCapture(e.pointerId); } catch (_) {}
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', endDrag);
+      window.addEventListener('pointercancel', endDrag);
+    });
+
+    // Mousewheel already supported globally on all range inputs elsewhere
+    // in the app, so no extra wheel handling needed here.
+  });
+}
+
 // init
 applyModeUI();
 generateSequence();
+// Initialize the rotary knobs visuals
+initKnobs();
 
 // --- Evolution Preview wiring ---
 // The Refresh Button should trigger an immediate recalculation and redraw,
