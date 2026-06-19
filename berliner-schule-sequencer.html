@@ -314,46 +314,102 @@ body.knob-dragging {
 }
 
 /* Visual representation of the Knob */
+/* --- NEW DESIGNED KNOBS CSS --- */
 .knob-visual {
-  width: 32px;
-  height: 32px;
-  background: var(--raised);
-  border: 2px solid var(--border2);
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--raised), var(--bg));
+  border: 2px solid var(--border2);
   position: relative;
   z-index: 1;
-  transition: transform 0.1s ease-out;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  cursor: ns-resize;
+  touch-action: none;
+  transition: border-color 0.2s;
 }
 
-/* The indicator line on the knob */
-.knob-visual::after {
-  content: '';
+.ctrl.active .knob-visual {
+  border-color: var(--amber);
+}
+
+.knob-marker {
   position: absolute;
-  top: 2px;
-  width: 2px;
-  height: 8px;
-  background: var(--amber);
-  border-radius: 1px;
-  transform-origin: center 14px;
+  top: 0; left: 0; width: 100%; height: 100%;
+  transform-origin: center center;
+  pointer-events: none;
+  z-index: 3;
 }
 
-/* Style for the value span now positioned below the knob */
+.marker-dot {
+  position: absolute;
+  top: 3px; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background-color: var(--amber);
+  box-shadow: 0 0 4px var(--amber);
+}
+
+/* Static Range Markers */
+.knob-tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 4px;
+  background-color: var(--muted);
+  border-radius: 1px;
+  transform-origin: center center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.knob-tick.start {
+  transform: translate(-50%, -50%) rotate(-135deg) translateY(-20px);
+}
+
+.knob-tick.end {
+  transform: translate(-50%, -50%) rotate(135deg) translateY(-20px);
+}
+
+/* The numeric input for double-click editing - absolute positioning to prevent layout jumping */
+.knob-input {
+  display: none; /* Hidden by default */
+  position: absolute;
+  bottom: 4px;    /* Fixed distance from bottom of .ctrl container */
+  left: 50%;      /* Center horizontally */
+  transform: translateX(-50%);
+  width: 40px;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 2px 0;
+  z-index: 10;
+    outline: none;
+  border-radius: 2px;
+}
+
+/* Keep the value span visible below the knob - enlarged hit-box */
 .ctrl .val {
   font-family: 'Share Tech Mono', monospace;
   color: var(--amber);
   font-size: 10px;
   display: block;
-  margin-top: 0;
-}
+  margin-top: 4px;
+  pointer-events: auto;
+  cursor: pointer;
 
-/* Select/non-knob ctrl boxes match knob-box height so rows align */
-.ctrl:has(select),
-.ctrl:has(input[type="number"]) {
-  justify-content: center;
-  padding: 13px 6px;
+  /* --- HIT-BOX EXTENSION --- */
+  text-align: center;
+  min-width: 40px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .ctrl.active { border-color: var(--amber); }
@@ -3300,10 +3356,8 @@ document.getElementById('evoRootRange')?.addEventListener('input', (e) => {
 });
 
 /**
- * Converts standard range inputs into visual rotary knobs.
- * It moves the .val span below the input and adds a visual rotation element.
- * Interaction is vertical drag (up = increase, down = decrease), matching
- * the rotary knob visual instead of the native horizontal slider drag.
+ * Converts standard range inputs into designed rotary knobs.
+ * Implements: Vertical Drag on knob, and Absolute-Positioned Edit Box to prevent layout jumps.
  */
 function initKnobs() {
   const sliders = document.querySelectorAll('input[type="range"]:not(#masterVol)');
@@ -3312,54 +3366,77 @@ function initKnobs() {
     const ctrlBox = slider.closest('.ctrl');
     if (!ctrlBox) return;
 
-    // 1. Move the .val span to be a sibling after the slider for "Value Bottom" layout
+    // 1. Cleanup: Move the .val span to be a sibling after the slider
     const label = ctrlBox.querySelector('.ctrl-label');
     const valSpan = label ? label.querySelector('.val') : null;
     if (valSpan) {
       slider.after(valSpan);
     }
 
-    // 2. Create the visual knob element
+    // 2. Create the visual knob structure
     const visual = document.createElement('div');
     visual.className = 'knob-visual';
 
-    // Insert the visual element before the slider
-    slider.parentNode.insertBefore(visual, slider);
+    const marker = document.createElement('div');
+    marker.className = 'knob-marker';
+    const dot = document.createElement('div');
+    dot.className = 'marker-dot';
+    marker.appendChild(dot);
 
-    // 3. Function to update rotation based on slider value
+    const tickStart = document.createElement('div');
+    tickStart.className = 'knob-tick start';
+    const tickEnd = document.createElement('div');
+    tickEnd.className = 'knob-tick end';
+
+    visual.appendChild(tickStart);
+    visual.appendChild(tickEnd);
+    visual.appendChild(marker);
+
+    // 3. Create the edit input - ABSOLUTELY POSITIONED
+    const editInput = document.createElement('input');
+    editInput.type = 'text';
+    editInput.className = 'knob-input';
+    editInput.value = slider.value;
+
+    slider.parentNode.insertBefore(visual, slider);
+    // Input is now absolute, so we just add it to the container
+    ctrlBox.appendChild(editInput);
+
+    // 4. Logic: Update rotation and labels
     const updateRotation = () => {
       const min = +slider.min || 0;
       const max = +slider.max || 100;
       const val = +slider.value;
       const percent = (val - min) / (max - min);
 
-      // Map 0-1 to -135deg to 135deg for a classic synth knob feel
       const rotation = (percent * 270) - 135;
-      visual.style.transform = `rotate(${rotation}deg)`;
+      marker.style.transform = `rotate(${rotation}deg)`;
+
+      editInput.value = slider.value;
+      if (valSpan) {
+        const isPct = slider.id === 'density' || slider.id === 'variation' || slider.id === 'swing' || slider.id === 'evoMutation' || slider.id === 'evoDrift' || slider.id === 'evoGrip' || slider.id === 'octaveDriftEvo';
+        valSpan.textContent = isPct ? slider.value + '%' : slider.value;
+      }
     };
 
-    // Initial position
     updateRotation();
-
-    // Sync on input (covers programmatic changes, e.g. from presets)
     slider.addEventListener('input', updateRotation);
 
-    // 4. Custom vertical-drag interaction replacing the native horizontal
-    //    range-slider drag. The native input stays for value storage and
-    //    for firing 'input'/'change' events that the rest of the app relies on.
+    // 5. Interaction: Vertical Drag
     let dragging = false;
     let startY = 0;
     let startVal = 0;
-
     const step = parseFloat(slider.step) || 1;
     const min = parseFloat(slider.min) || 0;
     const max = parseFloat(slider.max) || 100;
-    const PIXELS_PER_FULL_RANGE = 150; // drag distance (px) to go from min to max
+    const PIXELS_PER_FULL_RANGE = 120;
 
-    const setValueFromDelta = (deltaY) => {
-      // deltaY negative = dragged up = increase
+    const onPointerMove = (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      const deltaY = startY - e.clientY;
       const range = max - min;
-      const rawVal = startVal + (-deltaY / PIXELS_PER_FULL_RANGE) * range;
+      const rawVal = startVal + (deltaY / PIXELS_PER_FULL_RANGE) * range;
       const stepped = Math.round(rawVal / step) * step;
       const clamped = Math.min(max, Math.max(min, stepped));
       if (+slider.value !== clamped) {
@@ -3368,41 +3445,62 @@ function initKnobs() {
       }
     };
 
-    const onPointerMove = (e) => {
-      if (!dragging) return;
-      e.preventDefault();
-      setValueFromDelta(e.clientY - startY);
-    };
-
     const endDrag = (e) => {
       if (!dragging) return;
       dragging = false;
       ctrlBox.classList.remove('active');
       document.body.classList.remove('knob-dragging');
-      try { slider.releasePointerCapture(e.pointerId); } catch (_) {}
+      try { visual.releasePointerCapture(e.pointerId); } catch (_) {}
       slider.dispatchEvent(new Event('change'));
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', endDrag);
       window.removeEventListener('pointercancel', endDrag);
     };
 
-    slider.addEventListener('pointerdown', (e) => {
-      e.preventDefault(); // stop text selection on labels while dragging
+    visual.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
       dragging = true;
       startY = e.clientY;
       startVal = +slider.value;
       ctrlBox.classList.add('active');
       document.body.classList.add('knob-dragging');
-      // Pointer capture ensures we keep receiving move/up events even if
-      // the cursor leaves the small 32px knob hit-area mid-drag.
-      try { slider.setPointerCapture(e.pointerId); } catch (_) {}
+      try { visual.setPointerCapture(e.pointerId); } catch (_) {}
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', endDrag);
       window.addEventListener('pointercancel', endDrag);
     });
 
-    // Mousewheel already supported globally on all range inputs elsewhere
-    // in the app, so no extra wheel handling needed here.
+    // 6. Feature: Double-Click to Edit (Using visibility:hidden to maintain height)
+    if (valSpan) {
+      valSpan.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        valSpan.style.visibility = 'hidden'; // Keep space, hide text
+        editInput.style.display = 'block';
+        editInput.focus();
+        editInput.select();
+      });
+    }
+
+    const saveAndClose = () => {
+      const newVal = parseFloat(editInput.value);
+      if (!isNaN(newVal)) {
+        slider.value = Math.min(max, Math.max(min, newVal));
+        slider.dispatchEvent(new Event('input'));
+        slider.dispatchEvent(new Event('change'));
+      } else {
+        editInput.value = slider.value;
+      }
+      editInput.style.display = 'none';
+      if (valSpan) valSpan.style.visibility = 'visible'; // Show text again
+      updateRotation();
+    };
+
+    editInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); saveAndClose(); }
+      if (e.key === 'Escape') { editInput.value = slider.value; saveAndClose(); }
+    });
+
+    editInput.addEventListener('blur', saveAndClose);
   });
 }
 
