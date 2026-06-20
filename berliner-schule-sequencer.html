@@ -2599,115 +2599,89 @@ function generateEvolutionaryChain() {
 // =========================================
 
 /**
- * Redraws the entire sequence on the canvas.
- * This handles the piano-roll visualization for the main loop.
+ * Draws a fixed 24-key piano strip on the left side.
+ * Root note is always centered (index 12).
+ * @param {HTMLCanvasElement} canvas - The piano keys canvas
+ * @param {number} rootMidi - The current root note MIDI value
  */
-/**
- * Draws a small vertical piano-key strip (white/black key shading) next to
- * a piano-roll canvas, mapped to the same MIDI pitch range used for the
- * notes themselves, so the rows line up exactly with the note blocks.
- */
-function drawPianoKeys(canvas, midiMin, midiMax) {
+function drawPianoKeys(canvas, rootMidi) {
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width || 20;
   canvas.height = rect.height;
-  if (!canvas.width || !canvas.height) return;
 
   const ctx = canvas.getContext('2d');
-  const range = Math.max(1, midiMax - midiMin);
-  const blackPC = new Set([1, 3, 6, 8, 10]); // C#, D#, F#, G#, A#
+  const keyHeight = canvas.height / 24; // Fixed 24 keys for 2 octaves
+  const blackPC = new Set([1, 3, 6, 8, 10]); // Half-step offsets for black keys (C#, D#, F#, G#, A#)
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Background = white-key color for the full strip
-  ctx.fillStyle = 'rgba(255,255,255,0.10)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Draw 24 keys from Root+12 (top) down to Root-12 (bottom)
+  for (let i = 12; i >= -12; i--) {
+    const midi = rootMidi + i;
+    const y = (12 - i) * keyHeight;
 
-  // Black-key rows, narrower and darker
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  for (let m = Math.floor(midiMin); m <= Math.ceil(midiMax); m++) {
-    const pc = ((m % 12) + 12) % 12;
-    if (!blackPC.has(pc)) continue;
-    const yTop = canvas.height - ((m + 1 - midiMin) / range) * canvas.height;
-    const yBot = canvas.height - ((m - midiMin) / range) * canvas.height;
-    ctx.fillRect(0, yTop, canvas.width * 0.62, Math.max(1, yBot - yTop));
-  }
+    // Normalize pitch class to 0-11
+    const pc = ((midi % 12) + 12) % 12;
+    const isBlack = blackPC.has(pc);
 
-  // Thin separator line at each C, for octave orientation
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 1;
-  for (let m = Math.floor(midiMin); m <= Math.ceil(midiMax); m++) {
-    if (((m % 12) + 12) % 12 !== 0) continue;
-    const y = Math.round(canvas.height - ((m - midiMin) / range) * canvas.height) + 0.5;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    if (isBlack) {
+      ctx.fillStyle = '#1a1a1a'; // Dark black key
+      ctx.fillRect(0, y, canvas.width, keyHeight - 1);
+      ctx.strokeStyle = '#333';
+      ctx.strokeRect(0, y, canvas.width, keyHeight - 1);
+    } else {
+      ctx.fillStyle = '#e0e0e0'; // Light white key
+      ctx.fillRect(0, y, canvas.width, keyHeight - 1);
+      ctx.strokeStyle = '#ccc';
+      ctx.strokeRect(0, y, canvas.width, keyHeight - 1);
+    }
   }
 }
 
 /**
- * Redraws the entire sequence on the canvas.
- * This handles the piano-roll visualization for the main loop.
+ * Redraws the entire sequence on the main canvas
+ * and synchronizes the piano key strip.
  */
 function renderSequence() {
   if (!sequence || sequence.length === 0) return;
+
   const canvas = document.getElementById('mainSeqCanvas');
   if (!canvas) return;
-
   const ctx = canvas.getContext('2d');
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width;
   canvas.height = rect.height;
 
+  const rootMidi = parseInt(document.getElementById('root').value) || 60;
+  const keyHeight = canvas.height / 24;
   const totalSteps = sequence.length;
-  const phraseLen = +document.getElementById('phraseLen').value || 16;
   const pxPerStep = canvas.width / totalSteps;
 
-  const notes = sequence.filter(s => (s.midi !== undefined));
-  const midiMin = notes.length ? Math.min(...notes.map(s => s.midi)) - 1 : 48;
-  const midiMax = notes.length ? Math.max(...notes.map(s => s.midi)) + 1 : 72;
-  const midiRange = Math.max(1, midiMax - midiMin);
-
-  drawPianoKeys(document.getElementById('seqPianoKeys'), midiMin, midiMax);
-
-  const css = getComputedStyle(document.documentElement);
-  const noteColor = (css.getPropertyValue('--cyan') || '#0ea5e9').trim();
-  const anchorColor = (css.getPropertyValue('--anchor') || '#ec4899').trim();
-  const lineColor = 'rgba(255,255,255,0.08)';
-
-  ctx.fillStyle = (css.getPropertyValue('--bg') || '#0f172a').trim();
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Structural & step grid lines
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 1;
-  for (let r = 1; r < (totalSteps / phraseLen); r++) {
-    const x = r * phraseLen * pxPerStep;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-  }
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  for (let i = 0; i < totalSteps; i++) {
-    const x = i * pxPerStep + 0.5;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  // FIXED: Using the correct ID from your HTML: 'seqPianoKeys'
+  const pianoCanvas = document.getElementById('seqPianoKeys');
+  if (pianoCanvas) {
+    drawPianoKeys(pianoCanvas, rootMidi);
   }
 
-  // Draw notes ONLY on noteStart to prevent overlap.
-  // Math.round() ensures pixel-perfect alignment and kills subpixel bleeding.
-  const GAP = 2; // Horizontal gap between individual notes
-  // --- UPDATE START: Increased block height from 3 to 5 to match evolution preview ---
-  const blockHeight = 5;
-  // --- UPDATE END ---
+  // Draw notes on main canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   for (let i = 0; i < totalSteps; i++) {
-    const s = sequence[i];
-    if (!s || s.rest || s.midi === undefined || !s.noteStart) continue;
-    const hold = s.holdSteps || 1;
-    const startX = Math.round(i * pxPerStep) + (GAP / 2);
-    const width = Math.max(1, Math.round(hold * pxPerStep) - GAP);
-    const norm = (s.midi - midiMin) / midiRange;
-    const y = canvas.height - (norm * canvas.height);
+    const step = sequence[i];
+    if (step.midi === undefined) continue;
 
-    ctx.fillStyle = s.isAnchor ? anchorColor : noteColor;
-    ctx.fillRect(startX, y - blockHeight/2, width, blockHeight);
+    const noteMidi = step.midi;
+    const noteY = (12 - (noteMidi - rootMidi)) * keyHeight;
+
+    // Only draw notes within the 2-octave visible range
+    if (noteY < 0 || noteY > canvas.height) continue;
+
+    const xPos = i * pxPerStep;
+    const blockWidth = pxPerStep - 1;
+
+    ctx.fillStyle = '#00ccff';
+    ctx.fillRect(xPos, noteY, blockWidth, keyHeight - 2);
   }
 }
 
