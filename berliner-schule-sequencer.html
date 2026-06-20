@@ -2642,7 +2642,7 @@ function drawPianoKeys(canvas, centerMidi, viewRange) {
 
 /**
  * Redraws the entire sequence on the main canvas.
- * Adjusts view range and center based on the current mode.
+ * Includes the horizontal zebra stripes AND the original vertical grid lines.
  */
 function renderSequence() {
   if (!sequence || sequence.length === 0) return;
@@ -2658,18 +2658,16 @@ function renderSequence() {
   ctx.scale(dpr, dpr);
 
   // --- VIEW CONFIGURATION ---
-  let viewRange = 24; // Default 2 octaves
+  let viewRange = 24;
   let viewCenter = parseInt(document.getElementById('root').value) || 60;
 
   if (currentMode === 'arp') {
-    viewRange = 36; // 3 octaves for Arp
-
-    // Find the actual range of notes to center the view
+    viewRange = 36;
     const notes = sequence.filter(s => s.midi !== undefined).map(s => s.midi);
     if (notes.length > 0) {
       const min = Math.min(...notes);
       const max = Math.max(...notes);
-      viewCenter = (min + max) / 2; // Center of the actual notes
+      viewCenter = (min + max) / 2;
     }
   }
 
@@ -2684,30 +2682,30 @@ function renderSequence() {
     drawPianoKeys(pianoCanvas, viewCenter, viewRange);
   }
 
-  // Background Stripes
-  for (let k = 0; k < viewRange; k++) {
-    ctx.fillStyle = (k % 2 === 0) ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)';
-    ctx.fillRect(0, k * keyHeight, rect.width, keyHeight);
-  }
-
-  // Draw Notes
-  ctx.clearRect(0, 0, rect.width, rect.height); // Clear after stripes (or just draw stripes first)
-  // Note: To keep stripes, clear canvas first, then draw stripes, then draw notes.
-  // I'll just move the clear to the top.
-
-  // RE-CLEAR for correctness
+  // 1. Clear and Draw Horizontal Zebra Stripes
   ctx.clearRect(0, 0, rect.width, rect.height);
   for (let k = 0; k < viewRange; k++) {
     ctx.fillStyle = (k % 2 === 0) ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)';
     ctx.fillRect(0, k * keyHeight, rect.width, keyHeight);
   }
 
+  // 2. Draw Original Vertical Grid Lines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= totalSteps; i++) {
+    const x = i * pxPerStep;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, rect.height);
+    ctx.stroke();
+  }
+
+  // 3. Draw Notes
   for (let i = 0; i < totalSteps; i++) {
     const step = sequence[i];
     if (step.midi === undefined) continue;
 
     const noteMidi = step.midi;
-    // Calculate Y relative to the dynamic viewCenter
     const noteY = (halfRange - (noteMidi - viewCenter)) * keyHeight;
 
     if (noteY < 0 || noteY > rect.height) continue;
