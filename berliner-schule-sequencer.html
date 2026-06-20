@@ -114,7 +114,7 @@ body {
 }
 
 /* Vertical / horizontal divider lines used between control groups */
-.v-sep   { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+.v-sep   { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; align-self: center; }
 .v-sep-m { margin: 0 8px; }
 .h-sep   { flex: 1; height: 1px; background: var(--muted); opacity: 0.5; }
 
@@ -152,7 +152,7 @@ body {
 .canvas-fill { display: block; width: 100%; }
 
 /* Wrapper around a labeled set of .ctrl boxes (e.g. "Timing & Rhythm" section) */
-.controls-group { margin-bottom: 15px; }
+.controls-group { /* spacing now handled by .panel-row, see usage below */ }
 
 /* "—— Section Label ——" style divider between major page sections */
 .divider-row { margin: 20px 0 10px; }
@@ -300,14 +300,19 @@ body.knob-dragging {
   cursor: ns-resize;
 }
 
-/* Hide the default slider but keep it functional for interaction */
+/* Hide the default slider; the custom knob-visual handles all pointer
+   interaction (vertical drag). The native input stays purely as a data
+   store + keyboard/focus target, so it must not intercept clicks/drags
+   (it sat above the knob with z-index 2, fighting the vertical-drag
+   logic with native horizontal-slider behavior -> "sperrig/hakelig"). */
 .ctrl input[type="range"] {
   width: 32px;
   height: 32px;
   opacity: 0;
   cursor: ns-resize;
   position: absolute;
-  z-index: 2;
+  z-index: 0;
+  pointer-events: none;
   -webkit-appearance: none;
   appearance: none;
   touch-action: none;
@@ -496,7 +501,6 @@ body.knob-dragging {
   border: 1px solid var(--border);
   border-radius: var(--r);
   padding: 2px;
-  margin-bottom: 8px;
 }
 .export-tab {
   font-family: 'Share Tech Mono', monospace;
@@ -532,7 +536,6 @@ body.knob-dragging {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 15px;
 }
 
 .seq-header {
@@ -540,8 +543,6 @@ body.knob-dragging {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .seq-title {
@@ -554,26 +555,26 @@ body.knob-dragging {
 
 .stat-pills {
   display: flex;
-  gap: 6px;
   flex-wrap: wrap;
-  margin-left: auto;
+}
+
+.pill:not(:first-child)::before {
+  content: '·';
+  margin: 0 8px;
+  color: var(--muted);
+  opacity: 0.6;
 }
 
 .pill {
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
-  padding: 3px 8px;
-  border-radius: 2px;
-  background: var(--bg);
-  border: 1px solid var(--border);
   color: var(--muted);
 }
 
-.pill strong { color: var(--text-bright); }
 
 /* ── Sequencer Canvas Container (FIXED HEIGHT) ── */
 .seq-canvas-container {
-  flex: 0 0 200px;
+  flex: 0 0 140px;
   background: var(--bg);
   border: none;
   border-radius: var(--r);
@@ -581,15 +582,24 @@ body.knob-dragging {
   position: relative;
   overflow: hidden;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
 }
 
 #mainSeqCanvas {
   display: block;
-  width: 100% !important;
+  flex: 1;
+  min-width: 0;
   height: 100% !important;
   background: transparent;
+}
+
+.piano-keys {
+  display: block;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ── control bar ── */
@@ -823,22 +833,8 @@ details[open] summary::before { content: '− '; }
     </div>
   </div> <!-- End of Row 1 / transport -->
 
-<!-- SECTION SEPARATOR: Between MIDI Export and Settings -->
-<div class="flex-center gap-lg divider-row">
-  <div class="h-sep"></div>
-  <span class="mono nowrap divider-label">
-    Sequencer Parameters
-  </span>
-  <div class="h-sep"></div>
-</div>
-
 <!-- GROUP 1: TIMING & RHYTHM + EXPRESSION + PHRASE & NOTES (one shared row) -->
-<div class="controls-group">
-  <div class="flex-center gap-lg mb-md">
-    <div class="group-label live-text">Timing & Rhythm</div>
-    <div class="group-label">Expression</div>
-    <div class="group-label">Phrase & Notes</div>
-  </div>
+<div class="controls-group panel-row">
   <div class="controls">
     <div class="ctrl">
       <div class="ctrl-label live">BPM <span class="val" id="bpmVal">108</span></div>
@@ -919,7 +915,6 @@ details[open] summary::before { content: '− '; }
       <input type="range" id="noteCount" min="1" max="3" value="2">
     </div>
   </div>
-</div>
 </div>
 
   <!-- Offbeat anchor panel -->
@@ -1032,13 +1027,14 @@ details[open] summary::before { content: '− '; }
       <div class="stat-pills" id="statPills"></div>
     </div>
     <div class="seq-canvas-container">
+      <canvas id="seqPianoKeys" class="piano-keys"></canvas>
       <canvas id="mainSeqCanvas"></canvas>
     </div>
   </section>
 
     <!-- Row 2: MIDI & Evolution Station -->
-  <div class="flex-col gap-sm">
-    <!-- Export Mode Tabs -->
+  <div class="flex-col gap-md" style="margin-top: 10px;">
+    <!-- Export Mode Tabs (extra margin-top above gives 20px total separation from the sequence display, vs the standard 10px used everywhere else) -->
     <div class="export-tabs">
       <button class="export-tab active" data-target="midiPanel">MIDI Export</button>
       <button class="export-tab" data-target="evoPanel">Evolution Export</button>
@@ -1061,8 +1057,8 @@ details[open] summary::before { content: '− '; }
 
     <!-- Panel 2: Evolution Export -->
     <div id="evoPanel" class="export-panel">
-      <!-- Evo Row 1: Core Mutation Settings -->
-      <div class="flex-center gap-sm panel-row mb-sm">
+      <!-- Evo Row 1: Steps per Bar + Export (mirrors the MIDI export row above) -->
+      <div class="flex-center gap-lg panel-row mb-sm">
         <span class="seed-label nowrap">STEPS PER BAR</span>
         <select id="exportStretchEvo" class="select-field">
           <option value="2">2</option>
@@ -1072,39 +1068,42 @@ details[open] summary::before { content: '− '; }
           <option value="32">32</option>
         </select>
         <button class="btn evo-btn nowrap mr-auto" id="exportEvoBtn">🧬 EXPORT EVOLUTION</button>
+      </div>
 
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
+      <!-- Evo Row 2: All sliders + dropdowns, packed together, wraps onto a 2nd line if needed -->
+      <div class="flex-center flex-wrap gap-xs row-gap-md panel-row mb-sm" style="align-items: stretch;">
 
-        <div class="ctrl ctrl-grow">
+        <div class="ctrl">
           <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">12</span></div>
           <input type="range" id="evoIterations" min="1" max="64" value="12">
         </div>
 
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <div class="ctrl ctrl-grow">
+        <div class="ctrl">
           <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
           <input type="range" id="evoMutation" min="0" max="100" value="20">
         </div>
 
-        <div class="ctrl ctrl-grow">
+        <div class="ctrl">
           <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">5%</span></div>
           <input type="range" id="evoDrift" min="0" max="100" value="5">
         </div>
 
-        <div class="ctrl ctrl-grow">
+        <div class="ctrl">
           <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
           <input type="range" id="evoGrip" min="0" max="100" value="50">
         </div>
-      </div>
 
-      <!-- Evo Row 2: Root & Octave Drift -->
-      <div class="flex-center flex-wrap gap-xs row-gap-md panel-row">
+        <!-- Octave Drift -->
+        <div class="ctrl">
+          <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
+          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0">
+        </div>
+
+        <!-- Visual Separator -->
+        <div class="v-sep"></div>
 
       <!-- Evolution curve dropdown -->
-      <div class="ctrl shrink-0" style="width: 160px;">
+      <div class="ctrl shrink-0" style="width: 150px;">
         <div class="ctrl-label">Evolution Curve</div>
         <select id="evolutionCurve">
           <option value="linear">Linear</option>
@@ -1119,7 +1118,7 @@ details[open] summary::before { content: '− '; }
       </div>
 
       <!-- Mutation Style dropdown -->
-      <div class="ctrl shrink-0" style="width: 170px;">
+      <div class="ctrl shrink-0" style="width: 150px;">
         <div class="ctrl-label">Mutation Style</div>
         <select id="evoMutationStyle">
           <option value="walk" selected>Palette Walk</option>
@@ -1128,18 +1127,11 @@ details[open] summary::before { content: '− '; }
         </select>
       </div>
 
-
-        <!-- Octave Drift: Fixed width to prevent jumping -->
-        <div class="ctrl shrink-0" style="width: 140px;">
-          <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
-          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0">
-        </div>
-
         <!-- Visual Separator -->
         <div class="v-sep"></div>
 
         <!-- Root Mode Dropdown -->
-        <div class="ctrl shrink-0" style="width: 180px;">
+        <div class="ctrl shrink-0" style="width: 160px;">
           <div class="ctrl-label">Root</div>
           <select id="evoRootMode" style="overflow: hidden; text-overflow: ellipsis;">
             <option value="none" selected>None (Static)</option>
@@ -1164,12 +1156,13 @@ details[open] summary::before { content: '− '; }
               <option value="pachelbel">Pachelbel's Canon</option>
               <option value="chromatic">Chromatic Descent</option>
               <option value="pentatonic">Minor Pentatonic</option>
+
             </optgroup>
           </select>
         </div>
 
         <!-- Interval Container: appears next to Root Mode without pushing everything -->
-        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 110px;">
+        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 100px;">
           <div class="ctrl-label">Every</div>
           <select id="evoRootInterval">
             <option value="1">1 Block</option>
@@ -1183,7 +1176,7 @@ details[open] summary::before { content: '− '; }
         <div class="v-sep"></div>
 
         <!-- Seed Mode Dropdown -->
-        <div class="ctrl shrink-0" style="width: 110px;">
+        <div class="ctrl shrink-0" style="width: 100px;">
           <div class="ctrl-label">Evo Seed</div>
           <select id="evoSeedMode">
             <option value="random">Random</option>
@@ -1213,8 +1206,9 @@ details[open] summary::before { content: '− '; }
           <button class="btn nowrap" id="evoPreviewBtn">↻ Refresh Evolution</button>
           <span class="mono muted-10" id="evoPreviewInfo"></span>
         </div>
-        <div class="canvas-frame">
-          <canvas id="evoPreviewCanvas" height="160" class="canvas-fill"></canvas>
+        <div class="canvas-frame" style="display: flex; align-items: stretch;">
+          <canvas id="evoPianoKeys" class="piano-keys"></canvas>
+          <canvas id="evoPreviewCanvas" height="140" class="canvas-fill" style="flex: 1; min-width: 0;"></canvas>
         </div>
       </div>
     </div> <!-- End of evoPanel -->
@@ -1397,7 +1391,7 @@ details[open] summary::before { content: '− '; }
             <li><span style="color: var(--anchor);">Pink bar:</span> <span class="hl-text">Anchor note (fixed pitch). Height = pitch, Width = duration.</span></li>
             <li><span style="color: #fff;">Empty space:</span> <span class="hl-text">A rest.</span></li>
             <li><span style="color: #fff;">Vertical grid lines:</span> <span class="hl-text">Phrase/Block boundaries for structural reference.</span></li>
-            <li><strong class="hl-text">Stat Pills:</strong> <span class="hl-text">Top-right metrics show current Root, Scale, Note Count vs Total Steps, Anchor Count, and Pitch Range (↓/↑).</span></li>
+            <li><strong class="hl-text">Stat Pills:</strong> <span class="hl-text">Metrics next to the Refresh button show current Root, Scale, Note Count vs Total Steps, Anchor Count, and Pitch Range (↓/↑).</span></li>
           </ul>
         </div>
 
@@ -2225,7 +2219,7 @@ function renderEvolutionPreview() {
 
   const chain = currentEvoChain;
   const ctx = canvas.getContext('2d');
-  const height = 160;
+  const height = 140;
   const cssWidth = canvas.parentElement.clientWidth || canvas.clientWidth || 600;
   const pxPerStep = Math.max(cssWidth / Math.max(chain.length, 1), 0.5);
   canvas.width = cssWidth;
@@ -2247,6 +2241,8 @@ function renderEvolutionPreview() {
     maxMidi = Math.max(...notes.map(s => s.midi)) + 1;
   }
   const range = (maxMidi - minMidi) || 1;
+
+  drawPianoKeys(document.getElementById('evoPianoKeys'), minMidi, maxMidi);
 
   const phraseLen = +document.getElementById('phraseLen').value || 1;
   const repeats = +document.getElementById('repeats').value || 1;
@@ -2607,6 +2603,48 @@ function generateEvolutionaryChain() {
  * This handles the piano-roll visualization for the main loop.
  */
 /**
+ * Draws a small vertical piano-key strip (white/black key shading) next to
+ * a piano-roll canvas, mapped to the same MIDI pitch range used for the
+ * notes themselves, so the rows line up exactly with the note blocks.
+ */
+function drawPianoKeys(canvas, midiMin, midiMax) {
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width || 20;
+  canvas.height = rect.height;
+  if (!canvas.width || !canvas.height) return;
+
+  const ctx = canvas.getContext('2d');
+  const range = Math.max(1, midiMax - midiMin);
+  const blackPC = new Set([1, 3, 6, 8, 10]); // C#, D#, F#, G#, A#
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background = white-key color for the full strip
+  ctx.fillStyle = 'rgba(255,255,255,0.10)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Black-key rows, narrower and darker
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  for (let m = Math.floor(midiMin); m <= Math.ceil(midiMax); m++) {
+    const pc = ((m % 12) + 12) % 12;
+    if (!blackPC.has(pc)) continue;
+    const yTop = canvas.height - ((m + 1 - midiMin) / range) * canvas.height;
+    const yBot = canvas.height - ((m - midiMin) / range) * canvas.height;
+    ctx.fillRect(0, yTop, canvas.width * 0.62, Math.max(1, yBot - yTop));
+  }
+
+  // Thin separator line at each C, for octave orientation
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  for (let m = Math.floor(midiMin); m <= Math.ceil(midiMax); m++) {
+    if (((m % 12) + 12) % 12 !== 0) continue;
+    const y = Math.round(canvas.height - ((m - midiMin) / range) * canvas.height) + 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+}
+
+/**
  * Redraws the entire sequence on the canvas.
  * This handles the piano-roll visualization for the main loop.
  */
@@ -2628,6 +2666,8 @@ function renderSequence() {
   const midiMin = notes.length ? Math.min(...notes.map(s => s.midi)) - 1 : 48;
   const midiMax = notes.length ? Math.max(...notes.map(s => s.midi)) + 1 : 72;
   const midiRange = Math.max(1, midiMax - midiMin);
+
+  drawPianoKeys(document.getElementById('seqPianoKeys'), midiMin, midiMax);
 
   const css = getComputedStyle(document.documentElement);
   const noteColor = (css.getPropertyValue('--cyan') || '#0ea5e9').trim();
@@ -2715,11 +2755,11 @@ function updatePills() {
   const pills = document.getElementById('statPills');
   const p = (...t) => `<span class="pill">${t.join('')}</span>`;
   pills.innerHTML = [
-    p(rootEl, ' <strong>', scaleEl, '</strong>'),
-    p('Notes: <strong>', notes.length, '</strong>/', sequence.length),
-    anchors.length ? p('Anchors: <strong>', anchors.length, '</strong>') : '',
-    lo <= 127 ? p('↓ <strong>', midiToName(lo), '</strong>') : '',
-    hi >= 0 ? p('↑ <strong>', midiToName(hi), '</strong>') : '',
+    p(rootEl, ' ', scaleEl),
+    p('Notes: ', notes.length, '/', sequence.length),
+    anchors.length ? p('Anchors: ', anchors.length) : '',
+    lo <= 127 ? p('↓ ', midiToName(lo)) : '',
+    hi >= 0 ? p('↑ ', midiToName(hi)) : '',
   ].filter(Boolean).join('');
 }
 
@@ -2978,6 +3018,7 @@ function syncNoteLengths() {
   if (minVal > maxVal) {
     maxEl.value = minVal;
     document.getElementById('maxNoteLenVal').textContent = minVal;
+    maxEl.dispatchEvent(new Event('input')); // keep the knob visual (rotation) in sync
   }
 
   // Case 2: Max is pushed below Min -> Push Min down to match Max
@@ -2985,6 +3026,7 @@ function syncNoteLengths() {
   if (maxVal < minVal) {
     minEl.value = maxVal;
     document.getElementById('minLenVal').textContent = maxVal;
+    minEl.dispatchEvent(new Event('input')); // keep the knob visual (rotation) in sync
   }
 }
 
@@ -2999,12 +3041,14 @@ function syncPaletteRange() {
   if (paletteVal > rangeVal) {
     paletteEl.value = rangeVal;
     document.getElementById('paletteVal').textContent = rangeVal;
+    paletteEl.dispatchEvent(new Event('input'));
   }
 
   // Range can never be smaller than palette
   if (rangeVal < paletteVal) {
     rangeEl.value = paletteVal;
     document.getElementById('rangeVal').textContent = paletteVal;
+    rangeEl.dispatchEvent(new Event('input'));
   }
 }
 
@@ -3027,6 +3071,7 @@ function syncRootConstraints() {
   if (palVal > maxPossibleNotes) {
     palEl.value = maxPossibleNotes;
     document.getElementById('evoRootPalVal').textContent = maxPossibleNotes;
+    palEl.dispatchEvent(new Event('input'));
   }
 
   // Range must be at least large enough to accommodate the palette size
@@ -3035,6 +3080,7 @@ function syncRootConstraints() {
   if (rangeVal < minRequiredRange) {
     rangeEl.value = minRequiredRange;
     document.getElementById('evoRootRangeVal').textContent = minRequiredRange;
+    rangeEl.dispatchEvent(new Event('input'));
   }
 }
 
