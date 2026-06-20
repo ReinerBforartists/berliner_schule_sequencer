@@ -924,24 +924,9 @@ details[open] summary::before { content: '− '; }
     <div class="anchor-controls">
       <label class="field-label">MELODY RANGE</label>
       <select id="anchorMelodyPos">
-        <option value="above" selected>Above Anchor</option>
-        <option value="below">Below Anchor</option>
-        <option value="around">Around Anchor</option>
-      </select>
-      <label class="field-label">ANCHOR NOTE</label>
-      <select id="anchorNote">
-        <option value="36">C2</option>
-        <option value="38">D2</option>
-        <option value="40">E2</option>
-        <option value="41">F2</option>
-        <option value="43">G2</option>
-        <option value="45">A2</option>
-        <option value="48">C3</option>
-        <option value="50">D3</option>
-        <option value="52">E3</option>
-        <option value="55" selected>G3</option>
-        <option value="57">A3</option>
-        <option value="60">C4</option>
+        <option value="above" selected>Above Root</option>
+        <option value="below">Below Root</option>
+        <option value="around">Around Root</option>
       </select>
       <label class="field-label">PATTERN</label>
       <select id="anchorPattern">
@@ -1320,7 +1305,7 @@ details[open] summary::before { content: '− '; }
                   <span class="hl-amber">Offbeat Anchor Panel:</span>
                   <span class="hl-text">
                     <ul style="margin-left: 15px; margin-top: 5px; list-style: none; font-size: 12px; line-height: 1.6;">
-                      <li><span class="hl-amber">Anchor Note:</span> The fixed pitch that "locks" the rhythm. This is usually a bass note.</li>
+                      <li><span class="hl-amber">Anchor Note:</span> The fixed pitch that "locks" the rhythm. Always equals the current Root Note (no separate control) — usually functions as a bass note.</li>
                       <li><span class="hl-amber">Pattern:</span> Defines where the anchor sits. <span class="hl-amber">offbeat</span> creates the classic "push-pull" feel by placing the fixed note on every second step.</li>
                       <li><span class="hl-amber">Onbeat:</span> Instead of placing the anchor note offbeat we place it onbeat.</li>
                       <li><span class="hl-amber">Melody Range:</span> Controls the register of the moving notes relative to the anchor. <span class="hl-amber">Above/Below Anchor</span> shift the whole melody palette by octaves so it stays cleanly above or below the pedal note. <span class="hl-amber">Around Anchor</span> re-octaves each palette tone individually to whichever octave sits closest to the anchor, so the melody surrounds it - some notes above, some below.</li>
@@ -1547,57 +1532,54 @@ function buildPalette(rng, scale, size, root, toneRange) {
 }
 
 /**
- * Shifts an entire palette by whole octaves so it sits above, below, or
- * straddling ("around") a given anchor pitch. Used for Offbeat Anchor mode
- * so the melody's register can be controlled relative to the pedal-point
- * anchor note, independent of the scale's global root.
+ * Shifts the melody palette by whole octaves so it sits above, below, or
+ * straddling ("around") the fixed Anchor Note. The anchor note is always
+ * the current Root Note (no separate control). Instead, the melody's palette is octave-shifted
+ * as a whole (preserving its internal pitch-class structure/intervals) so
+ * that its register sits in the chosen position relative to the anchor.
  */
-/**
- * Computes the actual MIDI pitch to use for the Offbeat Anchor note, based
- * on the (untouched) melody palette's pitch range and the chosen position
- * (above/below/around). The palette itself is never modified - only the
- * anchor's octave is chosen so the melody ends up above, below, or
- * straddling it. The anchor's pitch CLASS (e.g. "G") is preserved; only the
- * octave is adjusted.
- */
-function computeAnchorPitch(anchorMidi, palette, position) {
-  if (!palette || palette.length === 0 || !position || position === 'none') return anchorMidi;
-
-  const lo = 24, hi = 84;
-  const pitchClass = ((anchorMidi % 12) + 12) % 12;
-
-  // All octave-transpositions of the anchor's pitch class within range.
-  const candidates = [];
-  for (let oct = 0; oct <= 8; oct++) {
-    const m = pitchClass + oct * 12;
-    if (m >= lo && m <= hi) candidates.push(m);
-  }
-  if (candidates.length === 0) return anchorMidi;
+function shiftPaletteToAnchor(palette, anchorMidi, position) {
+  if (!palette || palette.length === 0 || !position || position === 'none') return palette;
 
   const min = Math.min(...palette);
   const max = Math.max(...palette);
 
   if (position === 'above') {
-    // "Melody plays above the anchor" -> anchor sits below the melody's range.
-    const below = candidates.filter(c => c < min);
-    return below.length > 0 ? below[below.length - 1] : candidates[0];
+    // Shift the whole palette up in octave steps until every note is above the anchor.
+    let shift = 0;
+    while (min + shift <= anchorMidi) shift += 12;
+    const shifted = palette.map(m => m + shift);
+    if (shifted.some(m => m < 0 || m > 127)) return palette;
+    return shifted;
   }
 
   if (position === 'below') {
-    // "Melody plays below the anchor" -> anchor sits above the melody's range.
-    const above = candidates.filter(c => c > max);
-    return above.length > 0 ? above[0] : candidates[candidates.length - 1];
+    // Shift the whole palette down in octave steps until every note is below the anchor.
+    let shift = 0;
+    while (max + shift >= anchorMidi) shift -= 12;
+    const shifted = palette.map(m => m + shift);
+    if (shifted.some(m => m < 0 || m > 127)) return palette;
+    return shifted;
   }
 
   if (position === 'around') {
-    // Simply the midpoint of the melody's pitch range, rounded. The anchor's
-    // pitch class is not preserved here - if the midpoint coincides with a
-    // palette note, that's fine.
-    return Math.round((min + max) / 2);
+    // buildPalette() always constructs the corridor starting AT the root and
+    // moving upward, so min === anchorMidi (root) and the whole palette sits
+    // at-or-above it. A single constant octave-shift can't fix that (the
+    // midpoint is already close to the anchor, so shift would round to 0).
+    // Instead, drop the lower half of the palette down an octave so the
+    // melody actually straddles the anchor: roughly half below, half at/above.
+    const sorted = [...palette].sort((a, b) => a - b);
+    const splitIdx = Math.ceil(sorted.length / 2);
+    const straddled = sorted.map((m, idx) => (idx < splitIdx ? m - 12 : m));
+    if (straddled.some(m => m < 0 || m > 127)) return palette;
+    return straddled.sort((a, b) => a - b);
   }
 
-  return anchorMidi;
+  return palette;
 }
+
+
 
 // =========================================
 // PSEUDO-RANDOM NUMBER GENERATOR
@@ -2093,7 +2075,7 @@ function generateSequence() {
   if (seedMode !== 'fixed') document.getElementById('seedValue').value = seed;
   const rng = new RNG(seed);
 
-  const anchorMidi = parseInt(document.getElementById('anchorNote').value) || 48;
+  const anchorMidi = root;
   const anchorPattern = document.getElementById('anchorPattern').value;
   const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
   const arpParams = {
@@ -2110,9 +2092,13 @@ function generateSequence() {
       ? buildPalette(rng, scale, paletteSize, root, toneRange)
       : null;
 
-  const effectiveAnchorMidi = (mode === 'offbeat' && palette)
-      ? computeAnchorPitch(anchorMidi, palette, document.getElementById('anchorMelodyPos')?.value)
-      : anchorMidi;
+  // Offbeat Anchor mode: the anchor note itself stays fixed at the picked
+  // pitch; instead the melody palette is octave-shifted to sit above,
+  // below, or straddling that fixed anchor.
+  const effectiveAnchorMidi = anchorMidi;
+  if (mode === 'offbeat' && palette) {
+    palette = shiftPaletteToAnchor(palette, anchorMidi, document.getElementById('anchorMelodyPos')?.value);
+  }
 
   const params = {
     scale,
@@ -2365,7 +2351,7 @@ function generateEvolutionaryChain() {
   const minNoteLen = +document.getElementById('minNoteLen').value;
   const maxNoteLen = +document.getElementById('maxNoteLen').value;
 
-  const anchorMidi = parseInt(document.getElementById('anchorNote').value);
+  const anchorMidi = root;
   const anchorPattern = document.getElementById('anchorPattern').value;
   const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
 
@@ -2380,9 +2366,13 @@ function generateEvolutionaryChain() {
     if (!palette.includes(fallback)) palette = [...palette, fallback].sort((a, b) => a - b);
   }
 
-  const effectiveAnchorMidi = (mode === 'offbeat' && palette)
-      ? computeAnchorPitch(anchorMidi, palette, document.getElementById('anchorMelodyPos')?.value)
-      : anchorMidi;
+  // Offbeat Anchor mode: the anchor note itself stays fixed at the picked
+  // pitch; instead the melody palette is octave-shifted to sit above,
+  // below, or straddling that fixed anchor.
+  const effectiveAnchorMidi = anchorMidi;
+  if (mode === 'offbeat' && palette) {
+    palette = shiftPaletteToAnchor(palette, anchorMidi, document.getElementById('anchorMelodyPos')?.value);
+  }
 
   const params = {
     scale, root, phraseLen,
@@ -3271,9 +3261,9 @@ const PRESETS = {
   dune:           { mode:'schulze', scale:'aeolian',    root:48, bpm:55,  stepsPerBeat:2, phraseLen:32, repeats:3,  noteCount:1, minNoteLen:20, variation:5,  swing:0  },
 
   // --- Offbeat Anchor Mode ---
-  moog_sequencer: { mode:'offbeat', scale:'dorian',     root:50, bpm:115, stepsPerBeat:4, phraseLen:16, repeats:8,  density:80, maxInterval:3, anchorNote:55, anchorPattern:'offbeat', variation:25, swing:10, minNoteLen:2, maxNoteLen:4 },
-  berlin_pulse:   { mode:'offbeat', scale:'phrygian',   root:48, bpm:125, stepsPerBeat:4, phraseLen:16, repeats:4,  density:60, maxInterval:2, anchorNote:48, anchorPattern:'every4',  variation:15, swing:0,  minNoteLen:2, maxNoteLen:4 },
-  hypnosis:       { mode:'offbeat', scale:'aeolian',    root:55, bpm:95,  stepsPerBeat:4, phraseLen:12, repeats:6,  density:70, maxInterval:4, anchorNote:55, anchorPattern:'every3',  variation:30, swing:20, minNoteLen:2, maxNoteLen:6 },
+  moog_sequencer: { mode:'offbeat', scale:'dorian',     root:50, bpm:115, stepsPerBeat:4, phraseLen:16, repeats:8,  density:80, maxInterval:3, anchorPattern:'offbeat', variation:25, swing:10, minNoteLen:2, maxNoteLen:4 },
+  berlin_pulse:   { mode:'offbeat', scale:'phrygian',   root:48, bpm:125, stepsPerBeat:4, phraseLen:16, repeats:4,  density:60, maxInterval:2, anchorPattern:'every4',  variation:15, swing:0,  minNoteLen:2, maxNoteLen:4 },
+  hypnosis:       { mode:'offbeat', scale:'aeolian',    root:55, bpm:95,  stepsPerBeat:4, phraseLen:12, repeats:6,  density:70, maxInterval:4, anchorPattern:'every3',  variation:30, swing:20, minNoteLen:2, maxNoteLen:6 },
 
   // --- Arpeggiator Mode ---
   starlight:      { mode:'arp', scale:'majorPent',  root:57, bpm:110, stepsPerBeat:4, phraseLen:16, repeats:4, density:100, arpRoot:9, arpChord:'maj7',  arpPattern:'updown', arpOctaves:2, variation:10, swing:0,  minNoteLen:1, maxNoteLen:2 },
@@ -3328,7 +3318,6 @@ function applyPreset(name) {
   set('octaveDrift', p.octaveDrift);
 
   // Mode-specific settings (will be applied if the controls exist/are active)
-  if (p.anchorNote !== undefined) set('anchorNote', p.anchorNote);
   if (p.anchorPattern !== undefined) set('anchorPattern', p.anchorPattern);
   if (p.arpRoot !== undefined) set('arpRoot', p.arpRoot);
   if (p.arpChord !== undefined) set('arpChord', p.arpChord);
@@ -3391,7 +3380,7 @@ document.getElementById('exportEvoBtn').addEventListener('click', async () => {
   }
 });
 
-['scale','root','anchorNote','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+['scale','root','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change',generateSequence);
 });
 
@@ -3606,7 +3595,7 @@ document.getElementById('evoPanel')?.addEventListener('change', scheduleEvoPrevi
 
 // Auto-refresh preview when the underlying sequence is (re)generated
 document.getElementById('genBtn')?.addEventListener('click', scheduleEvoPreview);
-['scale','root','anchorNote','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+['scale','root','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change', scheduleEvoPreview);
 });
 document.getElementById('presetSelect')?.addEventListener('change', () => setTimeout(scheduleEvoPreview, 0));
