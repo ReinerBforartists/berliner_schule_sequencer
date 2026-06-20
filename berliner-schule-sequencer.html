@@ -2250,6 +2250,7 @@ function renderEvolutionPreview() {
   // Constants to match the main sequencer's visual style
   const GAP = 2;
   const BLOCK_HEIGHT = 5; // Increased height for better visibility
+  const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
 
   ctx.fillStyle = noteColor;
   for (let i = 0; i < chain.length; i++) {
@@ -2257,8 +2258,12 @@ function renderEvolutionPreview() {
     if (s && s.noteStart && !s.rest && typeof s.midi === 'number') {
       const y = height - ((s.midi - minMidi) / range) * height;
 
+      // Mirror the playback engine's swing timing: odd-numbered steps are
+      // delayed by half a step times the swing amount.
+      const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
+
       // Calculate start X and width using the same logic as the main sequencer
-      const startX = Math.round(i * pxPerStep) + (GAP / 2);
+      const startX = Math.round(i * pxPerStep + swingOffset) + (GAP / 2);
       const w = Math.max(1, Math.round((s.holdSteps || 1) * pxPerStep) - GAP);
 
       // Draw with increased height, centered vertically
@@ -2715,6 +2720,7 @@ function renderSequence() {
   }
 
   // 3. Draw Notes
+  const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
   for (let i = 0; i < totalSteps; i++) {
     const step = sequence[i];
     if (step.midi === undefined) continue;
@@ -2724,7 +2730,10 @@ function renderSequence() {
 
     if (noteY < 0 || noteY > rect.height) continue;
 
-    const xPos = i * pxPerStep;
+    // Mirror the playback engine's swing timing: odd-numbered steps are
+    // delayed by half a step times the swing amount.
+    const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
+    const xPos = i * pxPerStep + swingOffset;
     const blockWidth = pxPerStep - 1;
 
     ctx.fillStyle = '#00ccff';
@@ -3176,6 +3185,13 @@ evoSliderConfigs.forEach(s => {
 const genSliders=['phraseLen','repeats','maxInterval','density','noteCount','minNoteLen','maxNoteLen','variation','paletteSize','toneRange'];
 genSliders.forEach(id=>{
   document.getElementById(id)?.addEventListener('change', generateSequence);
+});
+
+// Swing is a "live" timing parameter (no regeneration needed) - just redraw
+// the piano rolls so the visual offset stays in sync while dragging.
+document.getElementById('swing')?.addEventListener('input', () => {
+  renderSequence();
+  renderEvolutionPreview();
 });
 
 
