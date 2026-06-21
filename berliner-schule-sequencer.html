@@ -850,7 +850,7 @@ details[open] summary::before { content: '− '; }
     </div>
     <div class="ctrl" id="minNoteLenCtrl">
       <div class="ctrl-label">Min Length <span class="val" id="minLenVal">1</span></div>
-      <input type="range" id="minNoteLen" min="1" max="24" value="1">
+      <input type="range" id="minNoteLen" min="1" max="32" value="1">
     </div>
     <div class="ctrl" id="maxNoteLenCtrl">
       <div class="ctrl-label">Max Length <span class="val" id="maxNoteLenVal">2</span></div>
@@ -1649,15 +1649,22 @@ function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, 
       }
 
       if (rng.chance(density ?? 1)) {
+        // Length is rolled independently of position/density, only clipped if it overruns the phrase end
+        const dur = rng.int(minNoteLen, maxNoteLen);
         const available = phraseLen - currentStep;
-        if (available < minNoteLen) { currentStep++; continue; } // Make sure there is enough space
-        const dur = rng.int(minNoteLen, Math.min(maxNoteLen, available));
-        fullEvents.push({start: currentStep, duration: dur, midi, degree: 0, octave: 0});
-        currentStep += dur;
+        const finalDur = Math.min(dur, available);
+        fullEvents.push({start: currentStep, duration: finalDur, midi, degree: 0, octave: 0});
+        currentStep += finalDur;
       } else {
         currentStep++;
       }
     }
+  }
+  if (fullEvents.length === 0) {
+    const start = rng.int(0, phraseLen - 1);
+    const dur = rng.int(minNoteLen, maxNoteLen);
+    const finalDur = Math.min(dur, phraseLen - start);
+    fullEvents.push({start, duration: finalDur, midi: motifMidi[0], degree: 0, octave: 0});
   }
   return fullEvents;
 }
@@ -1684,22 +1691,29 @@ function buildPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights
   const tones = palette && palette.length > 0 ? palette : [root];
   let toneIdx = rng.int(0, tones.length - 1);
 
-  for (let i = 0; i < phraseLen; i++) {
-    if (!rng.chance(density)) continue;
-    const available = phraseLen - i;
+  let i = 0;
+  while (i < phraseLen) {
+    if (rng.chance(density)) {
+      // Length is rolled independently of position/density -- density only flags note-or-not per step.
+      const dur = rng.int(minNoteLen, maxNoteLen);
+      const available = phraseLen - i;
+      const finalDur = Math.min(dur, available); // only clip if it overruns the phrase end
 
-    // DYNAMIC CLAMPING: Prevents rng.int(a, b) where a > b
-    const effMin = Math.min(minNoteLen, available);
-    const effMax = Math.max(effMin, Math.min(maxNoteLen, available));
+      events.push({start: i, duration: finalDur, midi: tones[toneIdx], degree: 0, octave: 0});
 
-    if (effMin > effMax) continue; // Skip if no valid length fits
+      const step = rng.int(-maxInterval, maxInterval);
+      toneIdx = Math.max(0, Math.min(tones.length - 1, toneIdx + step));
 
-    const dur = rng.int(effMin, effMax);
-    events.push({start: i, duration: dur, midi: tones[toneIdx], degree: 0, octave: 0});
-    i += dur - 1;
-
-    const step = rng.int(-maxInterval, maxInterval);
-    toneIdx = Math.max(0, Math.min(tones.length - 1, toneIdx + step));
+      i += finalDur;
+    } else {
+      i += 1; // miss -> advance one step, next step gets its own fair chance
+    }
+  }
+  if (events.length === 0) {
+    const start = rng.int(0, phraseLen - 1);
+    const dur = rng.int(minNoteLen, maxNoteLen);
+    const finalDur = Math.min(dur, phraseLen - start);
+    events.push({start, duration: finalDur, midi: tones[toneIdx], degree: 0, octave: 0});
   }
   return events;
 }
@@ -1710,7 +1724,10 @@ function mutatePhrase(rng, events, variation, params) {
   const tones = params.palette && params.palette.length > 0 ? params.palette : [params.root];
 
   if (copy.length === 0) {
-    return [{start: rng.int(0, params.phraseLen - 1), duration: 1, midi: tones[0], degree: 0, octave: 0}];
+    const start = rng.int(0, params.phraseLen - 1);
+    const dur = rng.int(params.minNoteLen || 1, params.maxNoteLen || params.minNoteLen || 1);
+    const finalDur = Math.min(dur, params.phraseLen - start);
+    return [{start, duration: finalDur, midi: tones[0], degree: 0, octave: 0}];
   }
 
   const n = Math.max(1, Math.floor(copy.length * variation));
@@ -1725,28 +1742,22 @@ function mutatePhrase(rng, events, variation, params) {
     if (roll < removeChance) {
       if (copy.length > 1) copy.splice(rng.int(0, copy.length - 1), 1);
     } else if (roll < removeChance + addChance) {
-      const start = rng.int(0, params.phraseLen - (params.minNoteLen || 1));
-      const available = params.phraseLen - start;
-      const effMin = Math.min(params.minNoteLen, available);
-      const effMax = Math.max(effMin, Math.min(params.maxNoteLen, available));
-      if (effMin > effMax) continue;
+      const start = rng.int(0, params.phraseLen - 1);
+      const dur = rng.int(params.minNoteLen, params.maxNoteLen);
+      const finalDur = Math.min(dur, params.phraseLen - start);
       if (!copy.find(e => e.start === start)) {
         const midi = tones[rng.int(0, tones.length - 1)];
-        copy.push({
-          start,
-          duration: rng.int(effMin, effMax),
-          midi, degree: 0, octave: 0
-        });
+        copy.push({ start, duration: finalDur, midi, degree: 0, octave: 0 });
       }
     } else {
-      const idx = rng.int(0, copy.length - 1);
-      if (copy[idx]) {
-        copy[idx].midi = tones[rng.int(0, tones.length - 1)];
+          const idx = rng.int(0, copy.length - 1);
+          if (copy[idx]) {
+            copy[idx].midi = tones[rng.int(0, tones.length - 1)];
+          }
+        }
       }
+      return copy;
     }
-  }
-  return copy;
-}
 
 function expandEvents(events, len) {
   const t=Array.from({length:len},()=>({rest:true}));
@@ -1836,11 +1847,12 @@ function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, 
       events.push({start: i, duration: 1, midi: anchorMidi, degree: null, octave: null, isAnchor: true});
     } else if (rng.chance(density)) {
       const midi = usePalette ? palette[paletteIdx] : scaleDegreeToMidi(root, scale, degree, octave);
+      // Length is rolled independently of position/density, only clipped if it overruns the phrase end
+      const dur = rng.int(minNoteLen, maxNoteLen);
       const available = phraseLen - i;
-      if (available < minNoteLen) continue; // Make sure there is enough space
-      const dur = rng.int(minNoteLen, Math.min(maxNoteLen, available));
-      events.push({start: i, duration: dur, midi, degree, octave});
-      i += dur - 1;
+      const finalDur = Math.min(dur, available);
+      events.push({start: i, duration: finalDur, midi, degree, octave});
+      i += finalDur - 1;
 
       const step = rng.int(-maxInterval, maxInterval);
       if (usePalette) {
@@ -1953,6 +1965,10 @@ function buildArpPhrase(rng, {phraseLen, density, maxNoteLen}, arpRoot, arpChord
       pos++;
     }
     events.push({start: i, duration: 1, midi, degree: 0, octave: 0});
+  }
+  if (events.length === 0) {
+    const start = rng.int(0, phraseLen - 1);
+    events.push({start, duration: 1, midi: ordered[0], degree: 0, octave: 0});
   }
   return events;
 }
@@ -3589,15 +3605,24 @@ function initKnobs() {
     editInput.value = slider.value;
 
     slider.parentNode.insertBefore(visual, slider);
-    // Input is now absolute, so we just add it to the container
     ctrlBox.appendChild(editInput);
 
     // 4. Logic: Update rotation and labels
     const updateRotation = () => {
       const min = +slider.min || 0;
-      const max = +slider.max || 100;
+      let max = +slider.max || 100;
       const val = +slider.value;
-      const percent = (val - min) / (max - min);
+
+      // DYNAMIC ROTATION: If this is a length slider, the visual "max" (5 o'clock)
+      // should be the current phrase length, not the HTML attribute max.
+      if (slider.id === 'minNoteLen' || slider.id === 'maxNoteLen') {
+        const phraseLen = parseInt(document.getElementById('phraseLen').value) || 16;
+        max = phraseLen;
+      }
+
+      // Calculate percentage based on the (possibly dynamic) max.
+      // Clamp to 1.0 so the knob doesn't spin past 5 o'clock if val > max
+      const percent = Math.min(1, Math.max(0, (val - min) / (max - min)));
 
       const rotation = (percent * 270) - 135;
       marker.style.transform = `rotate(${rotation}deg)`;
@@ -3617,18 +3642,18 @@ function initKnobs() {
     let startY = 0;
     let startVal = 0;
     const step = parseFloat(slider.step) || 1;
-    const min = parseFloat(slider.min) || 0;
-    const max = parseFloat(slider.max) || 100;
+    const minAttr = parseFloat(slider.min) || 0;
+    const maxAttr = parseFloat(slider.max) || 100;
     const PIXELS_PER_FULL_RANGE = 120;
 
     const onPointerMove = (e) => {
       if (!dragging) return;
       e.preventDefault();
       const deltaY = startY - e.clientY;
-      const range = max - min;
+      const range = maxAttr - minAttr;
       const rawVal = startVal + (deltaY / PIXELS_PER_FULL_RANGE) * range;
       const stepped = Math.round(rawVal / step) * step;
-      const clamped = Math.min(max, Math.max(min, stepped));
+      const clamped = Math.min(maxAttr, Math.max(minAttr, stepped));
       if (+slider.value !== clamped) {
         slider.value = clamped;
         slider.dispatchEvent(new Event('input'));
@@ -3660,11 +3685,11 @@ function initKnobs() {
       window.addEventListener('pointercancel', endDrag);
     });
 
-    // 6. Feature: Double-Click to Edit (Using visibility:hidden to maintain height)
+    // 6. Feature: Double-Click to Edit
     if (valSpan) {
       valSpan.addEventListener('dblclick', (e) => {
         e.stopPropagation();
-        valSpan.style.visibility = 'hidden'; // Keep space, hide text
+        valSpan.style.visibility = 'hidden';
         editInput.style.display = 'block';
         editInput.focus();
         editInput.select();
@@ -3674,14 +3699,14 @@ function initKnobs() {
     const saveAndClose = () => {
       const newVal = parseFloat(editInput.value);
       if (!isNaN(newVal)) {
-        slider.value = Math.min(max, Math.max(min, newVal));
+        slider.value = Math.min(maxAttr, Math.max(minAttr, newVal));
         slider.dispatchEvent(new Event('input'));
         slider.dispatchEvent(new Event('change'));
       } else {
         editInput.value = slider.value;
       }
       editInput.style.display = 'none';
-      if (valSpan) valSpan.style.visibility = 'visible'; // Show text again
+      if (valSpan) valSpan.style.visibility = 'visible';
       updateRotation();
     };
 
@@ -3731,6 +3756,15 @@ window.addEventListener('resize', () => {
 });
 // ── Sequencer Refresh Button ──
 document.getElementById('refreshSeqBtn')?.addEventListener('click', generateSequence);
+/**
+ * When Phrase Length changes, the visual "5 o'clock" position for
+ * Min/Max Length knobs changes. We trigger a fake 'input' event
+ * to force the knobs to recalculate their rotation.
+ */
+document.getElementById('phraseLen')?.addEventListener('input', () => {
+  document.getElementById('minNoteLen')?.dispatchEvent(new Event('input'));
+  document.getElementById('maxNoteLen')?.dispatchEvent(new Event('input'));
+});
 </script>
 </body>
 </html>
