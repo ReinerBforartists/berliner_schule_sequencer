@@ -1980,6 +1980,10 @@ function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpP
 // =========================================
 
 let sequence=[];
+// Cache of the static (non-cursor) pianoroll content so highlightStep()
+// doesn't have to redraw the entire grid + all note blocks on every step.
+let seqBgCanvas = null;
+let seqBgKey = '';
 let currentEvoChain = []; // Stores the result of the last evolution generation for instant export
 let playing=false;
 let playToken=0;
@@ -2647,21 +2651,44 @@ function drawPianoKeys(canvas, centerMidi, viewRange, rootMidi) {
 }
 
 /**
- * Redraws the entire sequence on the main canvas.
- * Includes the horizontal zebra stripes AND the original vertical grid lines.
+ * Resizes the visible canvas backing store to match its CSS size * dpr,
+ * but only when the size actually changed — resetting canvas.width/height
+ * tears down the whole GPU texture and is expensive to do every frame.
  */
-function renderSequence() {
-  if (!sequence || sequence.length === 0) return;
-
-  const canvas = document.getElementById('mainSeqCanvas');
-  if (!canvas) return;
-
+function ensureSeqCanvasSize(canvas) {
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
+  const neededW = Math.max(1, Math.round(rect.width * dpr));
+  const neededH = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== neededW || canvas.height !== neededH) {
+    canvas.width = neededW;
+    canvas.height = neededH;
+  }
+  return { rect, dpr, neededW, neededH };
+}
+
+/**
+ * Draws the static content (zebra stripes, grid, repeat markers, note
+ * blocks) into the offscreen seqBgCanvas. This is the expensive part
+ * (up to a couple thousand note/grid draws) and should only run when the
+ * sequence, view, or canvas size actually changes — NOT on every playback
+ * step.
+ */
+function renderSequenceBackground() {
+  if (!sequence || sequence.length === 0) return null;
+
+  const canvas = document.getElementById('mainSeqCanvas');
+  if (!canvas) return null;
+
+  const { rect, dpr, neededW, neededH } = ensureSeqCanvasSize(canvas);
+
+  if (!seqBgCanvas) seqBgCanvas = document.createElement('canvas');
+  if (seqBgCanvas.width !== neededW || seqBgCanvas.height !== neededH) {
+    seqBgCanvas.width = neededW;
+    seqBgCanvas.height = neededH;
+  }
+  const ctx = seqBgCanvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   // --- VIEW CONFIGURATION ---
   let viewRange = 24;
@@ -2743,6 +2770,32 @@ function renderSequence() {
     ctx.fillStyle = '#00ccff';
     ctx.fillRect(xPos, noteY, blockWidth, keyHeight - 2);
   }
+
+  seqBgSeqRef = sequence;
+  return { rect, dpr };
+}
+
+/**
+ * Copies the cached static background onto the visible canvas (1:1 pixel
+ * blit — cheap, no per-note/per-gridline drawing).
+ */
+function blitSeqBackground(ctx, dpr) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  if (seqBgCanvas) ctx.drawImage(seqBgCanvas, 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+/**
+ * Redraws the entire sequence on the main canvas.
+ * Includes the horizontal zebra stripes AND the original vertical grid lines.
+ */
+function renderSequence() {
+  const meta = renderSequenceBackground();
+  if (!meta) return;
+  const canvas = document.getElementById('mainSeqCanvas');
+  const ctx = canvas.getContext('2d');
+  blitSeqBackground(ctx, meta.dpr);
 }
 
 /**
@@ -2752,16 +2805,33 @@ function highlightStep(idx) {
   if (!sequence.length) return;
   const canvas = document.getElementById('mainSeqCanvas');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const rect = canvas.getBoundingClientRect();
-  const totalSteps = sequence.length;
-  const pxPerStep = rect.width / totalSteps;
 
-  // Redraw (this resets canvas.width/height and re-applies the dpr scale,
-  // so all subsequent drawing here must use CSS pixels, not canvas.width/height)
-  renderSequence();
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const neededW = Math.max(1, Math.round(rect.width * dpr));
+  const neededH = Math.max(1, Math.round(rect.height * dpr));
+
+  // Only rebuild the (expensive) static background when something that
+  // affects it actually changed — new/regenerated sequence, or a resize.
+  // On every other step we just blit the cached bitmap, which is what
+  // keeps the cursor in sync with the audio at high step counts.
+  const needsRebuild = !seqBgCanvas
+    || seqBgSeqRef !== sequence
+    || canvas.width !== neededW
+    || canvas.height !== neededH;
+
+  if (needsRebuild) {
+    renderSequenceBackground();
+  }
+
+  const ctx = canvas.getContext('2d');
+  ensureSeqCanvasSize(canvas);
+  blitSeqBackground(ctx, dpr);
+
   if (idx === -1) return;
 
+  const totalSteps = sequence.length;
+  const pxPerStep = rect.width / totalSteps;
   const x = idx * pxPerStep;
   const css = getComputedStyle(document.documentElement);
   const cursorColor = (css.getPropertyValue('--green') || '#10b981').trim();
