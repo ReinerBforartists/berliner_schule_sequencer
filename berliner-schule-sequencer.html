@@ -2609,15 +2609,20 @@ function generateEvolutionaryChain() {
       return tones[Math.max(0, Math.min(tones.length - 1, currentIdx + step))];
     };
 
-    const enforcePaletteCoverage = (events) => {
-      if (!tones || tones.length < 2 || events.length < 2) return events;
+    const enforcePaletteCoverage = (events, mutableIndices, rng) => {
+      // Hard guard: never override if no mutable targets or palette is invalid
+      if (!tones || tones.length < 2 || mutableIndices.length === 0) return events;
+
       const present = new Set(events.map(e => e.midi));
       const missing = tones.filter(t => !present.has(t));
       if (missing.length === 0) return events;
+
       const copy = events.map(e => ({...e}));
       missing.forEach((mt) => {
-        const idx = rng.int(0, copy.length - 1);
-        copy[idx].midi = mt;
+        // Only replace notes that are currently in the mutable pool
+        // This prevents the function from acting as a chaotic override
+        const targetIdx = mutableIndices[rng.int(0, mutableIndices.length - 1)];
+        copy[targetIdx].midi = mt;
       });
       return copy;
     };
@@ -2627,7 +2632,25 @@ function generateEvolutionaryChain() {
       if (tones && rng.chance(effectiveMutationRate)) return {...ev, midi: mutateTone(ev)};
       return ev;
     });
-    currentEvents = enforcePaletteCoverage(currentEvents);
+    // 4. MUTATION & GRIP
+    // Track which indices are actually mutable in this block to prevent blind overwrites
+    const mutableIndices = [];
+    currentEvents = currentEvents.map((ev, idx) => {
+      // Grip check first (preserves original RNG sequence)
+      if (rng.chance(gripStrength)) return ev;
+
+      // Mutation check
+      if (tones && rng.chance(effectiveMutationRate)) {
+        mutableIndices.push(idx);
+        return {...ev, midi: mutateTone(ev)};
+      }
+      return ev;
+    });
+
+    // HARD GUARD: Only enforce palette coverage if mutation is active AND grip is not locking everything
+    if (effectiveMutationRate > 0 && gripStrength < 1.0 && mutableIndices.length > 0) {
+      currentEvents = enforcePaletteCoverage(currentEvents, mutableIndices, rng);
+    }
 
     // 5. ADD EVOLVED BLOCK TO COMPOSITION
     fullCompositionSteps = fullCompositionSteps.concat(expandEvents(currentEvents, blockLen));
