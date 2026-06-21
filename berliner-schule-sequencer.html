@@ -850,7 +850,7 @@ details[open] summary::before { content: '− '; }
     </div>
     <div class="ctrl" id="minNoteLenCtrl">
       <div class="ctrl-label">Min Length <span class="val" id="minLenVal">1</span></div>
-      <input type="range" id="minNoteLen" min="1" max="24" value="1">
+      <input type="range" id="minNoteLen" min="1" max="32" value="1">
     </div>
     <div class="ctrl" id="maxNoteLenCtrl">
       <div class="ctrl-label">Max Length <span class="val" id="maxNoteLenVal">2</span></div>
@@ -3589,15 +3589,24 @@ function initKnobs() {
     editInput.value = slider.value;
 
     slider.parentNode.insertBefore(visual, slider);
-    // Input is now absolute, so we just add it to the container
     ctrlBox.appendChild(editInput);
 
     // 4. Logic: Update rotation and labels
     const updateRotation = () => {
       const min = +slider.min || 0;
-      const max = +slider.max || 100;
+      let max = +slider.max || 100;
       const val = +slider.value;
-      const percent = (val - min) / (max - min);
+
+      // DYNAMIC ROTATION: If this is a length slider, the visual "max" (5 o'clock)
+      // should be the current phrase length, not the HTML attribute max.
+      if (slider.id === 'minNoteLen' || slider.id === 'maxNoteLen') {
+        const phraseLen = parseInt(document.getElementById('phraseLen').value) || 16;
+        max = phraseLen;
+      }
+
+      // Calculate percentage based on the (possibly dynamic) max.
+      // Clamp to 1.0 so the knob doesn't spin past 5 o'clock if val > max
+      const percent = Math.min(1, Math.max(0, (val - min) / (max - min)));
 
       const rotation = (percent * 270) - 135;
       marker.style.transform = `rotate(${rotation}deg)`;
@@ -3617,18 +3626,18 @@ function initKnobs() {
     let startY = 0;
     let startVal = 0;
     const step = parseFloat(slider.step) || 1;
-    const min = parseFloat(slider.min) || 0;
-    const max = parseFloat(slider.max) || 100;
+    const minAttr = parseFloat(slider.min) || 0;
+    const maxAttr = parseFloat(slider.max) || 100;
     const PIXELS_PER_FULL_RANGE = 120;
 
     const onPointerMove = (e) => {
       if (!dragging) return;
       e.preventDefault();
       const deltaY = startY - e.clientY;
-      const range = max - min;
+      const range = maxAttr - minAttr;
       const rawVal = startVal + (deltaY / PIXELS_PER_FULL_RANGE) * range;
       const stepped = Math.round(rawVal / step) * step;
-      const clamped = Math.min(max, Math.max(min, stepped));
+      const clamped = Math.min(maxAttr, Math.max(minAttr, stepped));
       if (+slider.value !== clamped) {
         slider.value = clamped;
         slider.dispatchEvent(new Event('input'));
@@ -3660,11 +3669,11 @@ function initKnobs() {
       window.addEventListener('pointercancel', endDrag);
     });
 
-    // 6. Feature: Double-Click to Edit (Using visibility:hidden to maintain height)
+    // 6. Feature: Double-Click to Edit
     if (valSpan) {
       valSpan.addEventListener('dblclick', (e) => {
         e.stopPropagation();
-        valSpan.style.visibility = 'hidden'; // Keep space, hide text
+        valSpan.style.visibility = 'hidden';
         editInput.style.display = 'block';
         editInput.focus();
         editInput.select();
@@ -3674,14 +3683,14 @@ function initKnobs() {
     const saveAndClose = () => {
       const newVal = parseFloat(editInput.value);
       if (!isNaN(newVal)) {
-        slider.value = Math.min(max, Math.max(min, newVal));
+        slider.value = Math.min(maxAttr, Math.max(minAttr, newVal));
         slider.dispatchEvent(new Event('input'));
         slider.dispatchEvent(new Event('change'));
       } else {
         editInput.value = slider.value;
       }
       editInput.style.display = 'none';
-      if (valSpan) valSpan.style.visibility = 'visible'; // Show text again
+      if (valSpan) valSpan.style.visibility = 'visible';
       updateRotation();
     };
 
