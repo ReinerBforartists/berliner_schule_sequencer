@@ -3740,6 +3740,15 @@ window.addEventListener('resize', () => {
 });
 // ── Sequencer Refresh Button ──
 document.getElementById('refreshSeqBtn')?.addEventListener('click', generateSequence);
+/**
+ * When Phrase Length changes, the visual "5 o'clock" position for
+ * Min/Max Length knobs changes. We trigger a fake 'input' event
+ * to force the knobs to recalculate their rotation.
+ */
+document.getElementById('phraseLen')?.addEventListener('input', () => {
+  document.getElementById('minNoteLen')?.dispatchEvent(new Event('input'));
+  document.getElementById('maxNoteLen')?.dispatchEvent(new Event('input'));
+});
 </script>
 </body>
 </html>
