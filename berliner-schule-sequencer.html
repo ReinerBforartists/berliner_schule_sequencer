@@ -1742,28 +1742,22 @@ function mutatePhrase(rng, events, variation, params) {
     if (roll < removeChance) {
       if (copy.length > 1) copy.splice(rng.int(0, copy.length - 1), 1);
     } else if (roll < removeChance + addChance) {
-      const start = rng.int(0, params.phraseLen - (params.minNoteLen || 1));
-      const available = params.phraseLen - start;
-      const effMin = Math.min(params.minNoteLen, available);
-      const effMax = Math.max(effMin, Math.min(params.maxNoteLen, available));
-      if (effMin > effMax) continue;
+      const start = rng.int(0, params.phraseLen - 1);
+      const dur = rng.int(params.minNoteLen, params.maxNoteLen);
+      const finalDur = Math.min(dur, params.phraseLen - start);
       if (!copy.find(e => e.start === start)) {
         const midi = tones[rng.int(0, tones.length - 1)];
-        copy.push({
-          start,
-          duration: rng.int(effMin, effMax),
-          midi, degree: 0, octave: 0
-        });
+        copy.push({ start, duration: finalDur, midi, degree: 0, octave: 0 });
       }
     } else {
-      const idx = rng.int(0, copy.length - 1);
-      if (copy[idx]) {
-        copy[idx].midi = tones[rng.int(0, tones.length - 1)];
+          const idx = rng.int(0, copy.length - 1);
+          if (copy[idx]) {
+            copy[idx].midi = tones[rng.int(0, tones.length - 1)];
+          }
+        }
       }
+      return copy;
     }
-  }
-  return copy;
-}
 
 function expandEvents(events, len) {
   const t=Array.from({length:len},()=>({rest:true}));
