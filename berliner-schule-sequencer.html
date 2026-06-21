@@ -1649,15 +1649,22 @@ function buildMotivicPhrase(rng, {scale, root, phraseLen, weights, octaveStart, 
       }
 
       if (rng.chance(density ?? 1)) {
+        // Length is rolled independently of position/density, only clipped if it overruns the phrase end
+        const dur = rng.int(minNoteLen, maxNoteLen);
         const available = phraseLen - currentStep;
-        if (available < minNoteLen) { currentStep++; continue; } // Make sure there is enough space
-        const dur = rng.int(minNoteLen, Math.min(maxNoteLen, available));
-        fullEvents.push({start: currentStep, duration: dur, midi, degree: 0, octave: 0});
-        currentStep += dur;
+        const finalDur = Math.min(dur, available);
+        fullEvents.push({start: currentStep, duration: finalDur, midi, degree: 0, octave: 0});
+        currentStep += finalDur;
       } else {
         currentStep++;
       }
     }
+  }
+  if (fullEvents.length === 0) {
+    const start = rng.int(0, phraseLen - 1);
+    const dur = rng.int(minNoteLen, maxNoteLen);
+    const finalDur = Math.min(dur, phraseLen - start);
+    fullEvents.push({start, duration: finalDur, midi: motifMidi[0], degree: 0, octave: 0});
   }
   return fullEvents;
 }
@@ -1684,22 +1691,29 @@ function buildPhrase(rng, {scale, root, phraseLen, maxInterval, density, weights
   const tones = palette && palette.length > 0 ? palette : [root];
   let toneIdx = rng.int(0, tones.length - 1);
 
-  for (let i = 0; i < phraseLen; i++) {
-    if (!rng.chance(density)) continue;
-    const available = phraseLen - i;
+  let i = 0;
+  while (i < phraseLen) {
+    if (rng.chance(density)) {
+      // Length is rolled independently of position/density -- density only flags note-or-not per step.
+      const dur = rng.int(minNoteLen, maxNoteLen);
+      const available = phraseLen - i;
+      const finalDur = Math.min(dur, available); // only clip if it overruns the phrase end
 
-    // DYNAMIC CLAMPING: Prevents rng.int(a, b) where a > b
-    const effMin = Math.min(minNoteLen, available);
-    const effMax = Math.max(effMin, Math.min(maxNoteLen, available));
+      events.push({start: i, duration: finalDur, midi: tones[toneIdx], degree: 0, octave: 0});
 
-    if (effMin > effMax) continue; // Skip if no valid length fits
+      const step = rng.int(-maxInterval, maxInterval);
+      toneIdx = Math.max(0, Math.min(tones.length - 1, toneIdx + step));
 
-    const dur = rng.int(effMin, effMax);
-    events.push({start: i, duration: dur, midi: tones[toneIdx], degree: 0, octave: 0});
-    i += dur - 1;
-
-    const step = rng.int(-maxInterval, maxInterval);
-    toneIdx = Math.max(0, Math.min(tones.length - 1, toneIdx + step));
+      i += finalDur;
+    } else {
+      i += 1; // miss -> advance one step, next step gets its own fair chance
+    }
+  }
+  if (events.length === 0) {
+    const start = rng.int(0, phraseLen - 1);
+    const dur = rng.int(minNoteLen, maxNoteLen);
+    const finalDur = Math.min(dur, phraseLen - start);
+    events.push({start, duration: finalDur, midi: tones[toneIdx], degree: 0, octave: 0});
   }
   return events;
 }
@@ -1710,7 +1724,10 @@ function mutatePhrase(rng, events, variation, params) {
   const tones = params.palette && params.palette.length > 0 ? params.palette : [params.root];
 
   if (copy.length === 0) {
-    return [{start: rng.int(0, params.phraseLen - 1), duration: 1, midi: tones[0], degree: 0, octave: 0}];
+    const start = rng.int(0, params.phraseLen - 1);
+    const dur = rng.int(params.minNoteLen || 1, params.maxNoteLen || params.minNoteLen || 1);
+    const finalDur = Math.min(dur, params.phraseLen - start);
+    return [{start, duration: finalDur, midi: tones[0], degree: 0, octave: 0}];
   }
 
   const n = Math.max(1, Math.floor(copy.length * variation));
@@ -1836,11 +1853,12 @@ function buildOffbeatPhrase(rng, {scale, root, phraseLen, maxInterval, density, 
       events.push({start: i, duration: 1, midi: anchorMidi, degree: null, octave: null, isAnchor: true});
     } else if (rng.chance(density)) {
       const midi = usePalette ? palette[paletteIdx] : scaleDegreeToMidi(root, scale, degree, octave);
+      // Length is rolled independently of position/density, only clipped if it overruns the phrase end
+      const dur = rng.int(minNoteLen, maxNoteLen);
       const available = phraseLen - i;
-      if (available < minNoteLen) continue; // Make sure there is enough space
-      const dur = rng.int(minNoteLen, Math.min(maxNoteLen, available));
-      events.push({start: i, duration: dur, midi, degree, octave});
-      i += dur - 1;
+      const finalDur = Math.min(dur, available);
+      events.push({start: i, duration: finalDur, midi, degree, octave});
+      i += finalDur - 1;
 
       const step = rng.int(-maxInterval, maxInterval);
       if (usePalette) {
@@ -1953,6 +1971,10 @@ function buildArpPhrase(rng, {phraseLen, density, maxNoteLen}, arpRoot, arpChord
       pos++;
     }
     events.push({start: i, duration: 1, midi, degree: 0, octave: 0});
+  }
+  if (events.length === 0) {
+    const start = rng.int(0, phraseLen - 1);
+    events.push({start, duration: 1, midi: ordered[0], degree: 0, octave: 0});
   }
   return events;
 }
