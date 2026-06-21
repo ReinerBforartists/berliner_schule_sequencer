@@ -2208,32 +2208,54 @@ function renderEvolutionPreview() {
   }
 
   const chain = currentEvoChain;
-  const ctx = canvas.getContext('2d');
-  const height = 140;
+
+  // --- Sizing (DPR-correct, matching the main sequencer canvas) ---
   const cssWidth = canvas.parentElement.clientWidth || canvas.clientWidth || 600;
+  const cssHeight = 140;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(cssWidth * dpr));
+  canvas.height = Math.max(1, Math.round(cssHeight * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
   const pxPerStep = Math.max(cssWidth / Math.max(chain.length, 1), 0.5);
-  canvas.width = cssWidth;
-  canvas.height = height;
 
   const css = getComputedStyle(document.documentElement);
   const bgColor = (css.getPropertyValue('--bg') || '#0a0a0a').trim();
-  const noteColor = (css.getPropertyValue('--green') || '#7CFC00').trim();
   const accentColor = (css.getPropertyValue('--amber') || '#FFB000').trim();
   const lineColor = 'rgba(255,255,255,0.08)';
 
   ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, cssWidth, cssHeight);
 
+  // --- VIEW CONFIGURATION ---
+  // Same discrete-row approach as the main sequencer pianoroll: a fixed
+  // semitone view range, rounded up to full octaves and centered on the
+  // chain's note range, instead of stretching notes continuously across
+  // whatever min/max happen to occur.
   const notes = chain.filter(s => s && s.noteStart && !s.rest && typeof s.midi === 'number');
-  let minMidi = 48, maxMidi = 72;
+  let viewCenter = 60;
+  let viewRange = 24;
   if (notes.length > 0) {
-    minMidi = Math.min(...notes.map(s => s.midi)) - 1;
-    maxMidi = Math.max(...notes.map(s => s.midi)) + 1;
+    const midis = notes.map(s => s.midi);
+    const minN = Math.min(...midis);
+    const maxN = Math.max(...midis);
+    viewCenter = (minN + maxN) / 2;
+    const span = (maxN - minN) + 2; // small padding so notes don't touch the edge
+    viewRange = Math.max(24, Math.ceil(span / 12) * 12); // round up to full octaves
   }
-  const range = (maxMidi - minMidi) || 1;
+  const keyHeight = cssHeight / viewRange;
+  const halfRange = viewRange / 2;
 
-  drawPianoKeys(document.getElementById('evoPianoKeys'), minMidi, maxMidi, parseInt(document.getElementById('root').value));
+  drawPianoKeys(document.getElementById('evoPianoKeys'), viewCenter, viewRange, parseInt(document.getElementById('root').value));
 
+  // 1. Horizontal zebra stripes (one per semitone row), matching the main pianoroll
+  for (let k = 0; k < viewRange; k++) {
+    ctx.fillStyle = (k % 2 === 0) ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)';
+    ctx.fillRect(0, k * keyHeight, cssWidth, keyHeight);
+  }
+
+  // 2. Block-boundary grid lines
   const phraseLen = +document.getElementById('phraseLen').value || 1;
   const repeats = +document.getElementById('repeats').value || 1;
   const blockLen = phraseLen * repeats;
@@ -2243,50 +2265,49 @@ function renderEvolutionPreview() {
   ctx.lineWidth = 1;
   for (let b = 1; b < iterations; b++) {
     const x = Math.round(b * blockLen * pxPerStep) + 0.5;
-    if (x > canvas.width) break;
+    if (x > cssWidth) break;
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
+    ctx.lineTo(x, cssHeight);
     ctx.stroke();
   }
 
-  // --- UPDATE START: Match main sequencer gap (GAP=2) and increase height ---
-  // Constants to match the main sequencer's visual style
+  // 3. Notes — drawn on discrete semitone rows, same GAP/sizing logic as
+  // the main sequencer, so a note's height matches its piano-key row.
   const GAP = 2;
-  const BLOCK_HEIGHT = 5; // Increased height for better visibility
   const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
 
-  ctx.fillStyle = noteColor;
+  ctx.fillStyle = '#00ccff';
   for (let i = 0; i < chain.length; i++) {
     const s = chain[i];
-    if (s && s.noteStart && !s.rest && typeof s.midi === 'number') {
-      const y = height - ((s.midi - minMidi) / range) * height;
+    if (!s || !s.noteStart || s.rest || typeof s.midi !== 'number') continue;
 
-      // Mirror the playback engine's swing timing: odd-numbered steps are
-      // delayed by half a step times the swing amount.
-      const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
+    const noteY = (halfRange - (s.midi - viewCenter)) * keyHeight;
+    if (noteY < 0 || noteY > cssHeight) continue;
 
-      // Calculate start X and width using the same logic as the main sequencer
-      const startX = Math.round(i * pxPerStep + swingOffset) + (GAP / 2);
-      const w = Math.max(1, Math.round((s.holdSteps || 1) * pxPerStep) - GAP);
+    // Mirror the playback engine's swing timing: odd-numbered steps are
+    // delayed by half a step times the swing amount.
+    const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
+    const xPos = i * pxPerStep + swingOffset;
+    const blockWidth = Math.max(1, (s.holdSteps || 1) * pxPerStep - GAP);
 
-      // Draw with increased height, centered vertically
-      ctx.fillRect(startX, y - BLOCK_HEIGHT / 2, w, BLOCK_HEIGHT);
-    }
+    ctx.fillRect(xPos, noteY, blockWidth, keyHeight - 2);
   }
-  // --- UPDATE END ---
 
+  // 4. Orange repeat/block markers on top
   ctx.fillStyle = accentColor;
   for (let b = 0; b < iterations; b++) {
     const x = Math.round(b * blockLen * pxPerStep);
-    if (x > canvas.width) break;
+    if (x > cssWidth) break;
     ctx.fillRect(x, 0, 1, 6);
   }
 
   if (info) {
     const totalSteps = chain.length;
     const seedNote = (document.getElementById('evoSeedMode')?.value !== 'fixed') ? ' · seed locked for export' : '';
-    info.textContent = `${iterations} blocks · ${totalSteps} steps · pitch range ${minMidi + 1}–${maxMidi - 1}${seedNote}`;
+    const lo = notes.length ? Math.min(...notes.map(s => s.midi)) : null;
+    const hi = notes.length ? Math.max(...notes.map(s => s.midi)) : null;
+    info.textContent = `${iterations} blocks · ${totalSteps} steps${lo !== null ? ` · pitch range ${midiToName(lo)}–${midiToName(hi)}` : ''}${seedNote}`;
   }
 }
 
