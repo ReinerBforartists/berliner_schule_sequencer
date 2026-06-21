@@ -2721,9 +2721,13 @@ function renderSequence() {
 
   // 3. Draw Notes
   const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
+  const GAP = 2;
   for (let i = 0; i < totalSteps; i++) {
     const step = sequence[i];
-    if (step.midi === undefined) continue;
+    // Only draw at the start of a note; tied continuation steps share the
+    // same block via holdSteps below, so they must not draw their own block.
+    if (step.midi === undefined || step.tie) continue;
+    if (!step.noteStart && !step.isAnchor) continue;
 
     const noteMidi = step.midi;
     const noteY = (halfRange - (noteMidi - viewCenter)) * keyHeight;
@@ -2734,7 +2738,7 @@ function renderSequence() {
     // delayed by half a step times the swing amount.
     const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
     const xPos = i * pxPerStep + swingOffset;
-    const blockWidth = pxPerStep - 1;
+    const blockWidth = Math.max(1, (step.holdSteps || 1) * pxPerStep - GAP);
 
     ctx.fillStyle = '#00ccff';
     ctx.fillRect(xPos, noteY, blockWidth, keyHeight - 2);
@@ -2749,10 +2753,12 @@ function highlightStep(idx) {
   const canvas = document.getElementById('mainSeqCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
   const totalSteps = sequence.length;
-  const pxPerStep = canvas.width / totalSteps;
+  const pxPerStep = rect.width / totalSteps;
 
-  // Redraw
+  // Redraw (this resets canvas.width/height and re-applies the dpr scale,
+  // so all subsequent drawing here must use CSS pixels, not canvas.width/height)
   renderSequence();
   if (idx === -1) return;
 
@@ -2764,7 +2770,7 @@ function highlightStep(idx) {
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x, 0);
-  ctx.lineTo(x, canvas.height);
+  ctx.lineTo(x, rect.height);
   ctx.stroke();
 
   // Glow-Effect
@@ -2871,7 +2877,13 @@ async function playSequence() {
 
     if (!s.tie && (isNoteStep(s) || s.isAnchor)) {
       const vel = 100;
-      playNote(ctx, s.midi, stepDur * (s.holdSteps || 1) * 0.9, vel);
+      const heldDur = stepDur * (s.holdSteps || 1);
+      // Leave a small fixed gap (a fraction of a single step) before the
+      // note-off so consecutive notes don't bleed into each other — this
+      // must NOT scale with the number of held steps, otherwise long notes
+      // end audibly a whole step before their visual block does.
+      const noteDur = Math.max(0.03, heldDur - stepDur * 0.1);
+      playNote(ctx, s.midi, noteDur, vel);
     }
     nextStepTime += stepDur;
     i++;
