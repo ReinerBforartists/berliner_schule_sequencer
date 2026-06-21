@@ -114,7 +114,7 @@ body {
 }
 
 /* Vertical / horizontal divider lines used between control groups */
-.v-sep   { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+.v-sep   { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; align-self: center; }
 .v-sep-m { margin: 0 8px; }
 .h-sep   { flex: 1; height: 1px; background: var(--muted); opacity: 0.5; }
 
@@ -148,11 +148,11 @@ body {
 .select-field.amber { color: var(--amber); }
 
 /* Wrapper + canvas element for the evo preview piano-roll */
-.canvas-frame { border-radius: 2px; background: var(--bg); }
+.canvas-frame { border-radius: 2px; background: var(--bg); height: 140px; }
 .canvas-fill { display: block; width: 100%; }
 
 /* Wrapper around a labeled set of .ctrl boxes (e.g. "Timing & Rhythm" section) */
-.controls-group { margin-bottom: 15px; }
+.controls-group { /* spacing now handled by .panel-row, see usage below */ }
 
 /* "—— Section Label ——" style divider between major page sections */
 .divider-row { margin: 20px 0 10px; }
@@ -179,7 +179,7 @@ body {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  max-width: 980px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 14px 16px 14px;
   gap: 10px;
@@ -232,27 +232,10 @@ body {
 
 /* ── Controls grid ── */
 .controls {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   flex-shrink: 0;
-}
-.ctrl {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 8px 10px 9px;
-  min-width: 0;
-}
-.ctrl-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 5px;
-  display: flex;
-  justify-content: space-between;
 }
 .ctrl-label.live { color: var(--green); }
 .ctrl-label .val {
@@ -272,17 +255,189 @@ body {
   appearance: none;
   -webkit-appearance: none;
 }
-.ctrl select:focus, .ctrl input:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
-.ctrl input[type="range"] {
+/* --- Updated Control Layout for Rotary Knobs --- */
+.ctrl {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 7px 4px;
+  min-width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  text-align: center;
+  position: relative;
+}
+
+.ctrl-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 0;
+  display: block; /* Changed from flex to block to center text */
   width: 100%;
+  white-space: nowrap;
+}
+
+/* Only the actual knob (rotary visual + its label + value) should be
+   non-selectable, since dragging happens there. Plain controls like
+   selects, number inputs, and the volume slider stay normal. */
+.ctrl:has(.knob-visual) .ctrl-label,
+.ctrl:has(.knob-visual) .knob-visual,
+.ctrl:has(.knob-visual) .val {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* While dragging a knob, prevent text selection anywhere on the page */
+body.knob-dragging {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: ns-resize;
+}
+
+/* Hide the default slider; the custom knob-visual handles all pointer
+   interaction (vertical drag). The native input stays purely as a data
+   store + keyboard/focus target, so it must not intercept clicks/drags
+   (it sat above the knob with z-index 2, fighting the vertical-drag
+   logic with native horizontal-slider behavior -> "sperrig/hakelig"). */
+.ctrl input[type="range"] {
+  width: 32px;
+  height: 32px;
+  opacity: 0;
+  cursor: ns-resize;
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
   -webkit-appearance: none;
+  appearance: none;
+  touch-action: none;
+}
+
+/* Visual representation of the Knob */
+/* --- NEW DESIGNED KNOBS CSS --- */
+.knob-visual {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--raised), var(--bg));
+  border: 2px solid var(--border2);
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: ns-resize;
+  touch-action: none;
+  transition: border-color 0.2s;
+}
+
+.ctrl.active .knob-visual {
+  border-color: var(--amber);
+}
+
+.knob-marker {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  transform-origin: center center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.marker-dot {
+  position: absolute;
+  top: 3px; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background-color: var(--amber);
+  box-shadow: 0 0 4px var(--amber);
+}
+
+/* Static Range Markers */
+.knob-tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 4px;
+  background-color: var(--muted);
+  border-radius: 1px;
+  transform-origin: center center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.knob-tick.start {
+  transform: translate(-50%, -50%) rotate(-135deg) translateY(-20px);
+}
+
+.knob-tick.end {
+  transform: translate(-50%, -50%) rotate(135deg) translateY(-20px);
+}
+
+/* The numeric input for double-click editing - absolute positioning to prevent layout jumping */
+.knob-input {
+  display: none; /* Hidden by default */
+  position: absolute;
+  bottom: 4px;    /* Fixed distance from bottom of .ctrl container */
+  left: 50%;      /* Center horizontally */
+  transform: translateX(-50%);
+  width: 40px;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 2px 0;
+  z-index: 10;
+    outline: none;
+  border-radius: 2px;
+}
+
+/* Keep the value span visible below the knob - enlarged hit-box */
+.ctrl .val {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--amber);
+  font-size: 10px;
+  display: block;
+  margin-top: 4px;
+  pointer-events: auto;
+  cursor: pointer;
+
+  /* --- HIT-BOX EXTENSION --- */
+  text-align: center;
+  min-width: 40px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ctrl.active { border-color: var(--amber); }
+
+/* Master volume: plain horizontal slider, outside the .ctrl/knob system */
+#masterVol {
   height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
   background: var(--border2);
   border-radius: 2px;
   accent-color: var(--amber);
   cursor: pointer;
-  margin-top: 2px;
 }
+#masterVol::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--amber);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--amber-dim);
+}
+.ctrl select:focus, .ctrl input:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
 .ctrl input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 12px; height: 12px;
@@ -293,7 +448,7 @@ body {
 }
 
 /* span 2 cols */
-.ctrl.w2 { grid-column: span 2; }
+.ctrl.w2 { min-width: 130px; }
 
 /* ── Anchor panel ── */
 .anchor-panel {
@@ -346,7 +501,6 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--r);
   padding: 2px;
-  margin-bottom: 8px;
 }
 .export-tab {
   font-family: 'Share Tech Mono', monospace;
@@ -382,7 +536,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 15px;
 }
 
 .seq-header {
@@ -390,8 +543,6 @@ body {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .seq-title {
@@ -404,26 +555,26 @@ body {
 
 .stat-pills {
   display: flex;
-  gap: 6px;
   flex-wrap: wrap;
-  margin-left: auto;
+}
+
+.pill:not(:first-child)::before {
+  content: '·';
+  margin: 0 8px;
+  color: var(--muted);
+  opacity: 0.6;
 }
 
 .pill {
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
-  padding: 3px 8px;
-  border-radius: 2px;
-  background: var(--bg);
-  border: 1px solid var(--border);
   color: var(--muted);
 }
 
-.pill strong { color: var(--text-bright); }
 
 /* ── Sequencer Canvas Container (FIXED HEIGHT) ── */
 .seq-canvas-container {
-  flex: 0 0 200px;
+  flex: 0 0 140px;
   background: var(--bg);
   border: none;
   border-radius: var(--r);
@@ -431,15 +582,24 @@ body {
   position: relative;
   overflow: hidden;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
 }
 
 #mainSeqCanvas {
   display: block;
-  width: 100% !important;
+  flex: 1;
+  min-width: 0;
   height: 100% !important;
   background: transparent;
+}
+
+.piano-keys {
+  display: block;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ── control bar ── */
@@ -648,13 +808,11 @@ details[open] summary::before { content: '− '; }
     <button class="btn stop-btn" id="stopBtn" disabled>■ Stop</button>
 
     <!-- Volume Control for Monitoring only -->
-    <div class="ctrl ctrl-bare flex-center gap-sm" style="min-width: 140px;">
+    <div class="flex-center gap-sm" style="min-width: 140px;">
       <span class="seed-label nowrap">VOL</span>
       <input type="range" id="masterVol" min="0" max="100" value="100" class="flex-1">
       <span class="val mono hl-amber" id="volVal" style="font-size: 10px; width: 30px;">100%</span>
     </div>
-
-    <button class="btn" id="genBtn">↻ Generate</button>
 
     <!-- Vertical Separator -->
     <div class="v-sep v-sep-m"></div>
@@ -675,207 +833,8 @@ details[open] summary::before { content: '− '; }
     </div>
   </div> <!-- End of Row 1 / transport -->
 
-  <!-- Row 2: MIDI & Evolution Station -->
-  <div class="flex-col gap-sm">
-    <!-- Export Mode Tabs -->
-    <div class="export-tabs">
-      <button class="export-tab active" data-target="midiPanel">MIDI Export</button>
-      <button class="export-tab" data-target="evoPanel">Evolution Export</button>
-    </div>
-
-    <!-- Panel 1: Standard MIDI Export -->
-    <div id="midiPanel" class="export-panel active">
-      <div class="flex-center gap-lg panel-row">
-        <span class="seed-label nowrap">STEPS PER BAR</span>
-        <select id="exportStretch" class="select-field">
-          <option value="2">2</option>
-          <option value="4">4</option>
-          <option value="8">8</option>
-          <option value="16" selected>16</option>
-          <option value="32">32</option>
-        </select>
-        <button class="btn nowrap mr-auto" id="exportBtn">↓ EXPORT MIDI</button>
-      </div>
-    </div>
-
-    <!-- Panel 2: Evolution Export -->
-    <div id="evoPanel" class="export-panel">
-      <!-- Evo Row 1: Core Mutation Settings -->
-      <div class="flex-center gap-sm panel-row mb-sm">
-        <span class="seed-label nowrap">STEPS PER BAR</span>
-        <select id="exportStretchEvo" class="select-field">
-          <option value="2">2</option>
-          <option value="4">4</option>
-          <option value="8">8</option>
-          <option value="16" selected>16</option>
-          <option value="32">32</option>
-        </select>
-        <button class="btn evo-btn nowrap mr-auto" id="exportEvoBtn">🧬 EXPORT EVOLUTION</button>
-
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <div class="ctrl ctrl-grow">
-          <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">12</span></div>
-          <input type="range" id="evoIterations" min="1" max="64" value="12">
-        </div>
-
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <div class="ctrl ctrl-grow">
-          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
-          <input type="range" id="evoMutation" min="0" max="100" value="20">
-        </div>
-
-        <div class="ctrl ctrl-grow">
-          <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">5%</span></div>
-          <input type="range" id="evoDrift" min="0" max="100" value="5">
-        </div>
-
-        <div class="ctrl ctrl-grow">
-          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
-          <input type="range" id="evoGrip" min="0" max="100" value="50">
-        </div>
-      </div>
-
-      <!-- Evo Row 2: Root & Octave Drift -->
-      <div class="flex-center flex-wrap gap-xs row-gap-md panel-row">
-
-      <!-- Evolution curve dropdown -->
-      <div class="ctrl shrink-0" style="width: 160px;">
-        <div class="ctrl-label">Evolution Curve</div>
-        <select id="evolutionCurve">
-          <option value="linear">Linear</option>
-          <option value="rampUp">Ramp Up</option>
-          <option value="rampDown">Ramp Down</option>
-          <option value="arch">Arch</option>
-          <option value="valley">Valley</option>
-          <option value="easeIn">Ease In</option>
-          <option value="easeOut">Ease Out</option>
-          <option value="easeInOut">Ease In/Out</option>
-        </select>
-      </div>
-
-      <!-- Mutation Style dropdown -->
-      <div class="ctrl shrink-0" style="width: 170px;">
-        <div class="ctrl-label">Mutation Style</div>
-        <select id="evoMutationStyle">
-          <option value="walk" selected>Palette Walk</option>
-          <option value="random">Palette Random</option>
-          <option value="mix">Mix (Walk + Random)</option>
-        </select>
-      </div>
-
-
-        <!-- Octave Drift: Fixed width to prevent jumping -->
-        <div class="ctrl shrink-0" style="width: 140px;">
-          <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
-          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0">
-        </div>
-
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <!-- Root Mode Dropdown -->
-        <div class="ctrl shrink-0" style="width: 180px;">
-          <div class="ctrl-label">Root</div>
-          <select id="evoRootMode" style="overflow: hidden; text-overflow: ellipsis;">
-            <option value="none" selected>None (Static)</option>
-            <option value="free">Free (Random)</option>
-            <option value="thirds">Thirds (3rd/4th)</option>
-            <option value="fourths">4ths/5ths</option>
-            <option value="fifths">Cycle of 5ths</option>
-            <option value="alt_whole">Alt. Whole Tones (+2/-2)</option>
-            <option value="alt_semi">Alt. Semitones (+1/-1)</option>
-            <optgroup label="Berliner Schule / Ambient">
-              <option value="modal_iii">Modal I → III</option>
-              <option value="modal_iv">Modal I → IV</option>
-              <option value="circulating">Circulating Fifths/Fourths</option>
-              <option value="slow_osc">Slow Oscillation (I-IV-I-V)</option>
-            </optgroup>
-            <optgroup label="Pop / Rock / Standards">
-              <option value="pop_standard">Pop Standard (I-V-vi-IV)</option>
-              <option value="fifties">50s Progression (vi-IV-I-V)</option>
-              <option value="andalusian">Andalusian / Hollywood (i-bVII-bVI-bV)</option>
-              <option value="minor_common">Minor Common (vi-III-IV-V)</option>
-              <option value="jazz_standard">Jazz Standard (ii-V-I-IV-III-VI-II-V)</option>
-              <option value="pachelbel">Pachelbel's Canon</option>
-              <option value="chromatic">Chromatic Descent</option>
-              <option value="pentatonic">Minor Pentatonic</option>
-            </optgroup>
-          </select>
-        </div>
-
-        <!-- Interval Container: appears next to Root Mode without pushing everything -->
-        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 110px;">
-          <div class="ctrl-label">Every</div>
-          <select id="evoRootInterval">
-            <option value="1">1 Block</option>
-            <option value="2" selected>2 Blocks</option>
-            <option value="4">4 Blocks</option>
-            <option value="8">8 Blocks</option>
-          </select>
-        </div>
-
-        <!-- Visual Separator -->
-        <div class="v-sep"></div>
-
-        <!-- Seed Mode Dropdown -->
-        <div class="ctrl shrink-0" style="width: 110px;">
-          <div class="ctrl-label">Evo Seed</div>
-          <select id="evoSeedMode">
-            <option value="random">Random</option>
-            <option value="fixed">Fixed</option>
-          </select>
-        </div>
-      </div>
-        <!-- Evo Row 3: Root Constraints (Only for Random Mode) -->
-      <div id="evoRootConstraintRow" class="flex-center gap-sm panel-row mt-sm" style="display: none;">
-        <span class="seed-label nowrap">ROOT CONSTRAINTS:</span>
-        <!-- Palette first -->
-        <div class="ctrl shrink-0" style="width: 120px;">
-          <div class="ctrl-label">Palette <span class="val" id="evoRootPalVal">4</span></div>
-          <input type="range" id="evoRootPalette" min="1" max="12" value="4">
-        </div>
-        <!-- Range second -->
-        <div class="ctrl shrink-0" style="width: 120px;">
-          <div class="ctrl-label">Range <span class="val" id="evoRootRangeVal">7</span></div>
-          <input type="range" id="evoRootRange" min="0" max="24" value="7">
-        </div>
-        <span class="anchor-desc" style="font-size: 11px;">Limits the allowed root notes for Random mode.</span>
-      </div>
-
-      <!-- Evo Preview -->
-      <div id="evoPreviewSection" class="panel-row mt-sm">
-        <div class="flex-center gap-sm mb-sm">
-          <button class="btn nowrap" id="evoPreviewBtn">↻ Refresh Evolution</button>
-          <span class="mono muted-10" id="evoPreviewInfo"></span>
-        </div>
-        <div class="canvas-frame">
-          <canvas id="evoPreviewCanvas" height="160" class="canvas-fill"></canvas>
-        </div>
-      </div>
-    </div> <!-- End of evoPanel -->
-  </div> <!-- End of Row 2 / Export Station -->
-</div> <!-- End of transport-section -->
-
-<!-- SECTION SEPARATOR: Between MIDI Export and Settings -->
-<div class="flex-center gap-lg divider-row">
-  <div class="h-sep"></div>
-  <span class="mono nowrap divider-label">
-    Sequencer Parameters
-  </span>
-  <div class="h-sep"></div>
-</div>
-
-<!-- GROUP 1: TIMING & RHYTHM + EXPRESSION -->
-<div class="controls-group">
-  <div class="flex-center mb-md">
-    <div class="group-label live-text">Timing & Rhythm</div>
-    <!-- Label shifted to align with the Variation slider (approx 62.5% of width) -->
-    <div class="group-label pushed-right">Expression</div>
-  </div>
+<!-- GROUP 1: TIMING & RHYTHM + EXPRESSION + PHRASE & NOTES (one shared row) -->
+<div class="controls-group panel-row">
   <div class="controls">
     <div class="ctrl">
       <div class="ctrl-label live">BPM <span class="val" id="bpmVal">108</span></div>
@@ -897,6 +856,7 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label">Max Length <span class="val" id="maxNoteLenVal">2</span></div>
       <input type="range" id="maxNoteLen" min="1" max="32" value="2">
     </div>
+    <div class="v-sep v-sep-m"></div>
     <div class="ctrl">
       <div class="ctrl-label">Variation <span class="val" id="varVal">25%</span></div>
       <input type="range" id="variation" min="0" max="60" value="25">
@@ -909,13 +869,7 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label">Range <span class="val" id="rangeVal">4</span></div>
       <input type="range" id="toneRange" min="2" max="12" value="4">
     </div>
-  </div>
-</div>
-
-<!-- GROUP 2: PHRASE & NOTES (Structural) -->
-<div class="controls-group">
-  <div class="group-label mb-md">Phrase & Notes</div>
-  <div class="controls">
+    <div class="v-sep v-sep-m"></div>
     <div class="ctrl w2">
       <div class="ctrl-label">Scale</div>
       <select id="scale">
@@ -949,13 +903,13 @@ details[open] summary::before { content: '− '; }
     </div>
     <div class="ctrl" id="densityCtrl">
       <div class="ctrl-label">Density <span class="val" id="densityVal">72%</span></div>
-      <input type="range" id="density" min="30" max="100" value="72">
+      <input type="range" id="density" min="1" max="100" value="72">
     </div>
     <div class="ctrl">
       <div class="ctrl-label">Intervall <span class="val" id="intervalVal">3</span></div>
       <input type="range" id="maxInterval" min="1" max="5" value="3">
     </div>
-    <!-- NoteCount remains hidden/visible via JS -->
+    <!-- Notes (hidden/visible via JS) -->
     <div class="ctrl hidden" id="noteCountCtrl">
       <div class="ctrl-label">Notes <span class="val" id="noteCountVal">2</span></div>
       <input type="range" id="noteCount" min="1" max="3" value="2">
@@ -970,24 +924,9 @@ details[open] summary::before { content: '− '; }
     <div class="anchor-controls">
       <label class="field-label">MELODY RANGE</label>
       <select id="anchorMelodyPos">
-        <option value="above" selected>Above Anchor</option>
-        <option value="below">Below Anchor</option>
-        <option value="around">Around Anchor</option>
-      </select>
-      <label class="field-label">ANCHOR NOTE</label>
-      <select id="anchorNote">
-        <option value="36">C2</option>
-        <option value="38">D2</option>
-        <option value="40">E2</option>
-        <option value="41">F2</option>
-        <option value="43">G2</option>
-        <option value="45">A2</option>
-        <option value="48">C3</option>
-        <option value="50">D3</option>
-        <option value="52">E3</option>
-        <option value="55" selected>G3</option>
-        <option value="57">A3</option>
-        <option value="60">C4</option>
+        <option value="above" selected>Above Root</option>
+        <option value="below">Below Root</option>
+        <option value="around">Around Root</option>
       </select>
       <label class="field-label">PATTERN</label>
       <select id="anchorPattern">
@@ -1069,13 +1008,197 @@ details[open] summary::before { content: '− '; }
   <!-- Sequencer display -->
   <section class="seq-section">
     <div class="seq-header">
-      <span class="seq-title">Sequence Contour</span>
+      <button class="btn" id="genBtn">↻ Refresh Sequence</button>
       <div class="stat-pills" id="statPills"></div>
     </div>
     <div class="seq-canvas-container">
+      <canvas id="seqPianoKeys" class="piano-keys"></canvas>
       <canvas id="mainSeqCanvas"></canvas>
     </div>
   </section>
+
+    <!-- Row 2: MIDI & Evolution Station -->
+  <div class="flex-col gap-md" style="margin-top: 10px;">
+    <!-- Export Mode Tabs (extra margin-top above gives 20px total separation from the sequence display, vs the standard 10px used everywhere else) -->
+    <div class="export-tabs">
+      <button class="export-tab active" data-target="midiPanel">MIDI Export</button>
+      <button class="export-tab" data-target="evoPanel">Evolution Export</button>
+    </div>
+
+    <!-- Panel 1: Standard MIDI Export -->
+    <div id="midiPanel" class="export-panel active">
+      <div class="flex-center gap-lg panel-row">
+        <span class="seed-label nowrap">STEPS PER BAR</span>
+        <select id="exportStretch" class="select-field">
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="8">8</option>
+          <option value="16" selected>16</option>
+          <option value="32">32</option>
+        </select>
+        <button class="btn nowrap mr-auto" id="exportBtn">↓ EXPORT MIDI</button>
+      </div>
+    </div>
+
+    <!-- Panel 2: Evolution Export -->
+    <div id="evoPanel" class="export-panel">
+      <!-- Evo Row 1: Steps per Bar + Export (mirrors the MIDI export row above) -->
+      <div class="flex-center gap-lg panel-row mb-sm">
+        <span class="seed-label nowrap">STEPS PER BAR</span>
+        <select id="exportStretchEvo" class="select-field">
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="8">8</option>
+          <option value="16" selected>16</option>
+          <option value="32">32</option>
+        </select>
+        <button class="btn evo-btn nowrap mr-auto" id="exportEvoBtn">🧬 EXPORT EVOLUTION</button>
+      </div>
+
+      <!-- Evo Row 2: All sliders + dropdowns, packed together, wraps onto a 2nd line if needed -->
+      <div class="flex-center flex-wrap gap-xs row-gap-md panel-row mb-sm" style="align-items: stretch;">
+
+        <div class="ctrl">
+          <div class="ctrl-label">Iterations <span class="val" id="evoIterVal">12</span></div>
+          <input type="range" id="evoIterations" min="1" max="64" value="12">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
+          <input type="range" id="evoMutation" min="0" max="100" value="20">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-label">Drift <span class="val" id="evoDriftVal">5%</span></div>
+          <input type="range" id="evoDrift" min="0" max="100" value="5">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
+          <input type="range" id="evoGrip" min="0" max="100" value="50">
+        </div>
+
+        <!-- Octave Drift -->
+        <div class="ctrl">
+          <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
+          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0">
+        </div>
+
+        <!-- Visual Separator -->
+        <div class="v-sep"></div>
+
+      <!-- Evolution curve dropdown -->
+      <div class="ctrl shrink-0" style="width: 150px;">
+        <div class="ctrl-label">Evolution Curve</div>
+        <select id="evolutionCurve">
+          <option value="linear">Linear</option>
+          <option value="rampUp">Ramp Up</option>
+          <option value="rampDown">Ramp Down</option>
+          <option value="arch">Arch</option>
+          <option value="valley">Valley</option>
+          <option value="easeIn">Ease In</option>
+          <option value="easeOut">Ease Out</option>
+          <option value="easeInOut">Ease In/Out</option>
+        </select>
+      </div>
+
+      <!-- Mutation Style dropdown -->
+      <div class="ctrl shrink-0" style="width: 150px;">
+        <div class="ctrl-label">Mutation Style</div>
+        <select id="evoMutationStyle">
+          <option value="walk" selected>Palette Walk</option>
+          <option value="random">Palette Random</option>
+          <option value="mix">Mix (Walk + Random)</option>
+        </select>
+      </div>
+
+        <!-- Visual Separator -->
+        <div class="v-sep"></div>
+
+        <!-- Root Mode Dropdown -->
+        <div class="ctrl shrink-0" style="width: 160px;">
+          <div class="ctrl-label">Root</div>
+          <select id="evoRootMode" style="overflow: hidden; text-overflow: ellipsis;">
+            <option value="none" selected>None (Static)</option>
+            <option value="free">Free (Random)</option>
+            <option value="thirds">Thirds (3rd/4th)</option>
+            <option value="fourths">4ths/5ths</option>
+            <option value="fifths">Cycle of 5ths</option>
+            <option value="alt_whole">Alt. Whole Tones (+2/-2)</option>
+            <option value="alt_semi">Alt. Semitones (+1/-1)</option>
+            <optgroup label="Berliner Schule / Ambient">
+              <option value="modal_iii">Modal I → III</option>
+              <option value="modal_iv">Modal I → IV</option>
+              <option value="circulating">Circulating Fifths/Fourths</option>
+              <option value="slow_osc">Slow Oscillation (I-IV-I-V)</option>
+            </optgroup>
+            <optgroup label="Pop / Rock / Standards">
+              <option value="pop_standard">Pop Standard (I-V-vi-IV)</option>
+              <option value="fifties">50s Progression (vi-IV-I-V)</option>
+              <option value="andalusian">Andalusian / Hollywood (i-bVII-bVI-bV)</option>
+              <option value="minor_common">Minor Common (vi-III-IV-V)</option>
+              <option value="jazz_standard">Jazz Standard (ii-V-I-IV-III-VI-II-V)</option>
+              <option value="pachelbel">Pachelbel's Canon</option>
+              <option value="chromatic">Chromatic Descent</option>
+              <option value="pentatonic">Minor Pentatonic</option>
+
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Interval Container: appears next to Root Mode without pushing everything -->
+        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 100px;">
+          <div class="ctrl-label">Every</div>
+          <select id="evoRootInterval">
+            <option value="1">1 Block</option>
+            <option value="2" selected>2 Blocks</option>
+            <option value="4">4 Blocks</option>
+            <option value="8">8 Blocks</option>
+          </select>
+        </div>
+
+        <!-- Visual Separator -->
+        <div class="v-sep"></div>
+
+        <!-- Seed Mode Dropdown -->
+        <div class="ctrl shrink-0" style="width: 100px;">
+          <div class="ctrl-label">Evo Seed</div>
+          <select id="evoSeedMode">
+            <option value="random">Random</option>
+            <option value="fixed">Fixed</option>
+          </select>
+        </div>
+      </div>
+        <!-- Evo Row 3: Root Constraints (Only for Random Mode) -->
+      <div id="evoRootConstraintRow" class="flex-center gap-sm panel-row mt-sm" style="display: none;">
+        <span class="seed-label nowrap">ROOT CONSTRAINTS:</span>
+        <!-- Palette first -->
+        <div class="ctrl shrink-0" style="width: 120px;">
+          <div class="ctrl-label">Palette <span class="val" id="evoRootPalVal">4</span></div>
+          <input type="range" id="evoRootPalette" min="1" max="12" value="4">
+        </div>
+        <!-- Range second -->
+        <div class="ctrl shrink-0" style="width: 120px;">
+          <div class="ctrl-label">Range <span class="val" id="evoRootRangeVal">7</span></div>
+          <input type="range" id="evoRootRange" min="0" max="24" value="7">
+        </div>
+        <span class="anchor-desc" style="font-size: 11px;">Limits the allowed root notes for Random mode.</span>
+      </div>
+
+      <!-- Evo Preview -->
+      <div id="evoPreviewSection" class="panel-row mt-sm">
+        <div class="flex-center gap-sm mb-sm">
+          <button class="btn nowrap" id="evoPreviewBtn">↻ Refresh Evolution</button>
+          <span class="mono muted-10" id="evoPreviewInfo"></span>
+        </div>
+        <div class="canvas-frame" style="display: flex; align-items: stretch;">
+          <canvas id="evoPianoKeys" class="piano-keys"></canvas>
+          <canvas id="evoPreviewCanvas" height="140" class="canvas-fill" style="flex: 1; min-width: 0;"></canvas>
+        </div>
+      </div>
+    </div> <!-- End of evoPanel -->
+  </div> <!-- End of Row 2 / Export Station -->
+</div> <!-- End of transport-section -->
 
   <!-- Howto -->
   <details>
@@ -1120,40 +1243,6 @@ details[open] summary::before { content: '− '; }
             <li><span class="hl-amber">VOL:</span> <span class="hl-text">Controls only the internal monitoring synth volume. It does not affect your external MIDI hardware or DAW.</span></li>
             <li><span class="hl-amber">Fixed Seed:</span> <span class="hl-text">If you find a sequence you love, note the seed number. Entering it again will recreate that exact same pattern perfectly.</span></li>
             <li><span class="hl-amber">Random Seed:</span> <span class="hl-text">Every time you click "Generate", a new random seed is used, giving you an infinite variety of patterns.</span></li>
-          </ul>
-        </div>
-
-        <!-- SECTION 3: MIDI EXPORT & EVOLUTION -->
-        <div style="margin-bottom: 25px;">
-          <strong class="section-heading hl-amber">3. MIDI Export & Evolutionary Chain (🧬)</strong><br>
-          Switch between the two export tabs to choose your output method:
-          <ul class="list-square">
-            <li><span class="hl-amber">Standard MIDI Export:</span> <span class="hl-text">Exports the current loop exactly as you hear it in the sequencer. Ideal for short loops in your DAW.</span></li>
-            <li><span class="hl-amber">🧬 Evolution Export:</span> <span class="hl-text">Instead of a loop, this creates a long-form composition. It takes your current sequence and "mutates" it over several blocks. This mimics how old modular sequencers would slowly drift and change over 20 minutes.</span>
-              <ul class="list-circle">
-                <li><span class="hl-amber">Evolution Preview Canvas:</span> <span class="hl-text">A real-time piano roll visualization of the generated evolutionary chain. It updates automatically when parameters change. Use "Refresh Evolution" to force a new seed and regenerate the preview.</span></li>
-                <li><span class="hl-amber">Iterations:</span> <span class="hl-text">How many blocks are generated. More iterations = a longer MIDI file.</span></li>
-                <li><span class="hl-amber">Mutation:</span> <span class="hl-text">The "chaos" factor. High values mean each block will differ significantly from the previous one. Low values create a very subtle, slow evolution.</span></li>
-                <li><span class="hl-amber">Drift:</span> <span class="hl-text">Adds sudden octave jumps between blocks, creating dramatic shifts in energy and register.</span></li>
-                <li><span class="hl-amber">Grip:</span> <span class="hl-text">The "anchor" to the original theme. High grip prevents the evolution from wandering too far away from your starting phrase.</span></li>
-                <li><span class="hl-amber">Octave Drift:</span> <span class="hl-text">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
-                  <li><span class="hl-amber">Root Shift:</span> <span class="hl-text">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).
-                  <ul style="margin-left: 15px; margin-top: 5px; font-size: 11px; color: var(--text-bright); list-style: circle;">
-                    <li><strong class="hl-amber">Root Shift Interval:</strong> "Every X Blocks" controls how frequently the root changes. Lower values = faster harmonic movement.</li>
-                    <li><span class="hl-amber">Root Constraints (for 'Free' mode):</span> When using Random root shifts, you can constrain the harmonic wanderlust:
-                      <br>— <strong>Palette:</strong> Limits the number of allowed root notes available for selection.
-                      <br>— <strong>Range:</strong> Restricts the maximum distance the root can jump away from the original starting key.</li>
-                  </ul>
-                </li>
-                <li><span class="hl-amber">Evolution Curve:</span> <span class="hl-text">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, "Valley" for a dip, or "Ease" functions for organic transitions.</span></li>
-                <li><span class="hl-amber">Mutation Style:</span> <span class="hl-text">Determines how notes are altered during mutation:
-                  <br>— <strong>Palette Walk:</strong> Moves to adjacent tones in the current palette (stepwise motion).
-                  <br>— <strong>Palette Random:</strong> Jumps to any random tone in the palette.
-                  <br>— <strong>Mix:</strong> Alternates between Walk and Random for balanced variation.</span></li>
-                <li><span class="hl-amber">Evo Seed Mode:</span> <span class="hl-text">"Fixed" locks the evolution chain to the current seed. "Random" generates a new chain each time you refresh or export.</span></li>
-                <li><span class="hl-amber">Export Stretch:</span> <span class="hl-text">Defines the grid alignment for the evolution export (Steps per Bar). Matches the standard export for consistent DAW integration.</span></li>
-              </ul>
-            </li>
           </ul>
         </div>
 
@@ -1216,7 +1305,7 @@ details[open] summary::before { content: '− '; }
                   <span class="hl-amber">Offbeat Anchor Panel:</span>
                   <span class="hl-text">
                     <ul style="margin-left: 15px; margin-top: 5px; list-style: none; font-size: 12px; line-height: 1.6;">
-                      <li><span class="hl-amber">Anchor Note:</span> The fixed pitch that "locks" the rhythm. This is usually a bass note.</li>
+                      <li><span class="hl-amber">Anchor Note:</span> The fixed pitch that "locks" the rhythm. Always equals the current Root Note (no separate control) — usually functions as a bass note.</li>
                       <li><span class="hl-amber">Pattern:</span> Defines where the anchor sits. <span class="hl-amber">offbeat</span> creates the classic "push-pull" feel by placing the fixed note on every second step.</li>
                       <li><span class="hl-amber">Onbeat:</span> Instead of placing the anchor note offbeat we place it onbeat.</li>
                       <li><span class="hl-amber">Melody Range:</span> Controls the register of the moving notes relative to the anchor. <span class="hl-amber">Above/Below Anchor</span> shift the whole melody palette by octaves so it stays cleanly above or below the pedal note. <span class="hl-amber">Around Anchor</span> re-octaves each palette tone individually to whichever octave sits closest to the anchor, so the melody surrounds it - some notes above, some below.</li>
@@ -1245,6 +1334,40 @@ details[open] summary::before { content: '− '; }
           </div>
         </div>
 
+        <!-- SECTION 3: MIDI EXPORT & EVOLUTION -->
+        <div style="margin-bottom: 25px;">
+          <strong class="section-heading hl-amber">3. MIDI Export & Evolutionary Chain (🧬)</strong><br>
+          Switch between the two export tabs to choose your output method:
+          <ul class="list-square">
+            <li><span class="hl-amber">Standard MIDI Export:</span> <span class="hl-text">Exports the current loop exactly as you hear it in the sequencer. Ideal for short loops in your DAW.</span></li>
+            <li><span class="hl-amber">🧬 Evolution Export:</span> <span class="hl-text">Instead of a loop, this creates a long-form composition. It takes your current sequence and "mutates" it over several blocks. This mimics how old modular sequencers would slowly drift and change over 20 minutes.</span>
+              <ul class="list-circle">
+                <li><span class="hl-amber">Evolution Preview Canvas:</span> <span class="hl-text">A real-time piano roll visualization of the generated evolutionary chain. It updates automatically when parameters change. Use "Refresh Evolution" to force a new seed and regenerate the preview.</span></li>
+                <li><span class="hl-amber">Iterations:</span> <span class="hl-text">How many blocks are generated. More iterations = a longer MIDI file.</span></li>
+                <li><span class="hl-amber">Mutation:</span> <span class="hl-text">The "chaos" factor. High values mean each block will differ significantly from the previous one. Low values create a very subtle, slow evolution.</span></li>
+                <li><span class="hl-amber">Drift:</span> <span class="hl-text">Adds sudden octave jumps between blocks, creating dramatic shifts in energy and register.</span></li>
+                <li><span class="hl-amber">Grip:</span> <span class="hl-text">The "anchor" to the original theme. High grip prevents the evolution from wandering too far away from your starting phrase.</span></li>
+                <li><span class="hl-amber">Octave Drift:</span> <span class="hl-text">Probability that the entire sequence jumps up or down an octave at the end of a block.</span></li>
+                  <li><span class="hl-amber">Root Shift:</span> <span class="hl-text">Changes the base key (root note) between blocks. This allows you to create full harmonic progressions (e.g., moving from I to IV or following a Cycle of Fifths).
+                  <ul style="margin-left: 15px; margin-top: 5px; font-size: 11px; color: var(--text-bright); list-style: circle;">
+                    <li><strong class="hl-amber">Root Shift Interval:</strong> "Every X Blocks" controls how frequently the root changes. Lower values = faster harmonic movement.</li>
+                    <li><span class="hl-amber">Root Constraints (for 'Free' mode):</span> When using Random root shifts, you can constrain the harmonic wanderlust:
+                      <br>— <strong>Palette:</strong> Limits the number of allowed root notes available for selection.
+                      <br>— <strong>Range:</strong> Restricts the maximum distance the root can jump away from the original starting key.</li>
+                  </ul>
+                </li>
+                <li><span class="hl-amber">Evolution Curve:</span> <span class="hl-text">Controls the intensity of mutation and drift over time. Use "Ramp Up" for increasing tension, "Arch" for a dramatic peak in the middle, "Valley" for a dip, or "Ease" functions for organic transitions.</span></li>
+                <li><span class="hl-amber">Mutation Style:</span> <span class="hl-text">Determines how notes are altered during mutation:
+                  <br>— <strong>Palette Walk:</strong> Moves to adjacent tones in the current palette (stepwise motion).
+                  <br>— <strong>Palette Random:</strong> Jumps to any random tone in the palette.
+                  <br>— <strong>Mix:</strong> Alternates between Walk and Random for balanced variation.</span></li>
+                <li><span class="hl-amber">Evo Seed Mode:</span> <span class="hl-text">"Fixed" locks the evolution chain to the current seed. "Random" generates a new chain each time you refresh or export.</span></li>
+                <li><span class="hl-amber">Export Stretch:</span> <span class="hl-text">Defines the grid alignment for the evolution export (Steps per Bar). Matches the standard export for consistent DAW integration.</span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
         <!-- SECTION 5: DISPLAY LEGEND -->
         <div style="margin-bottom: 10px;">
           <strong class="section-heading hl-text">🔍 Sequence Contour & Display Legend</strong><br>
@@ -1253,7 +1376,7 @@ details[open] summary::before { content: '− '; }
             <li><span style="color: var(--anchor);">Pink bar:</span> <span class="hl-text">Anchor note (fixed pitch). Height = pitch, Width = duration.</span></li>
             <li><span style="color: #fff;">Empty space:</span> <span class="hl-text">A rest.</span></li>
             <li><span style="color: #fff;">Vertical grid lines:</span> <span class="hl-text">Phrase/Block boundaries for structural reference.</span></li>
-            <li><strong class="hl-text">Stat Pills:</strong> <span class="hl-text">Top-right metrics show current Root, Scale, Note Count vs Total Steps, Anchor Count, and Pitch Range (↓/↑).</span></li>
+            <li><strong class="hl-text">Stat Pills:</strong> <span class="hl-text">Metrics next to the Refresh button show current Root, Scale, Note Count vs Total Steps, Anchor Count, and Pitch Range (↓/↑).</span></li>
           </ul>
         </div>
 
@@ -1409,57 +1532,54 @@ function buildPalette(rng, scale, size, root, toneRange) {
 }
 
 /**
- * Shifts an entire palette by whole octaves so it sits above, below, or
- * straddling ("around") a given anchor pitch. Used for Offbeat Anchor mode
- * so the melody's register can be controlled relative to the pedal-point
- * anchor note, independent of the scale's global root.
+ * Shifts the melody palette by whole octaves so it sits above, below, or
+ * straddling ("around") the fixed Anchor Note. The anchor note is always
+ * the current Root Note (no separate control). Instead, the melody's palette is octave-shifted
+ * as a whole (preserving its internal pitch-class structure/intervals) so
+ * that its register sits in the chosen position relative to the anchor.
  */
-/**
- * Computes the actual MIDI pitch to use for the Offbeat Anchor note, based
- * on the (untouched) melody palette's pitch range and the chosen position
- * (above/below/around). The palette itself is never modified - only the
- * anchor's octave is chosen so the melody ends up above, below, or
- * straddling it. The anchor's pitch CLASS (e.g. "G") is preserved; only the
- * octave is adjusted.
- */
-function computeAnchorPitch(anchorMidi, palette, position) {
-  if (!palette || palette.length === 0 || !position || position === 'none') return anchorMidi;
-
-  const lo = 24, hi = 84;
-  const pitchClass = ((anchorMidi % 12) + 12) % 12;
-
-  // All octave-transpositions of the anchor's pitch class within range.
-  const candidates = [];
-  for (let oct = 0; oct <= 8; oct++) {
-    const m = pitchClass + oct * 12;
-    if (m >= lo && m <= hi) candidates.push(m);
-  }
-  if (candidates.length === 0) return anchorMidi;
+function shiftPaletteToAnchor(palette, anchorMidi, position) {
+  if (!palette || palette.length === 0 || !position || position === 'none') return palette;
 
   const min = Math.min(...palette);
   const max = Math.max(...palette);
 
   if (position === 'above') {
-    // "Melody plays above the anchor" -> anchor sits below the melody's range.
-    const below = candidates.filter(c => c < min);
-    return below.length > 0 ? below[below.length - 1] : candidates[0];
+    // Shift the whole palette up in octave steps until every note is above the anchor.
+    let shift = 0;
+    while (min + shift <= anchorMidi) shift += 12;
+    const shifted = palette.map(m => m + shift);
+    if (shifted.some(m => m < 0 || m > 127)) return palette;
+    return shifted;
   }
 
   if (position === 'below') {
-    // "Melody plays below the anchor" -> anchor sits above the melody's range.
-    const above = candidates.filter(c => c > max);
-    return above.length > 0 ? above[0] : candidates[candidates.length - 1];
+    // Shift the whole palette down in octave steps until every note is below the anchor.
+    let shift = 0;
+    while (max + shift >= anchorMidi) shift -= 12;
+    const shifted = palette.map(m => m + shift);
+    if (shifted.some(m => m < 0 || m > 127)) return palette;
+    return shifted;
   }
 
   if (position === 'around') {
-    // Simply the midpoint of the melody's pitch range, rounded. The anchor's
-    // pitch class is not preserved here - if the midpoint coincides with a
-    // palette note, that's fine.
-    return Math.round((min + max) / 2);
+    // buildPalette() always constructs the corridor starting AT the root and
+    // moving upward, so min === anchorMidi (root) and the whole palette sits
+    // at-or-above it. A single constant octave-shift can't fix that (the
+    // midpoint is already close to the anchor, so shift would round to 0).
+    // Instead, drop the lower half of the palette down an octave so the
+    // melody actually straddles the anchor: roughly half below, half at/above.
+    const sorted = [...palette].sort((a, b) => a - b);
+    const splitIdx = Math.ceil(sorted.length / 2);
+    const straddled = sorted.map((m, idx) => (idx < splitIdx ? m - 12 : m));
+    if (straddled.some(m => m < 0 || m > 127)) return palette;
+    return straddled.sort((a, b) => a - b);
   }
 
-  return anchorMidi;
+  return palette;
 }
+
+
 
 // =========================================
 // PSEUDO-RANDOM NUMBER GENERATOR
@@ -1595,8 +1715,10 @@ function mutatePhrase(rng, events, variation, params) {
 
   const n = Math.max(1, Math.floor(copy.length * variation));
   const structuralChance = Math.min(0.4, variation * 0.8);
+
+  // FIX: No notes removed if density is 100%
+  const removeChance = (params.density >= 1.0) ? 0 : structuralChance / 2;
   const addChance = structuralChance / 2;
-  const removeChance = structuralChance / 2;
 
   for (let m = 0; m < n; m++) {
     const roll = rng.next();
@@ -1605,8 +1727,6 @@ function mutatePhrase(rng, events, variation, params) {
     } else if (roll < removeChance + addChance) {
       const start = rng.int(0, params.phraseLen - (params.minNoteLen || 1));
       const available = params.phraseLen - start;
-
-      // DYNAMIC CLAMPING: Prevents rng.int(a, b) where a > b
       const effMin = Math.min(params.minNoteLen, available);
       const effMax = Math.max(effMin, Math.min(params.maxNoteLen, available));
       if (effMin > effMax) continue;
@@ -1757,7 +1877,9 @@ function mutateOffbeatPhrase(rng, events, variation, params, anchorMidi, anchorP
     const ev = copy[idx];
     if (ev.isAnchor) continue;
 
-    if (rng.chance(0.3)) {
+    // FIX: Use variation instead of 0.3 and prevent removal if density is 100%
+    const removeChance = (params.density >= 1.0) ? 0 : (variation * 0.3);
+    if (rng.chance(removeChance)) {
       copy.splice(idx, 1);
     } else {
       if (tones) {
@@ -1842,7 +1964,10 @@ function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpP
   for (let m = 0; m < n; m++) {
     if (copy.length === 0) break;
     const idx = rng.int(0, copy.length - 1);
-    if (rng.chance(0.25)) {
+
+    // FIX: Use variation instead of 0.25 and prevent removal if density is 100%
+    const removeChance = (params.density >= 1.0) ? 0 : (variation * 0.25);
+    if (rng.chance(removeChance)) {
       copy.splice(idx, 1);
     } else {
       const fresh = buildArpPhrase(rng, {...params, phraseLen: params.phraseLen}, arpRoot, arpChord, arpPattern, arpOctaves);
@@ -1860,6 +1985,10 @@ function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpP
 // =========================================
 
 let sequence=[];
+// Cache of the static (non-cursor) pianoroll content so highlightStep()
+// doesn't have to redraw the entire grid + all note blocks on every step.
+let seqBgCanvas = null;
+let seqBgKey = '';
 let currentEvoChain = []; // Stores the result of the last evolution generation for instant export
 let playing=false;
 let playToken=0;
@@ -1955,7 +2084,7 @@ function generateSequence() {
   if (seedMode !== 'fixed') document.getElementById('seedValue').value = seed;
   const rng = new RNG(seed);
 
-  const anchorMidi = parseInt(document.getElementById('anchorNote').value) || 48;
+  const anchorMidi = root;
   const anchorPattern = document.getElementById('anchorPattern').value;
   const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
   const arpParams = {
@@ -1972,9 +2101,13 @@ function generateSequence() {
       ? buildPalette(rng, scale, paletteSize, root, toneRange)
       : null;
 
-  const effectiveAnchorMidi = (mode === 'offbeat' && palette)
-      ? computeAnchorPitch(anchorMidi, palette, document.getElementById('anchorMelodyPos')?.value)
-      : anchorMidi;
+  // Offbeat Anchor mode: the anchor note itself stays fixed at the picked
+  // pitch; instead the melody palette is octave-shifted to sit above,
+  // below, or straddling that fixed anchor.
+  const effectiveAnchorMidi = anchorMidi;
+  if (mode === 'offbeat' && palette) {
+    palette = shiftPaletteToAnchor(palette, anchorMidi, document.getElementById('anchorMelodyPos')?.value);
+  }
 
   const params = {
     scale,
@@ -2080,30 +2213,54 @@ function renderEvolutionPreview() {
   }
 
   const chain = currentEvoChain;
-  const ctx = canvas.getContext('2d');
-  const height = 160;
+
+  // --- Sizing (DPR-correct, matching the main sequencer canvas) ---
   const cssWidth = canvas.parentElement.clientWidth || canvas.clientWidth || 600;
+  const cssHeight = 140;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(cssWidth * dpr));
+  canvas.height = Math.max(1, Math.round(cssHeight * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
   const pxPerStep = Math.max(cssWidth / Math.max(chain.length, 1), 0.5);
-  canvas.width = cssWidth;
-  canvas.height = height;
 
   const css = getComputedStyle(document.documentElement);
   const bgColor = (css.getPropertyValue('--bg') || '#0a0a0a').trim();
-  const noteColor = (css.getPropertyValue('--green') || '#7CFC00').trim();
   const accentColor = (css.getPropertyValue('--amber') || '#FFB000').trim();
   const lineColor = 'rgba(255,255,255,0.08)';
 
   ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, cssWidth, cssHeight);
 
+  // --- VIEW CONFIGURATION ---
+  // Same discrete-row approach as the main sequencer pianoroll: a fixed
+  // semitone view range, rounded up to full octaves and centered on the
+  // chain's note range, instead of stretching notes continuously across
+  // whatever min/max happen to occur.
   const notes = chain.filter(s => s && s.noteStart && !s.rest && typeof s.midi === 'number');
-  let minMidi = 48, maxMidi = 72;
+  let viewCenter = 60;
+  let viewRange = 24;
   if (notes.length > 0) {
-    minMidi = Math.min(...notes.map(s => s.midi)) - 1;
-    maxMidi = Math.max(...notes.map(s => s.midi)) + 1;
+    const midis = notes.map(s => s.midi);
+    const minN = Math.min(...midis);
+    const maxN = Math.max(...midis);
+    viewCenter = (minN + maxN) / 2;
+    const span = (maxN - minN) + 2; // small padding so notes don't touch the edge
+    viewRange = Math.max(24, Math.ceil(span / 12) * 12); // round up to full octaves
   }
-  const range = (maxMidi - minMidi) || 1;
+  const keyHeight = cssHeight / viewRange;
+  const halfRange = viewRange / 2;
 
+  drawPianoKeys(document.getElementById('evoPianoKeys'), viewCenter, viewRange, parseInt(document.getElementById('root').value));
+
+  // 1. Horizontal zebra stripes (one per semitone row), matching the main pianoroll
+  for (let k = 0; k < viewRange; k++) {
+    ctx.fillStyle = (k % 2 === 0) ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)';
+    ctx.fillRect(0, k * keyHeight, cssWidth, keyHeight);
+  }
+
+  // 2. Block-boundary grid lines
   const phraseLen = +document.getElementById('phraseLen').value || 1;
   const repeats = +document.getElementById('repeats').value || 1;
   const blockLen = phraseLen * repeats;
@@ -2113,45 +2270,49 @@ function renderEvolutionPreview() {
   ctx.lineWidth = 1;
   for (let b = 1; b < iterations; b++) {
     const x = Math.round(b * blockLen * pxPerStep) + 0.5;
-    if (x > canvas.width) break;
+    if (x > cssWidth) break;
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
+    ctx.lineTo(x, cssHeight);
     ctx.stroke();
   }
 
-  // --- UPDATE START: Match main sequencer gap (GAP=2) and increase height ---
-  // Constants to match the main sequencer's visual style
+  // 3. Notes — drawn on discrete semitone rows, same GAP/sizing logic as
+  // the main sequencer, so a note's height matches its piano-key row.
   const GAP = 2;
-  const BLOCK_HEIGHT = 5; // Increased height for better visibility
+  const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
 
-  ctx.fillStyle = noteColor;
+  ctx.fillStyle = '#00ccff';
   for (let i = 0; i < chain.length; i++) {
     const s = chain[i];
-    if (s && s.noteStart && !s.rest && typeof s.midi === 'number') {
-      const y = height - ((s.midi - minMidi) / range) * height;
+    if (!s || !s.noteStart || s.rest || typeof s.midi !== 'number') continue;
 
-      // Calculate start X and width using the same logic as the main sequencer
-      const startX = Math.round(i * pxPerStep) + (GAP / 2);
-      const w = Math.max(1, Math.round((s.holdSteps || 1) * pxPerStep) - GAP);
+    const noteY = (halfRange - (s.midi - viewCenter)) * keyHeight;
+    if (noteY < 0 || noteY > cssHeight) continue;
 
-      // Draw with increased height, centered vertically
-      ctx.fillRect(startX, y - BLOCK_HEIGHT / 2, w, BLOCK_HEIGHT);
-    }
+    // Mirror the playback engine's swing timing: odd-numbered steps are
+    // delayed by half a step times the swing amount.
+    const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
+    const xPos = i * pxPerStep + swingOffset;
+    const blockWidth = Math.max(1, (s.holdSteps || 1) * pxPerStep - GAP);
+
+    ctx.fillRect(xPos, noteY, blockWidth, keyHeight - 2);
   }
-  // --- UPDATE END ---
 
+  // 4. Orange repeat/block markers on top
   ctx.fillStyle = accentColor;
   for (let b = 0; b < iterations; b++) {
     const x = Math.round(b * blockLen * pxPerStep);
-    if (x > canvas.width) break;
+    if (x > cssWidth) break;
     ctx.fillRect(x, 0, 1, 6);
   }
 
   if (info) {
     const totalSteps = chain.length;
     const seedNote = (document.getElementById('evoSeedMode')?.value !== 'fixed') ? ' · seed locked for export' : '';
-    info.textContent = `${iterations} blocks · ${totalSteps} steps · pitch range ${minMidi + 1}–${maxMidi - 1}${seedNote}`;
+    const lo = notes.length ? Math.min(...notes.map(s => s.midi)) : null;
+    const hi = notes.length ? Math.max(...notes.map(s => s.midi)) : null;
+    info.textContent = `${iterations} blocks · ${totalSteps} steps${lo !== null ? ` · pitch range ${midiToName(lo)}–${midiToName(hi)}` : ''}${seedNote}`;
   }
 }
 
@@ -2225,7 +2386,7 @@ function generateEvolutionaryChain() {
   const minNoteLen = +document.getElementById('minNoteLen').value;
   const maxNoteLen = +document.getElementById('maxNoteLen').value;
 
-  const anchorMidi = parseInt(document.getElementById('anchorNote').value);
+  const anchorMidi = root;
   const anchorPattern = document.getElementById('anchorPattern').value;
   const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
 
@@ -2240,9 +2401,13 @@ function generateEvolutionaryChain() {
     if (!palette.includes(fallback)) palette = [...palette, fallback].sort((a, b) => a - b);
   }
 
-  const effectiveAnchorMidi = (mode === 'offbeat' && palette)
-      ? computeAnchorPitch(anchorMidi, palette, document.getElementById('anchorMelodyPos')?.value)
-      : anchorMidi;
+  // Offbeat Anchor mode: the anchor note itself stays fixed at the picked
+  // pitch; instead the melody palette is octave-shifted to sit above,
+  // below, or straddling that fixed anchor.
+  const effectiveAnchorMidi = anchorMidi;
+  if (mode === 'offbeat' && palette) {
+    palette = shiftPaletteToAnchor(palette, anchorMidi, document.getElementById('anchorMelodyPos')?.value);
+  }
 
   const params = {
     scale, root, phraseLen,
@@ -2459,72 +2624,204 @@ function generateEvolutionaryChain() {
 // =========================================
 
 /**
- * Redraws the entire sequence on the canvas.
- * This handles the piano-roll visualization for the main loop.
+ * Draws a piano strip with a flexible number of keys centered around a value.
+ * @param {HTMLCanvasElement} canvas - The piano keys canvas
+ * @param {number} centerMidi - The MIDI value that should be in the exact center
+ * @param {number} viewRange - Total number of keys to draw (e.g., 24 or 36)
  */
+function drawPianoKeys(canvas, centerMidi, viewRange, rootMidi) {
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const keyHeight = rect.height / viewRange;
+  const blackPC = new Set([1, 3, 6, 8, 10]);
+  const halfRange = viewRange / 2;
+  const css = getComputedStyle(document.documentElement);
+  const accentColor = (css.getPropertyValue('--amber') || '#FFB000').trim();
+  const hasRoot = typeof rootMidi === 'number';
+  const roundedRoot = hasRoot ? Math.round(rootMidi) : null;
+
+  ctx.clearRect(0, 0, rect.width, rect.height);
+
+  // Draw from center + halfRange (top) down to center - halfRange (bottom)
+  for (let i = halfRange; i >= -halfRange; i--) {
+    // Math.round prevents floating point centerMidi from breaking the pitch class check
+    const midi = Math.round(centerMidi + i);
+    const y = (halfRange - i) * keyHeight;
+    const pc = ((midi % 12) + 12) % 12;
+    const isBlack = blackPC.has(pc);
+    const isRoot = hasRoot && midi === roundedRoot;
+
+    ctx.fillStyle = isRoot ? accentColor : '#e0e0e0';
+    ctx.fillRect(0, y, rect.width, keyHeight - 1);
+    ctx.strokeStyle = '#ccc';
+    ctx.strokeRect(0, y, rect.width, keyHeight - 1);
+
+    if (isBlack && !isRoot) {
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, y, rect.width * 0.6, keyHeight - 1);
+    } else if (isBlack && isRoot) {
+      // Keep the root highlight visible but still indicate it was a black key
+      ctx.fillStyle = accentColor;
+      ctx.globalAlpha = 0.55;
+      ctx.fillRect(0, y, rect.width * 0.6, keyHeight - 1);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
 /**
- * Redraws the entire sequence on the canvas.
- * This handles the piano-roll visualization for the main loop.
+ * Resizes the visible canvas backing store to match its CSS size * dpr,
+ * but only when the size actually changed — resetting canvas.width/height
+ * tears down the whole GPU texture and is expensive to do every frame.
+ */
+function ensureSeqCanvasSize(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const neededW = Math.max(1, Math.round(rect.width * dpr));
+  const neededH = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== neededW || canvas.height !== neededH) {
+    canvas.width = neededW;
+    canvas.height = neededH;
+  }
+  return { rect, dpr, neededW, neededH };
+}
+
+/**
+ * Draws the static content (zebra stripes, grid, repeat markers, note
+ * blocks) into the offscreen seqBgCanvas. This is the expensive part
+ * (up to a couple thousand note/grid draws) and should only run when the
+ * sequence, view, or canvas size actually changes — NOT on every playback
+ * step.
+ */
+function renderSequenceBackground() {
+  if (!sequence || sequence.length === 0) return null;
+
+  const canvas = document.getElementById('mainSeqCanvas');
+  if (!canvas) return null;
+
+  const { rect, dpr, neededW, neededH } = ensureSeqCanvasSize(canvas);
+
+  if (!seqBgCanvas) seqBgCanvas = document.createElement('canvas');
+  if (seqBgCanvas.width !== neededW || seqBgCanvas.height !== neededH) {
+    seqBgCanvas.width = neededW;
+    seqBgCanvas.height = neededH;
+  }
+  const ctx = seqBgCanvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // --- VIEW CONFIGURATION ---
+  let viewRange = 24;
+  let viewCenter = parseInt(document.getElementById('root').value) || 60;
+
+  if (currentMode === 'arp') {
+    viewRange = 36;
+    const notes = sequence.filter(s => s.midi !== undefined).map(s => s.midi);
+    if (notes.length > 0) {
+      const min = Math.min(...notes);
+      const max = Math.max(...notes);
+      viewCenter = (min + max) / 2;
+    }
+  }
+
+  const keyHeight = rect.height / viewRange;
+  const halfRange = viewRange / 2;
+  const totalSteps = sequence.length;
+  const pxPerStep = rect.width / totalSteps;
+
+  // Sync Piano Keys
+  const pianoCanvas = document.getElementById('seqPianoKeys');
+  if (pianoCanvas) {
+    drawPianoKeys(pianoCanvas, viewCenter, viewRange, parseInt(document.getElementById('root').value));
+  }
+
+  // 1. Clear and Draw Horizontal Zebra Stripes
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  for (let k = 0; k < viewRange; k++) {
+    ctx.fillStyle = (k % 2 === 0) ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)';
+    ctx.fillRect(0, k * keyHeight, rect.width, keyHeight);
+  }
+
+  // 2. Draw Original Vertical Grid Lines
+  const phraseLenForGrid = parseInt(document.getElementById('phraseLen')?.value) || 0;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= totalSteps; i++) {
+    const x = i * pxPerStep;
+    const isRepeatBoundary = phraseLenForGrid > 0 && i % phraseLenForGrid === 0;
+    ctx.strokeStyle = isRepeatBoundary ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.05)';
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, rect.height);
+    ctx.stroke();
+  }
+
+  // 2b. Orange repeat markers on top (matching Evolution piano roll style)
+  if (phraseLenForGrid > 0) {
+    const css = getComputedStyle(document.documentElement);
+    const accentColor = (css.getPropertyValue('--amber') || '#FFB000').trim();
+    ctx.fillStyle = accentColor;
+    for (let i = 0; i <= totalSteps; i += phraseLenForGrid) {
+      const x = i * pxPerStep;
+      ctx.fillRect(x, 0, 1, 6);
+    }
+  }
+
+  // 3. Draw Notes
+  const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
+  const GAP = 2;
+  for (let i = 0; i < totalSteps; i++) {
+    const step = sequence[i];
+    // Only draw at the start of a note; tied continuation steps share the
+    // same block via holdSteps below, so they must not draw their own block.
+    if (step.midi === undefined || step.tie) continue;
+    if (!step.noteStart && !step.isAnchor) continue;
+
+    const noteMidi = step.midi;
+    const noteY = (halfRange - (noteMidi - viewCenter)) * keyHeight;
+
+    if (noteY < 0 || noteY > rect.height) continue;
+
+    // Mirror the playback engine's swing timing: odd-numbered steps are
+    // delayed by half a step times the swing amount.
+    const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
+    const xPos = i * pxPerStep + swingOffset;
+    const blockWidth = Math.max(1, (step.holdSteps || 1) * pxPerStep - GAP);
+
+    ctx.fillStyle = '#00ccff';
+    ctx.fillRect(xPos, noteY, blockWidth, keyHeight - 2);
+  }
+
+  seqBgSeqRef = sequence;
+  return { rect, dpr };
+}
+
+/**
+ * Copies the cached static background onto the visible canvas (1:1 pixel
+ * blit — cheap, no per-note/per-gridline drawing).
+ */
+function blitSeqBackground(ctx, dpr) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  if (seqBgCanvas) ctx.drawImage(seqBgCanvas, 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+/**
+ * Redraws the entire sequence on the main canvas.
+ * Includes the horizontal zebra stripes AND the original vertical grid lines.
  */
 function renderSequence() {
-  if (!sequence || sequence.length === 0) return;
+  const meta = renderSequenceBackground();
+  if (!meta) return;
   const canvas = document.getElementById('mainSeqCanvas');
-  if (!canvas) return;
-
   const ctx = canvas.getContext('2d');
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-
-  const totalSteps = sequence.length;
-  const phraseLen = +document.getElementById('phraseLen').value || 16;
-  const pxPerStep = canvas.width / totalSteps;
-
-  const notes = sequence.filter(s => (s.midi !== undefined));
-  const midiMin = notes.length ? Math.min(...notes.map(s => s.midi)) - 1 : 48;
-  const midiMax = notes.length ? Math.max(...notes.map(s => s.midi)) + 1 : 72;
-  const midiRange = Math.max(1, midiMax - midiMin);
-
-  const css = getComputedStyle(document.documentElement);
-  const noteColor = (css.getPropertyValue('--cyan') || '#0ea5e9').trim();
-  const anchorColor = (css.getPropertyValue('--anchor') || '#ec4899').trim();
-  const lineColor = 'rgba(255,255,255,0.08)';
-
-  ctx.fillStyle = (css.getPropertyValue('--bg') || '#0f172a').trim();
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Structural & step grid lines
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 1;
-  for (let r = 1; r < (totalSteps / phraseLen); r++) {
-    const x = r * phraseLen * pxPerStep;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-  }
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  for (let i = 0; i < totalSteps; i++) {
-    const x = i * pxPerStep + 0.5;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-  }
-
-  // Draw notes ONLY on noteStart to prevent overlap.
-  // Math.round() ensures pixel-perfect alignment and kills subpixel bleeding.
-  const GAP = 2; // Horizontal gap between individual notes
-  // --- UPDATE START: Increased block height from 3 to 5 to match evolution preview ---
-  const blockHeight = 5;
-  // --- UPDATE END ---
-
-  for (let i = 0; i < totalSteps; i++) {
-    const s = sequence[i];
-    if (!s || s.rest || s.midi === undefined || !s.noteStart) continue;
-    const hold = s.holdSteps || 1;
-    const startX = Math.round(i * pxPerStep) + (GAP / 2);
-    const width = Math.max(1, Math.round(hold * pxPerStep) - GAP);
-    const norm = (s.midi - midiMin) / midiRange;
-    const y = canvas.height - (norm * canvas.height);
-
-    ctx.fillStyle = s.isAnchor ? anchorColor : noteColor;
-    ctx.fillRect(startX, y - blockHeight/2, width, blockHeight);
-  }
+  blitSeqBackground(ctx, meta.dpr);
 }
 
 /**
@@ -2534,14 +2831,33 @@ function highlightStep(idx) {
   if (!sequence.length) return;
   const canvas = document.getElementById('mainSeqCanvas');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const totalSteps = sequence.length;
-  const pxPerStep = canvas.width / totalSteps;
 
-  // Redraw
-  renderSequence();
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const neededW = Math.max(1, Math.round(rect.width * dpr));
+  const neededH = Math.max(1, Math.round(rect.height * dpr));
+
+  // Only rebuild the (expensive) static background when something that
+  // affects it actually changed — new/regenerated sequence, or a resize.
+  // On every other step we just blit the cached bitmap, which is what
+  // keeps the cursor in sync with the audio at high step counts.
+  const needsRebuild = !seqBgCanvas
+    || seqBgSeqRef !== sequence
+    || canvas.width !== neededW
+    || canvas.height !== neededH;
+
+  if (needsRebuild) {
+    renderSequenceBackground();
+  }
+
+  const ctx = canvas.getContext('2d');
+  ensureSeqCanvasSize(canvas);
+  blitSeqBackground(ctx, dpr);
+
   if (idx === -1) return;
 
+  const totalSteps = sequence.length;
+  const pxPerStep = rect.width / totalSteps;
   const x = idx * pxPerStep;
   const css = getComputedStyle(document.documentElement);
   const cursorColor = (css.getPropertyValue('--green') || '#10b981').trim();
@@ -2550,7 +2866,7 @@ function highlightStep(idx) {
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x, 0);
-  ctx.lineTo(x, canvas.height);
+  ctx.lineTo(x, rect.height);
   ctx.stroke();
 
   // Glow-Effect
@@ -2571,11 +2887,11 @@ function updatePills() {
   const pills = document.getElementById('statPills');
   const p = (...t) => `<span class="pill">${t.join('')}</span>`;
   pills.innerHTML = [
-    p(rootEl, ' <strong>', scaleEl, '</strong>'),
-    p('Notes: <strong>', notes.length, '</strong>/', sequence.length),
-    anchors.length ? p('Anchors: <strong>', anchors.length, '</strong>') : '',
-    lo <= 127 ? p('↓ <strong>', midiToName(lo), '</strong>') : '',
-    hi >= 0 ? p('↑ <strong>', midiToName(hi), '</strong>') : '',
+    p(rootEl, ' ', scaleEl),
+    p('Notes: ', notes.length, '/', sequence.length),
+    anchors.length ? p('Anchors: ', anchors.length) : '',
+    lo <= 127 ? p('↓ ', midiToName(lo)) : '',
+    hi >= 0 ? p('↑ ', midiToName(hi)) : '',
   ].filter(Boolean).join('');
 }
 
@@ -2657,7 +2973,13 @@ async function playSequence() {
 
     if (!s.tie && (isNoteStep(s) || s.isAnchor)) {
       const vel = 100;
-      playNote(ctx, s.midi, stepDur * (s.holdSteps || 1) * 0.9, vel);
+      const heldDur = stepDur * (s.holdSteps || 1);
+      // Leave a small fixed gap (a fraction of a single step) before the
+      // note-off so consecutive notes don't bleed into each other — this
+      // must NOT scale with the number of held steps, otherwise long notes
+      // end audibly a whole step before their visual block does.
+      const noteDur = Math.max(0.03, heldDur - stepDur * 0.1);
+      playNote(ctx, s.midi, noteDur, vel);
     }
     nextStepTime += stepDur;
     i++;
@@ -2834,6 +3156,7 @@ function syncNoteLengths() {
   if (minVal > maxVal) {
     maxEl.value = minVal;
     document.getElementById('maxNoteLenVal').textContent = minVal;
+    maxEl.dispatchEvent(new Event('input')); // keep the knob visual (rotation) in sync
   }
 
   // Case 2: Max is pushed below Min -> Push Min down to match Max
@@ -2841,6 +3164,7 @@ function syncNoteLengths() {
   if (maxVal < minVal) {
     minEl.value = maxVal;
     document.getElementById('minLenVal').textContent = maxVal;
+    minEl.dispatchEvent(new Event('input')); // keep the knob visual (rotation) in sync
   }
 }
 
@@ -2855,12 +3179,14 @@ function syncPaletteRange() {
   if (paletteVal > rangeVal) {
     paletteEl.value = rangeVal;
     document.getElementById('paletteVal').textContent = rangeVal;
+    paletteEl.dispatchEvent(new Event('input'));
   }
 
   // Range can never be smaller than palette
   if (rangeVal < paletteVal) {
     rangeEl.value = paletteVal;
     document.getElementById('rangeVal').textContent = paletteVal;
+    rangeEl.dispatchEvent(new Event('input'));
   }
 }
 
@@ -2883,6 +3209,7 @@ function syncRootConstraints() {
   if (palVal > maxPossibleNotes) {
     palEl.value = maxPossibleNotes;
     document.getElementById('evoRootPalVal').textContent = maxPossibleNotes;
+    palEl.dispatchEvent(new Event('input'));
   }
 
   // Range must be at least large enough to accommodate the palette size
@@ -2891,6 +3218,7 @@ function syncRootConstraints() {
   if (rangeVal < minRequiredRange) {
     rangeEl.value = minRequiredRange;
     document.getElementById('evoRootRangeVal').textContent = minRequiredRange;
+    rangeEl.dispatchEvent(new Event('input'));
   }
 }
 
@@ -2965,6 +3293,13 @@ evoSliderConfigs.forEach(s => {
 const genSliders=['phraseLen','repeats','maxInterval','density','noteCount','minNoteLen','maxNoteLen','variation','paletteSize','toneRange'];
 genSliders.forEach(id=>{
   document.getElementById(id)?.addEventListener('change', generateSequence);
+});
+
+// Swing is a "live" timing parameter (no regeneration needed) - just redraw
+// the piano rolls so the visual offset stays in sync while dragging.
+document.getElementById('swing')?.addEventListener('input', () => {
+  renderSequence();
+  renderEvolutionPreview();
 });
 
 
@@ -3050,9 +3385,9 @@ const PRESETS = {
   dune:           { mode:'schulze', scale:'aeolian',    root:48, bpm:55,  stepsPerBeat:2, phraseLen:32, repeats:3,  noteCount:1, minNoteLen:20, variation:5,  swing:0  },
 
   // --- Offbeat Anchor Mode ---
-  moog_sequencer: { mode:'offbeat', scale:'dorian',     root:50, bpm:115, stepsPerBeat:4, phraseLen:16, repeats:8,  density:80, maxInterval:3, anchorNote:55, anchorPattern:'offbeat', variation:25, swing:10, minNoteLen:2, maxNoteLen:4 },
-  berlin_pulse:   { mode:'offbeat', scale:'phrygian',   root:48, bpm:125, stepsPerBeat:4, phraseLen:16, repeats:4,  density:60, maxInterval:2, anchorNote:48, anchorPattern:'every4',  variation:15, swing:0,  minNoteLen:2, maxNoteLen:4 },
-  hypnosis:       { mode:'offbeat', scale:'aeolian',    root:55, bpm:95,  stepsPerBeat:4, phraseLen:12, repeats:6,  density:70, maxInterval:4, anchorNote:55, anchorPattern:'every3',  variation:30, swing:20, minNoteLen:2, maxNoteLen:6 },
+  moog_sequencer: { mode:'offbeat', scale:'dorian',     root:50, bpm:115, stepsPerBeat:4, phraseLen:16, repeats:8,  density:80, maxInterval:3, anchorPattern:'offbeat', variation:25, swing:10, minNoteLen:2, maxNoteLen:4 },
+  berlin_pulse:   { mode:'offbeat', scale:'phrygian',   root:48, bpm:125, stepsPerBeat:4, phraseLen:16, repeats:4,  density:60, maxInterval:2, anchorPattern:'every4',  variation:15, swing:0,  minNoteLen:2, maxNoteLen:4 },
+  hypnosis:       { mode:'offbeat', scale:'aeolian',    root:55, bpm:95,  stepsPerBeat:4, phraseLen:12, repeats:6,  density:70, maxInterval:4, anchorPattern:'every3',  variation:30, swing:20, minNoteLen:2, maxNoteLen:6 },
 
   // --- Arpeggiator Mode ---
   starlight:      { mode:'arp', scale:'majorPent',  root:57, bpm:110, stepsPerBeat:4, phraseLen:16, repeats:4, density:100, arpRoot:9, arpChord:'maj7',  arpPattern:'updown', arpOctaves:2, variation:10, swing:0,  minNoteLen:1, maxNoteLen:2 },
@@ -3107,7 +3442,6 @@ function applyPreset(name) {
   set('octaveDrift', p.octaveDrift);
 
   // Mode-specific settings (will be applied if the controls exist/are active)
-  if (p.anchorNote !== undefined) set('anchorNote', p.anchorNote);
   if (p.anchorPattern !== undefined) set('anchorPattern', p.anchorPattern);
   if (p.arpRoot !== undefined) set('arpRoot', p.arpRoot);
   if (p.arpChord !== undefined) set('arpChord', p.arpChord);
@@ -3170,7 +3504,7 @@ document.getElementById('exportEvoBtn').addEventListener('click', async () => {
   }
 });
 
-['scale','root','anchorNote','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+['scale','root','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change',generateSequence);
 });
 
@@ -3211,9 +3545,160 @@ document.getElementById('evoRootRange')?.addEventListener('input', (e) => {
   syncRootConstraints();
 });
 
+/**
+ * Converts standard range inputs into designed rotary knobs.
+ * Implements: Vertical Drag on knob, and Absolute-Positioned Edit Box to prevent layout jumps.
+ */
+function initKnobs() {
+  const sliders = document.querySelectorAll('input[type="range"]:not(#masterVol)');
+
+  sliders.forEach(slider => {
+    const ctrlBox = slider.closest('.ctrl');
+    if (!ctrlBox) return;
+
+    // 1. Cleanup: Move the .val span to be a sibling after the slider
+    const label = ctrlBox.querySelector('.ctrl-label');
+    const valSpan = label ? label.querySelector('.val') : null;
+    if (valSpan) {
+      slider.after(valSpan);
+    }
+
+    // 2. Create the visual knob structure
+    const visual = document.createElement('div');
+    visual.className = 'knob-visual';
+
+    const marker = document.createElement('div');
+    marker.className = 'knob-marker';
+    const dot = document.createElement('div');
+    dot.className = 'marker-dot';
+    marker.appendChild(dot);
+
+    const tickStart = document.createElement('div');
+    tickStart.className = 'knob-tick start';
+    const tickEnd = document.createElement('div');
+    tickEnd.className = 'knob-tick end';
+
+    visual.appendChild(tickStart);
+    visual.appendChild(tickEnd);
+    visual.appendChild(marker);
+
+    // 3. Create the edit input - ABSOLUTELY POSITIONED
+    const editInput = document.createElement('input');
+    editInput.type = 'text';
+    editInput.className = 'knob-input';
+    editInput.value = slider.value;
+
+    slider.parentNode.insertBefore(visual, slider);
+    // Input is now absolute, so we just add it to the container
+    ctrlBox.appendChild(editInput);
+
+    // 4. Logic: Update rotation and labels
+    const updateRotation = () => {
+      const min = +slider.min || 0;
+      const max = +slider.max || 100;
+      const val = +slider.value;
+      const percent = (val - min) / (max - min);
+
+      const rotation = (percent * 270) - 135;
+      marker.style.transform = `rotate(${rotation}deg)`;
+
+      editInput.value = slider.value;
+      if (valSpan) {
+        const isPct = slider.id === 'density' || slider.id === 'variation' || slider.id === 'swing' || slider.id === 'evoMutation' || slider.id === 'evoDrift' || slider.id === 'evoGrip' || slider.id === 'octaveDriftEvo';
+        valSpan.textContent = isPct ? slider.value + '%' : slider.value;
+      }
+    };
+
+    updateRotation();
+    slider.addEventListener('input', updateRotation);
+
+    // 5. Interaction: Vertical Drag
+    let dragging = false;
+    let startY = 0;
+    let startVal = 0;
+    const step = parseFloat(slider.step) || 1;
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const PIXELS_PER_FULL_RANGE = 120;
+
+    const onPointerMove = (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      const deltaY = startY - e.clientY;
+      const range = max - min;
+      const rawVal = startVal + (deltaY / PIXELS_PER_FULL_RANGE) * range;
+      const stepped = Math.round(rawVal / step) * step;
+      const clamped = Math.min(max, Math.max(min, stepped));
+      if (+slider.value !== clamped) {
+        slider.value = clamped;
+        slider.dispatchEvent(new Event('input'));
+      }
+    };
+
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      ctrlBox.classList.remove('active');
+      document.body.classList.remove('knob-dragging');
+      try { visual.releasePointerCapture(e.pointerId); } catch (_) {}
+      slider.dispatchEvent(new Event('change'));
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+    };
+
+    visual.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      dragging = true;
+      startY = e.clientY;
+      startVal = +slider.value;
+      ctrlBox.classList.add('active');
+      document.body.classList.add('knob-dragging');
+      try { visual.setPointerCapture(e.pointerId); } catch (_) {}
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', endDrag);
+      window.addEventListener('pointercancel', endDrag);
+    });
+
+    // 6. Feature: Double-Click to Edit (Using visibility:hidden to maintain height)
+    if (valSpan) {
+      valSpan.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        valSpan.style.visibility = 'hidden'; // Keep space, hide text
+        editInput.style.display = 'block';
+        editInput.focus();
+        editInput.select();
+      });
+    }
+
+    const saveAndClose = () => {
+      const newVal = parseFloat(editInput.value);
+      if (!isNaN(newVal)) {
+        slider.value = Math.min(max, Math.max(min, newVal));
+        slider.dispatchEvent(new Event('input'));
+        slider.dispatchEvent(new Event('change'));
+      } else {
+        editInput.value = slider.value;
+      }
+      editInput.style.display = 'none';
+      if (valSpan) valSpan.style.visibility = 'visible'; // Show text again
+      updateRotation();
+    };
+
+    editInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); saveAndClose(); }
+      if (e.key === 'Escape') { editInput.value = slider.value; saveAndClose(); }
+    });
+
+    editInput.addEventListener('blur', saveAndClose);
+  });
+}
+
 // init
 applyModeUI();
 generateSequence();
+// Initialize the rotary knobs visuals
+initKnobs();
 
 // --- Evolution Preview wiring ---
 // The Refresh Button should trigger an immediate recalculation and redraw,
@@ -3234,7 +3719,7 @@ document.getElementById('evoPanel')?.addEventListener('change', scheduleEvoPrevi
 
 // Auto-refresh preview when the underlying sequence is (re)generated
 document.getElementById('genBtn')?.addEventListener('click', scheduleEvoPreview);
-['scale','root','anchorNote','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+['scale','root','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change', scheduleEvoPreview);
 });
 document.getElementById('presetSelect')?.addEventListener('change', () => setTimeout(scheduleEvoPreview, 0));
@@ -3244,6 +3729,8 @@ window.addEventListener('resize', renderEvolutionPreview);
 window.addEventListener('resize', () => {
   renderSequence();
 });
+// ── Sequencer Refresh Button ──
+document.getElementById('refreshSeqBtn')?.addEventListener('click', generateSequence);
 </script>
 </body>
 </html>
