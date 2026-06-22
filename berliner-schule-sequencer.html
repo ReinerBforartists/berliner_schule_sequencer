@@ -3761,22 +3761,76 @@ document.querySelector('.export-tab[data-target="evoPanel"]')?.addEventListener(
   setTimeout(renderEvolutionPreview, 0);
 });
 
-// Auto-refresh preview whenever any evolution control changes
-document.getElementById('evoPanel')?.addEventListener('input', scheduleEvoPreview);
-document.getElementById('evoPanel')?.addEventListener('change', scheduleEvoPreview);
+// ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// ROBUST EVENT BINDING & PIANO-ROLL REFRESH SYSTEM
+// Replaces flaky event delegation and tab-dependent blocking.
+// Ensures real-time updates for both Main Sequencer and Evolution Preview.
+// ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-// Auto-refresh preview when the underlying sequence is (re)generated
-document.getElementById('genBtn')?.addEventListener('click', scheduleEvoPreview);
-['scale','root','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
-  document.getElementById(id)?.addEventListener('change', scheduleEvoPreview);
+function triggerEvoPreviewUpdate() {
+  refreshEvolutionData();
+  renderEvolutionPreview();
+}
+
+function triggerMainSequencerUpdate() {
+  generateSequence();
+  triggerEvoPreviewUpdate(); // Synchronizes evolution preview alongside main sequencer
+}
+
+// 1. Explicit binding for all Evolution sliders
+const evoSliderIds = [
+  'evoIterations', 'evoMutation', 'evoDrift', 'evoGrip', 'octaveDriftEvo',
+  'evoRootPalette', 'evoRootRange', 'evolutionCurve', 'evoMutationStyle', 'evoSeedMode', 'exportStretchEvo'
+];
+
+evoSliderIds.forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', () => {
+    clearTimeout(window._evoPreviewTimer);
+    window._evoPreviewTimer = setTimeout(triggerEvoPreviewUpdate, 150);
+  });
+  el.addEventListener('change', triggerEvoPreviewUpdate);
 });
-document.getElementById('presetSelect')?.addEventListener('change', () => setTimeout(scheduleEvoPreview, 0));
-// Only redraw the canvas on resize/zoom, do NOT recalculate data
-window.addEventListener('resize', renderEvolutionPreview);
-// Ensure the main sequencer canvas redraws when the window is resized
+
+// 2. Root Mode & Interval Dropdowns (needs explicit UI toggle + data refresh)
+document.getElementById('evoRootMode')?.addEventListener('change', (e) => {
+  updateEvoRootUI(); // Toggles constraint sliders visibility
+  triggerEvoPreviewUpdate(); // Regenerates evolution data immediately
+});
+
+document.getElementById('evoRootInterval')?.addEventListener('change', triggerEvoPreviewUpdate);
+
+// 3. Explicit binding for Main Sequencer controls
+document.getElementById('genBtn')?.addEventListener('click', triggerMainSequencerUpdate);
+
+const sequencerControls = [
+  'scale', 'root', 'density', 'variation', 'minNoteLen', 'maxNoteLen',
+  'noteCount', 'phraseLen', 'repeats', 'bpm', 'swing', 'stepsPerBeat', 'maxInterval'
+];
+
+sequencerControls.forEach(id => {
+  document.getElementById(id)?.addEventListener('change', triggerMainSequencerUpdate);
+});
+
+// 4. Mode-specific controls
+['anchorPattern', 'anchorOnbeat', 'anchorMelodyPos', 'arpRoot', 'arpChord', 'arpPattern', 'arpOctaves'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', triggerMainSequencerUpdate);
+});
+
+// 5. Preset loading & window resize
+document.getElementById('presetSelect')?.addEventListener('change', () => {
+  setTimeout(() => {
+    generateSequence();
+    triggerEvoPreviewUpdate();
+  }, 0);
+});
+
 window.addEventListener('resize', () => {
   renderSequence();
+  renderEvolutionPreview();
 });
+
 // ── Sequencer Refresh Button ──
 document.getElementById('refreshSeqBtn')?.addEventListener('click', generateSequence);
 /**
