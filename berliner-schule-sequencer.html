@@ -3559,18 +3559,35 @@ document.getElementById('presetSelect').addEventListener('change', (e) => {
   applyPreset(e.target.value);
 });
 
-// Mousewheel on all range sliders
-document.querySelectorAll('input[type="range"]').forEach(slider => {
-  slider.addEventListener('wheel', (e) => {
+// Mousewheel on masterVol (plain range slider, not a knob)
+document.getElementById('masterVol')?.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const slider = document.getElementById('masterVol');
+  const step = parseFloat(slider.step) || 1;
+  const min  = parseFloat(slider.min) || 0;
+  const max  = parseFloat(slider.max) || 100;
+  const dir  = e.deltaY < 0 ? 1 : -1;
+  const newVal = Math.min(max, Math.max(min, parseFloat(slider.value) + dir * step));
+  slider.value = newVal;
+  slider.dispatchEvent(new Event('input'));
+  slider.dispatchEvent(new Event('change'));
+}, { passive: false });
+
+// Mousewheel on select dropdowns — cycle through options
+// The whole .ctrl container is the hit-box so it works even when zoomed.
+document.querySelectorAll('select').forEach(sel => {
+  // Use the parent .ctrl as hit-box if available, otherwise the select itself
+  const hitTarget = sel.closest('.ctrl') || sel;
+  hitTarget.addEventListener('wheel', (e) => {
+    // Only act when the pointer is actually over this element
+    // (prevents stealing scroll from siblings)
     e.preventDefault();
-    const step = parseFloat(slider.step) || 1;
-    const min  = parseFloat(slider.min) || 0;
-    const max  = parseFloat(slider.max) || 100;
-    const dir  = e.deltaY < 0 ? 1 : -1;
-    const newVal = Math.min(max, Math.max(min, parseFloat(slider.value) + dir * step));
-    slider.value = newVal;
-    slider.dispatchEvent(new Event('input'));
-    slider.dispatchEvent(new Event('change'));
+    const dir = e.deltaY < 0 ? -1 : 1;
+    const newIdx = Math.min(sel.options.length - 1, Math.max(0, sel.selectedIndex + dir));
+    if (newIdx !== sel.selectedIndex) {
+      sel.selectedIndex = newIdx;
+      sel.dispatchEvent(new Event('change'));
+    }
   }, { passive: false });
 });
 
@@ -3707,6 +3724,27 @@ function initKnobs() {
       window.addEventListener('pointerup', endDrag);
       window.addEventListener('pointercancel', endDrag);
     });
+
+    // 5b. Mousewheel on knob — use the whole .ctrl box as hit-zone so it
+    //     still works when the page is zoomed and the knob itself is tiny.
+    //     preventDefault() stops the page from scrolling away.
+    const onKnobWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const s  = parseFloat(slider.step) || 1;
+      const lo = parseFloat(slider.min)  || 0;
+      const hi = parseFloat(slider.max)  || 100;
+      const dir = e.deltaY < 0 ? 1 : -1;
+      const nv = Math.min(hi, Math.max(lo, parseFloat(slider.value) + dir * s));
+      if (+slider.value !== nv) {
+        slider.value = nv;
+        slider.dispatchEvent(new Event('input'));
+        slider.dispatchEvent(new Event('change'));
+      }
+    };
+    // Register on both the visual knob and the surrounding ctrl box (larger hit-zone)
+    visual.addEventListener('wheel', onKnobWheel, { passive: false });
+    ctrlBox.addEventListener('wheel', onKnobWheel, { passive: false });
 
     // 6. Feature: Double-Click to Edit
     if (valSpan) {
