@@ -32,8 +32,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Berliner Schule Sequencer - Evolutionary</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:        #0f172a;
@@ -59,11 +57,36 @@
 html, body { min-height: 100%; background: var(--bg); color: var(--text); overflow-y: auto; }
 
 body {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-size: 13px;
   font-weight: 500;
 }
-.mono { font-family: 'Share Tech Mono', monospace; }
+.mono { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace; }
+
+.mono,
+.ctrl-label,
+.val,
+.seed-label,
+.preset-label,
+.group-label,
+.field-label,
+.section-heading,
+.logo,
+.mode-tab,
+.export-tab,
+.btn,
+.ctrl input,
+.ctrl select,
+.seed-bar input,
+.seed-bar select,
+.select-field,
+#presetSelect,
+summary {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 /* ── Utility classes ──
    Common layout/spacing/typography patterns that were previously
@@ -96,7 +119,7 @@ body {
    Previously referenced in HTML but never actually defined - every usage
    re-specified the full style inline. */
 .group-label {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.1em;
@@ -114,7 +137,7 @@ body {
 }
 
 /* Vertical / horizontal divider lines used between control groups */
-.v-sep   { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; align-self: center; margin: 0 4px; }
+.v-sep   { width: 2px; height: 24px; background: var(--border); flex-shrink: 0; align-self: center; margin: 0 4px; }
 .v-sep-m { margin: 0 4px; }
 .h-sep   { flex: 1; height: 1px; background: var(--muted); opacity: 0.5; }
 
@@ -136,7 +159,7 @@ body {
 /* Standalone select fields that sit outside .ctrl / .seed-bar / .anchor-controls
    but should still look like the standard form controls */
 .select-field {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   background: var(--bg);
   border: 1px solid var(--border2);
@@ -179,7 +202,7 @@ body {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  max-width: 1200px;
+  max-width: 1150px;
   margin: 0 auto;
   padding: 14px 16px 14px;
   gap: 10px;
@@ -197,7 +220,7 @@ body {
   padding-bottom: 10px;
 }
 .logo {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.15em;
   color: var(--amber);
@@ -213,7 +236,7 @@ body {
   padding: 2px;
 }
 .mode-tab {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.08em;
   padding: 5px 14px;
@@ -240,11 +263,11 @@ body {
 .ctrl-label.live { color: var(--green); }
 .ctrl-label .val {
   color: var(--amber);
-  font-size: 10px;
+  font-size: 12px;
 }
 .ctrl select, .ctrl input[type="number"] {
   width: 100%;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   background: var(--bg);
   border: 1px solid var(--border2);
@@ -272,7 +295,7 @@ body {
 }
 
 .ctrl-label {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 8px;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -392,7 +415,7 @@ body.knob-dragging {
   background: var(--bg);
   border: 1px solid var(--amber);
   color: var(--amber);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
   padding: 2px 0;
   z-index: 10;
@@ -402,9 +425,9 @@ body.knob-dragging {
 
 /* Keep the value span visible below the knob - enlarged hit-box */
 .ctrl .val {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   color: var(--amber);
-  font-size: 10px;
+  font-size: 12px;
   display: block;
   margin-top: 4px;
   pointer-events: auto;
@@ -464,7 +487,7 @@ body.knob-dragging {
 }
 .anchor-panel.visible { display: flex; }
 .anchor-label {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.1em;
   color: var(--anchor);
@@ -482,7 +505,7 @@ body.knob-dragging {
   align-items: center;
 }
 .anchor-controls select {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   background: var(--bg);
   border: 1px solid var(--anchor-dim);
@@ -503,7 +526,7 @@ body.knob-dragging {
   padding: 2px;
 }
 .export-tab {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
   padding: 4px 12px;
   border-radius: 2px;
@@ -546,7 +569,7 @@ body.knob-dragging {
 }
 
 .seq-title {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.12em;
   color: var(--muted);
@@ -566,7 +589,7 @@ body.knob-dragging {
 }
 
 .pill {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
   color: var(--muted);
 }
@@ -614,7 +637,7 @@ body.knob-dragging {
 }
 
 .btn {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.08em;
   padding: 9px 18px;
@@ -641,7 +664,7 @@ body.knob-dragging {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -657,7 +680,7 @@ body.knob-dragging {
 
 /* ── Details extras ── */
 summary {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.1em;
   color: var(--muted);
@@ -689,13 +712,13 @@ details[open] summary::before { content: '− '; }
   flex-shrink: 0;
 }
 .seed-label {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 9px;
   letter-spacing: 0.1em;
   color: var(--muted);
 }
 .seed-bar input[type="number"] {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 12px;
   background: var(--bg);
   border: 1px solid var(--border2);
@@ -705,7 +728,7 @@ details[open] summary::before { content: '− '; }
   width: 110px;
 }
 .seed-bar select {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   background: var(--bg);
   border: 1px solid var(--border2);
@@ -723,7 +746,7 @@ details[open] summary::before { content: '− '; }
   flex-wrap: wrap;
 }
 .preset-label {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 9px;
   letter-spacing: 0.1em;
   color: var(--muted);
@@ -733,7 +756,7 @@ details[open] summary::before { content: '− '; }
 
 /* New Preset Dropdown Style */
 #presetSelect {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   background: var(--bg);
   border: 1px solid var(--border2);
@@ -1220,7 +1243,7 @@ details[open] summary::before { content: '− '; }
 
         <!-- MAIN TITLE -->
         <div style="margin-bottom: 20px; text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-          <h2 style="color: var(--amber); font-family: 'Share Tech Mono', monospace; font-size: 18px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">Berliner Schule Sequencer</h2>
+          <h2 style="color: var(--amber); font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace; font-size: 18px; letter-spacing: 0.15em; text-transform: uppercase; margin: 0;">Berliner Schule Sequencer</h2>
         </div>
 
         <!-- Description -->
@@ -1394,7 +1417,7 @@ details[open] summary::before { content: '− '; }
         </div>
 
         <!-- Footer -->
-        <div style="text-align: center; padding: 20px 0; font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--text-bright);">
+        <div style="text-align: center; padding: 20px 0; font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--text-bright);">
           COPYRIGHT &copy; 2026 BY REINER PROKEIN | LICENSED UNDER MIT
         </div>
 
@@ -1416,7 +1439,7 @@ function fastUpdateText(id, value, isPercent = false) {
   requestAnimationFrame(() => {
     const el = document.getElementById(id);
     if (el) {
-      el.textContent = isPercent ? value + '%' : value;
+      el.textContent = isPercent ? value + ' %' : value;
     }
   });
 }
@@ -3304,7 +3327,7 @@ document.getElementById('maxNoteLen')?.addEventListener('input', () => {
 
 // Volume Monitoring Update
 document.getElementById('masterVol')?.addEventListener('input', (e) => {
-  document.getElementById('volVal').textContent = e.target.value + '%';
+  document.getElementById('volVal').textContent = e.target.value + ' %';
 });
 
 // ─── UI wiring ───
@@ -3379,20 +3402,20 @@ document.getElementById('evoIterations')?.addEventListener('input', (e) => {
 });
 
 document.getElementById('evoMutation')?.addEventListener('input', (e) => {
-  document.getElementById('evoMutVal').textContent = e.target.value + '%';
+  document.getElementById('evoMutVal').textContent = e.target.value + ' %';
 });
 
 document.getElementById('evoDrift')?.addEventListener('input', (e) => {
-  document.getElementById('evoDriftVal').textContent = e.target.value + '%';
+  document.getElementById('evoDriftVal').textContent = e.target.value + ' %';
 });
 
 document.getElementById('evoGrip')?.addEventListener('input', (e) => {
-  document.getElementById('evoGripVal').textContent = e.target.value + '%';
+  document.getElementById('evoGripVal').textContent = e.target.value + ' %';
 });
 
 // This handles the second drift slider in Row 2 of Evo Panel if used
 document.getElementById('octaveDriftEvo')?.addEventListener('input', (e) => {
-  document.getElementById('driftValEvo').textContent = e.target.value + '%';
+  document.getElementById('driftValEvo').textContent = e.target.value + ' %';
 });
 
 document.querySelectorAll('.mode-tab').forEach(btn=>{
@@ -3699,7 +3722,7 @@ function initKnobs() {
       editInput.value = slider.value;
       if (valSpan) {
         const isPct = slider.id === 'density' || slider.id === 'variation' || slider.id === 'swing' || slider.id === 'evoMutation' || slider.id === 'evoDrift' || slider.id === 'evoGrip' || slider.id === 'octaveDriftEvo';
-        valSpan.textContent = isPct ? slider.value + '%' : slider.value;
+        valSpan.textContent = isPct ? slider.value + ' %' : slider.value;
       }
     };
 
