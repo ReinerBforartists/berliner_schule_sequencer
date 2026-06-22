@@ -2299,6 +2299,11 @@ function renderEvolutionPreview() {
   const GAP = 2;
   const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
 
+  // Minimum rendered dimensions so notes stay visible even with many steps
+  // or a wide pitch range: at least 2px tall, at least 1.5px wide.
+  const MIN_NOTE_H = 2;
+  const MIN_NOTE_W = 1.5;
+
   ctx.fillStyle = '#00ccff';
   for (let i = 0; i < chain.length; i++) {
     const s = chain[i];
@@ -2311,9 +2316,10 @@ function renderEvolutionPreview() {
     // delayed by half a step times the swing amount.
     const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
     const xPos = i * pxPerStep + swingOffset;
-    const blockWidth = Math.max(1, (s.holdSteps || 1) * pxPerStep - GAP);
+    const blockWidth = Math.max(MIN_NOTE_W, (s.holdSteps || 1) * pxPerStep - GAP);
+    const noteH = Math.max(MIN_NOTE_H, keyHeight - 2);
 
-    ctx.fillRect(xPos, noteY, blockWidth, keyHeight - 2);
+    ctx.fillRect(xPos, noteY, blockWidth, noteH);
   }
 
   // 4. Orange repeat/block markers on top
@@ -2817,6 +2823,8 @@ function renderSequenceBackground() {
   // 3. Draw Notes
   const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
   const GAP = 2;
+  const MIN_NOTE_H = 2;
+  const MIN_NOTE_W = 1.5;
   for (let i = 0; i < totalSteps; i++) {
     const step = sequence[i];
     // Only draw at the start of a note; tied continuation steps share the
@@ -2833,10 +2841,11 @@ function renderSequenceBackground() {
     // delayed by half a step times the swing amount.
     const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
     const xPos = i * pxPerStep + swingOffset;
-    const blockWidth = Math.max(1, (step.holdSteps || 1) * pxPerStep - GAP);
+    const blockWidth = Math.max(MIN_NOTE_W, (step.holdSteps || 1) * pxPerStep - GAP);
+    const noteH = Math.max(MIN_NOTE_H, keyHeight - 2);
 
     ctx.fillStyle = '#00ccff';
-    ctx.fillRect(xPos, noteY, blockWidth, keyHeight - 2);
+    ctx.fillRect(xPos, noteY, blockWidth, noteH);
   }
 
   seqBgSeqRef = sequence;
