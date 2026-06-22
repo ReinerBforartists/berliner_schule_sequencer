@@ -114,8 +114,8 @@ body {
 }
 
 /* Vertical / horizontal divider lines used between control groups */
-.v-sep   { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; align-self: center; }
-.v-sep-m { margin: 0 8px; }
+.v-sep   { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; align-self: center; margin: 0 4px; }
+.v-sep-m { margin: 0 4px; }
 .h-sep   { flex: 1; height: 1px; background: var(--muted); opacity: 0.5; }
 
 /* Small uppercase field labels (used in anchor/arp side panels) */
@@ -833,9 +833,11 @@ details[open] summary::before { content: '− '; }
     </div>
   </div> <!-- End of Row 1 / transport -->
 
-<!-- GROUP 1: TIMING & RHYTHM + EXPRESSION + PHRASE & NOTES (one shared row) -->
+<!-- CONTROLS: three semantic groups in one row -->
 <div class="controls-group panel-row">
   <div class="controls">
+
+    <!-- Group 1: Timing & Rhythm -->
     <div class="ctrl">
       <div class="ctrl-label live">BPM <span class="val" id="bpmVal">108</span></div>
       <input type="range" id="bpm" min="60" max="180" value="108">
@@ -848,28 +850,18 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label live">Steps/Beat <span class="val" id="spbVal">4</span></div>
       <input type="range" id="stepsPerBeat" min="2" max="8" value="4">
     </div>
-    <div class="ctrl" id="minNoteLenCtrl">
-      <div class="ctrl-label">Min Length <span class="val" id="minLenVal">1</span></div>
-      <input type="range" id="minNoteLen" min="1" max="32" value="1">
-    </div>
-    <div class="ctrl" id="maxNoteLenCtrl">
-      <div class="ctrl-label">Max Length <span class="val" id="maxNoteLenVal">2</span></div>
-      <input type="range" id="maxNoteLen" min="1" max="32" value="2">
-    </div>
-    <div class="v-sep v-sep-m"></div>
     <div class="ctrl">
-      <div class="ctrl-label">Variation <span class="val" id="varVal">25%</span></div>
-      <input type="range" id="variation" min="0" max="60" value="25">
+      <div class="ctrl-label">Steps <span class="val" id="phraseVal">16</span></div>
+      <input type="range" id="phraseLen" min="4" max="32" value="16">
     </div>
-    <div class="ctrl hidden" id="paletteCtrl">
-      <div class="ctrl-label">Palette <span class="val" id="paletteVal">3</span></div>
-      <input type="range" id="paletteSize" min="2" max="8" value="3">
+    <div class="ctrl">
+      <div class="ctrl-label">Repeats <span class="val" id="repsVal">4</span></div>
+      <input type="range" id="repeats" min="2" max="16" value="4">
     </div>
-    <div class="ctrl hidden" id="rangeCtrl">
-      <div class="ctrl-label">Range <span class="val" id="rangeVal">4</span></div>
-      <input type="range" id="toneRange" min="2" max="12" value="4">
-    </div>
+
     <div class="v-sep v-sep-m"></div>
+
+    <!-- Group 2a: Tonalität -->
     <div class="ctrl w2">
       <div class="ctrl-label">Scale</div>
       <select id="scale">
@@ -893,14 +885,30 @@ details[open] summary::before { content: '− '; }
         <option value="59">B3</option>
       </select>
     </div>
-    <div class="ctrl">
-      <div class="ctrl-label">Steps <span class="val" id="phraseVal">16</span></div>
-      <input type="range" id="phraseLen" min="4" max="32" value="16">
+
+    <div class="v-sep v-sep-m"></div>
+
+    <div class="ctrl hidden" id="paletteCtrl">
+      <div class="ctrl-label">Palette <span class="val" id="paletteVal">3</span></div>
+      <input type="range" id="paletteSize" min="2" max="8" value="3">
     </div>
-    <div class="ctrl">
-      <div class="ctrl-label">Repeats <span class="val" id="repsVal">4</span></div>
-      <input type="range" id="repeats" min="2" max="16" value="4">
+    <div class="ctrl hidden" id="rangeCtrl">
+      <div class="ctrl-label">Range <span class="val" id="rangeVal">4</span></div>
+      <input type="range" id="toneRange" min="2" max="12" value="4">
     </div>
+
+    <!-- Group 2b: Notenparameter -->
+    <div class="ctrl" id="minNoteLenCtrl">
+      <div class="ctrl-label">Min Len <span class="val" id="minLenVal">1</span></div>
+      <input type="range" id="minNoteLen" min="1" max="32" value="1">
+    </div>
+    <div class="ctrl" id="maxNoteLenCtrl">
+      <div class="ctrl-label">Max Len <span class="val" id="maxNoteLenVal">2</span></div>
+      <input type="range" id="maxNoteLen" min="1" max="32" value="2">
+    </div>
+
+    <div class="v-sep v-sep-m"></div>
+
     <div class="ctrl" id="densityCtrl">
       <div class="ctrl-label">Density <span class="val" id="densityVal">72%</span></div>
       <input type="range" id="density" min="1" max="100" value="72">
@@ -914,6 +922,13 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label">Notes <span class="val" id="noteCountVal">2</span></div>
       <input type="range" id="noteCount" min="1" max="3" value="2">
     </div>
+
+    <!-- Group 3: Variation -->
+    <div class="ctrl">
+      <div class="ctrl-label">Variation <span class="val" id="varVal">25%</span></div>
+      <input type="range" id="variation" min="0" max="60" value="25">
+    </div>
+
   </div>
 </div>
 
@@ -1063,6 +1078,8 @@ details[open] summary::before { content: '− '; }
           <input type="range" id="evoIterations" min="1" max="64" value="12">
         </div>
 
+        <div class="v-sep v-sep-m"></div>
+
         <div class="ctrl">
           <div class="ctrl-label">Mutation <span class="val" id="evoMutVal">20%</span></div>
           <input type="range" id="evoMutation" min="0" max="100" value="20">
@@ -1085,7 +1102,7 @@ details[open] summary::before { content: '− '; }
         </div>
 
         <!-- Visual Separator -->
-        <div class="v-sep"></div>
+        <div class="v-sep v-sep-m"></div>
 
       <!-- Evolution curve dropdown -->
       <div class="ctrl shrink-0" style="width: 110px;">
@@ -1113,7 +1130,7 @@ details[open] summary::before { content: '− '; }
       </div>
 
         <!-- Visual Separator -->
-        <div class="v-sep"></div>
+        <div class="v-sep v-sep-m"></div>
 
         <!-- Root Mode Dropdown -->
         <div class="ctrl shrink-0" style="width: 160px;">
@@ -1158,7 +1175,7 @@ details[open] summary::before { content: '− '; }
         </div>
 
         <!-- Visual Separator -->
-        <div class="v-sep"></div>
+        <div class="v-sep v-sep-m"></div>
 
         <!-- Seed Mode Dropdown -->
         <div class="ctrl shrink-0" style="width: 80px;">
@@ -1170,7 +1187,7 @@ details[open] summary::before { content: '− '; }
         </div>
 
         <!-- Root Constraints: Palette + Range knobs — only visible in Free (Random) mode -->
-        <div id="evoRootConstraintSep" class="v-sep" style="display: none;"></div>
+        <div id="evoRootConstraintSep" class="v-sep v-sep-m" style="display: none;"></div>
         <div id="evoRootPaletteCtrl" class="ctrl" style="display: none;">
           <div class="ctrl-label">Palette <span class="val" id="evoRootPalVal">4</span></div>
           <input type="range" id="evoRootPalette" min="1" max="12" value="4">
