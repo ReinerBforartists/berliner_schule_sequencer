@@ -800,6 +800,11 @@ details[open] summary::before { content: '− '; }
 .seed-label, .preset-label {
   font-size: 10px;
 }
+/* Remove borders only from individual control boxes - no effect on panel-row or knobs */
+.ctrl {
+  border: none !important;
+  box-shadow: none !important;
+}
 
 </style>
 </head>
