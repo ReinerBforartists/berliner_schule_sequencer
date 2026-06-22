@@ -1088,7 +1088,7 @@ details[open] summary::before { content: '− '; }
         <div class="v-sep"></div>
 
       <!-- Evolution curve dropdown -->
-      <div class="ctrl shrink-0" style="width: 150px;">
+      <div class="ctrl shrink-0" style="width: 110px;">
         <div class="ctrl-label">Evolution Curve</div>
         <select id="evolutionCurve">
           <option value="linear">Linear</option>
@@ -1103,7 +1103,7 @@ details[open] summary::before { content: '− '; }
       </div>
 
       <!-- Mutation Style dropdown -->
-      <div class="ctrl shrink-0" style="width: 150px;">
+      <div class="ctrl shrink-0" style="width: 110px;">
         <div class="ctrl-label">Mutation Style</div>
         <select id="evoMutationStyle">
           <option value="walk" selected>Palette Walk</option>
@@ -1147,7 +1147,7 @@ details[open] summary::before { content: '− '; }
         </div>
 
         <!-- Interval Container: appears next to Root Mode without pushing everything -->
-        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 100px;">
+        <div id="evoIntervalContainer" class="ctrl shrink-0" style="display: none; width: 80px; gap: 5px;">
           <div class="ctrl-label">Every</div>
           <select id="evoRootInterval">
             <option value="1">1 Block</option>
@@ -1161,28 +1161,24 @@ details[open] summary::before { content: '− '; }
         <div class="v-sep"></div>
 
         <!-- Seed Mode Dropdown -->
-        <div class="ctrl shrink-0" style="width: 100px;">
+        <div class="ctrl shrink-0" style="width: 80px;">
           <div class="ctrl-label">Evo Seed</div>
           <select id="evoSeedMode">
             <option value="random">Random</option>
             <option value="fixed">Fixed</option>
           </select>
         </div>
-      </div>
-        <!-- Evo Row 3: Root Constraints (Only for Random Mode) -->
-      <div id="evoRootConstraintRow" class="flex-center gap-sm panel-row mt-sm" style="display: none;">
-        <span class="seed-label nowrap">ROOT CONSTRAINTS:</span>
-        <!-- Palette first -->
-        <div class="ctrl shrink-0" style="width: 120px;">
+
+        <!-- Root Constraints: Palette + Range knobs — only visible in Free (Random) mode -->
+        <div id="evoRootConstraintSep" class="v-sep" style="display: none;"></div>
+        <div id="evoRootPaletteCtrl" class="ctrl" style="display: none;">
           <div class="ctrl-label">Palette <span class="val" id="evoRootPalVal">4</span></div>
           <input type="range" id="evoRootPalette" min="1" max="12" value="4">
         </div>
-        <!-- Range second -->
-        <div class="ctrl shrink-0" style="width: 120px;">
+        <div id="evoRootRangeCtrl" class="ctrl" style="display: none;">
           <div class="ctrl-label">Range <span class="val" id="evoRootRangeVal">7</span></div>
           <input type="range" id="evoRootRange" min="0" max="24" value="7">
         </div>
-        <span class="anchor-desc" style="font-size: 11px;">Limits the allowed root notes for Random mode.</span>
       </div>
 
       <!-- Evo Preview -->
@@ -1438,13 +1434,18 @@ initExportTabs();
 function updateEvoRootUI() {
   const mode = document.getElementById('evoRootMode').value;
   const container = document.getElementById('evoIntervalContainer');
-  const constraintRow = document.getElementById('evoRootConstraintRow');
+  const sep        = document.getElementById('evoRootConstraintSep');
+  const palCtrl    = document.getElementById('evoRootPaletteCtrl');
+  const rangeCtrl  = document.getElementById('evoRootRangeCtrl');
 
   // Show interval dropdown for everything except "none"
-  container.style.display = (mode === 'none') ? 'none' : 'block';
+  container.style.display = (mode === 'none') ? 'none' : 'flex';
 
-  // Show constraint sliders ONLY for "free" mode
-  constraintRow.style.display = (mode === 'free') ? 'flex' : 'none';
+  // Show constraint knobs (inline, in the same row) ONLY for "free" mode
+  const showFree = (mode === 'free');
+  if (sep)      sep.style.display      = showFree ? 'block' : 'none';
+  if (palCtrl)  palCtrl.style.display  = showFree ? 'flex'  : 'none';
+  if (rangeCtrl) rangeCtrl.style.display = showFree ? 'flex' : 'none';
 }
 
 
