@@ -2487,7 +2487,9 @@ function generateEvolutionaryChain() {
     free:       { type: 'random', vals: [3, -3, 4, -4, 5, -5, 7, -7] },
     thirds:     { type: 'random', vals: [3, -3, 4, -4] },
     fourths:    { type: 'random', vals: [5, -5] },
-    fifths:     { type: 'random', vals: [7, -7] },
+    // Cycle of 5ths: absolute semitone offsets from initial root, stepping +7 each time (mod 12).
+    // After 12 steps the sequence returns to 0. Stays within one octave of origin.
+    fifths:     { type: 'cycle',  vals: [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5] },
     alt_whole:  { type: 'cycle',  vals: [0, 2, 0, 2] },
     alt_semi:   { type: 'cycle',  vals: [0, 1, 0, 1] },
     modal_iii:  { type: 'cycle',  vals: [0, 4] },
