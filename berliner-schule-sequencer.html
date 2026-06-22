@@ -1022,21 +1022,6 @@ details[open] summary::before { content: '− '; }
   <div class="anchor-panel" id="arpPanel">
     <div class="anchor-label">▸ Arp</div>
     <div class="anchor-controls">
-      <label class="field-label">ROOT NOTE</label>
-      <select id="arpRoot">
-        <option value="0">C</option>
-        <option value="1">C#</option>
-        <option value="2">D</option>
-        <option value="3">D#</option>
-        <option value="4">E</option>
-        <option value="5">F</option>
-        <option value="6">F#</option>
-        <option value="7">G</option>
-        <option value="8">G#</option>
-        <option value="9">A</option>
-        <option value="10">A#</option>
-        <option value="11">B</option>
-      </select>
       <label class="field-label">CHORD</label>
       <select id="arpChord">
         <optgroup label="Triads">
@@ -2175,7 +2160,7 @@ function generateSequence() {
   const anchorPattern = document.getElementById('anchorPattern').value;
   const anchorOnbeat = document.getElementById('anchorOnbeat').checked;
   const arpParams = {
-    root: parseInt(document.getElementById('arpRoot').value) || 0,
+    root: root % 12,
     chord: document.getElementById('arpChord').value,
     pattern: document.getElementById('arpPattern').value,
     octaves: document.getElementById('arpOctaves').value
@@ -2514,7 +2499,7 @@ function generateEvolutionaryChain() {
   };
 
   const arpParams = {
-    root: parseInt(document.getElementById('arpRoot').value),
+    root: root % 12,
     chord: document.getElementById('arpChord').value,
     pattern: document.getElementById('arpPattern').value,
     octaves: document.getElementById('arpOctaves').value
@@ -3511,9 +3496,9 @@ const PRESETS = {
   hypnosis:       { mode:'offbeat', scale:'aeolian',    root:55, bpm:95,  stepsPerBeat:4, phraseLen:12, repeats:6,  density:70, maxInterval:4, anchorPattern:'every3',  variation:30, swing:20, minNoteLen:2, maxNoteLen:6 },
 
   // --- Arpeggiator Mode ---
-  starlight:      { mode:'arp', scale:'majorPent',  root:57, bpm:110, stepsPerBeat:4, phraseLen:16, repeats:4, density:100, arpRoot:9, arpChord:'maj7',  arpPattern:'updown', arpOctaves:2, variation:10, swing:0,  minNoteLen:1, maxNoteLen:2 },
-  cosmic_wind:    { mode:'arp', scale:'dorian',     root:50, bpm:85,  stepsPerBeat:4, phraseLen:16, repeats:6, density:90,  arpRoot:2, arpChord:'min9',  arpPattern:'up',     arpOctaves:3, variation:20, swing:10, minNoteLen:1, maxNoteLen:3 },
-  nebula:         { mode:'arp', scale:'mixolydian', root:55, bpm:120, stepsPerBeat:4, phraseLen:12, repeats:8, density:80,  arpRoot:7, arpChord:'dom13', arpPattern:'random', arpOctaves:2, variation:40, swing:25, minNoteLen:1, maxNoteLen:2 },
+  starlight:      { mode:'arp', scale:'majorPent',  root:57, bpm:110, stepsPerBeat:4, phraseLen:16, repeats:4, density:100, arpChord:'maj7',  arpPattern:'updown', arpOctaves:2, variation:10, swing:0,  minNoteLen:1, maxNoteLen:2 },
+  cosmic_wind:    { mode:'arp', scale:'dorian',     root:50, bpm:85,  stepsPerBeat:4, phraseLen:16, repeats:6, density:90,  arpChord:'min9',  arpPattern:'up',     arpOctaves:3, variation:20, swing:10, minNoteLen:1, maxNoteLen:3 },
+  nebula:         { mode:'arp', scale:'mixolydian', root:55, bpm:120, stepsPerBeat:4, phraseLen:12, repeats:8, density:80,  arpChord:'dom13', arpPattern:'random', arpOctaves:2, variation:40, swing:25, minNoteLen:1, maxNoteLen:2 },
 
   // --- Motivic Mode ---
   dna_structure:  { mode:'motivic', scale:'dorian',   root:50, bpm:105, stepsPerBeat:4, phraseLen:16, repeats:4, density:75, maxInterval:3, variation:20, swing:0,  minNoteLen:2, maxNoteLen:6 },
@@ -3564,7 +3549,6 @@ function applyPreset(name) {
 
   // Mode-specific settings (will be applied if the controls exist/are active)
   if (p.anchorPattern !== undefined) set('anchorPattern', p.anchorPattern);
-  if (p.arpRoot !== undefined) set('arpRoot', p.arpRoot);
   if (p.arpChord !== undefined) set('arpChord', p.arpChord);
   if (p.arpPattern !== undefined) set('arpPattern', p.arpPattern);
   if (p.arpOctaves !== undefined) set('arpOctaves', p.arpOctaves);
@@ -3625,7 +3609,7 @@ document.getElementById('exportEvoBtn').addEventListener('click', async () => {
   }
 });
 
-['scale','root','anchorPattern','anchorOnbeat','anchorMelodyPos','arpRoot','arpChord','arpPattern','arpOctaves'].forEach(id=>{
+['scale','root','anchorPattern','anchorOnbeat','anchorMelodyPos','arpChord','arpPattern','arpOctaves'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change',generateSequence);
 });
 
@@ -3934,7 +3918,7 @@ sequencerControls.forEach(id => {
 });
 
 // 4. Mode-specific controls
-['anchorPattern', 'anchorOnbeat', 'anchorMelodyPos', 'arpRoot', 'arpChord', 'arpPattern', 'arpOctaves'].forEach(id => {
+['anchorPattern', 'anchorOnbeat', 'anchorMelodyPos', 'arpChord', 'arpPattern', 'arpOctaves'].forEach(id => {
   document.getElementById(id)?.addEventListener('change', triggerMainSequencerUpdate);
 });
 
