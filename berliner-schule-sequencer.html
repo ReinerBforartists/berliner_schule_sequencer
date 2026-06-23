@@ -665,6 +665,18 @@ body.knob-dragging {
 .btn.primary { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
 .btn.primary:hover:not(:disabled) { background: #0c4a6e; }
 .btn.stop-btn { border-color: var(--red); color: var(--red); }
+/* ── Refresh Utility Buttons (Ghost Style) ── */
+.btn-refresh {
+  border: 1px solid var(--cyan-dim) !important; /* Subtle thin border */
+  color: var(--cyan) !important;               /* Icon and text color */
+  background: transparent !important;           /* No fill, keeping it light */
+}
+
+.btn-refresh:hover:not(:disabled) {
+  border-color: var(--cyan) !important;       /* Glow effect on border */
+  background: rgba(14, 165, 233, 0.1) !important; /* Extremely subtle cyan tint */
+}
+.btn-refresh:active {  background: rgba(14, 165, 233, 0.2) !important;}
 .btn.evo-btn { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
 
 .status-area {
@@ -1054,7 +1066,7 @@ details[open] summary::before { content: '− '; }
   <!-- Sequencer display -->
   <section class="seq-section">
     <div class="seq-header">
-      <button class="btn" id="genBtn">↻ Refresh Sequence</button>
+      <button class="btn btn-refresh" id="genBtn">↻ Refresh Sequence</button>
       <div class="stat-pills" id="statPills"></div>
     </div>
     <div class="seq-canvas-container">
@@ -1232,7 +1244,7 @@ details[open] summary::before { content: '− '; }
       <!-- Evo Preview -->
       <div id="evoPreviewSection" class="panel-row mt-sm">
         <div class="flex-center gap-sm mb-sm">
-          <button class="btn nowrap" id="evoPreviewBtn">↻ Refresh Evolution</button>
+          <button class="btn btn-refresh nowrap" id="evoPreviewBtn">↻ Refresh Evolution</button>
           <span class="mono muted-10" id="evoPreviewInfo"></span>
         </div>
         <div class="canvas-frame" style="display: flex; align-items: stretch;">
