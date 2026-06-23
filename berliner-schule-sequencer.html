@@ -3414,29 +3414,6 @@ document.getElementById('swing')?.addEventListener('input', () => {
 });
 
 
-// Evolution sliders
-// --- Evolution UI Label Updates ---
-// This block ensures that moving the sliders actually updates the text labels next to them.
-document.getElementById('evoIterations')?.addEventListener('input', (e) => {
-  document.getElementById('evoIterVal').textContent = e.target.value;
-});
-
-document.getElementById('evoMutation')?.addEventListener('input', (e) => {
-  document.getElementById('evoMutVal').textContent = e.target.value + ' %';
-});
-
-document.getElementById('evoDrift')?.addEventListener('input', (e) => {
-  document.getElementById('evoDriftVal').textContent = e.target.value + ' %';
-});
-
-document.getElementById('evoGrip')?.addEventListener('input', (e) => {
-  document.getElementById('evoGripVal').textContent = e.target.value + ' %';
-});
-
-// This handles the second drift slider in Row 2 of Evo Panel if used
-document.getElementById('octaveDriftEvo')?.addEventListener('input', (e) => {
-  document.getElementById('driftValEvo').textContent = e.target.value + ' %';
-});
 
 document.querySelectorAll('.mode-tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
