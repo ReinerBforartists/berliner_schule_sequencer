@@ -509,11 +509,6 @@ body.knob-dragging {
   text-transform: uppercase;
   white-space: nowrap;
 }
-.anchor-desc {
-  font-size: 12px;
-  color: var(--muted);
-  flex: 1;
-}
 .anchor-controls {
   display: flex;
   gap: 8px;
@@ -969,7 +964,7 @@ details[open] summary::before { content: '− '; }
       <input type="range" id="maxNoteLen" min="1" max="32" value="2">
     </div>
 
-    <div class="v-sep v-sep-m" id="sepBeforeDensity"></div>
+    <div class="v-sep v-sep-m"></div>
 
     <div class="ctrl" id="densityCtrl">
       <div class="ctrl-label">Density <span class="val" id="densityVal">72%</span></div>
@@ -997,7 +992,6 @@ details[open] summary::before { content: '− '; }
   <!-- Offbeat anchor panel -->
   <div class="anchor-panel" id="anchorPanel">
     <div class="anchor-label">▸ Anchor</div>
-    <div class="anchor-desc">Every offbeat plays the same fixed note — all main beats form the melody</div>
     <div class="anchor-controls">
       <label class="field-label">MELODY RANGE</label>
       <select id="anchorMelodyPos">
@@ -3481,11 +3475,6 @@ function applyModeUI() {
   // Palette control
   document.getElementById('paletteCtrl').classList.toggle('hidden', !hasPalette);
   document.getElementById('rangeCtrl').classList.toggle('hidden', !hasPalette);
-
-  // Hide the separator before Density when the entire mid-group (palette + min/max len) is hidden
-  // (Arp mode: no palette, no min/max len → two separators would appear back-to-back)
-  const midGroupVisible = hasPalette || !(isSchulze || isArp);
-  document.getElementById('sepBeforeDensity').classList.toggle('hidden', !midGroupVisible);
 
   // Mode specific panels
   document.getElementById('anchorPanel').classList.toggle('visible', isOffbeat);
