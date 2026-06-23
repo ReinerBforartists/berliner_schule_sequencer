@@ -3903,14 +3903,7 @@ sequencerControls.forEach(id => {
   document.getElementById(id)?.addEventListener('change', triggerMainSequencerUpdate);
 });
 
-// 5. Preset loading & window resize
-document.getElementById('presetSelect')?.addEventListener('change', () => {
-  setTimeout(() => {
-    generateSequence();
-    triggerEvoPreviewUpdate();
-  }, 0);
-});
-
+// 5. Window resize
 window.addEventListener('resize', () => {
   renderSequence();
   renderEvolutionPreview();
