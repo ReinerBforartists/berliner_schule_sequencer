@@ -78,7 +78,6 @@ body,
 .val,
 .seed-label,
 .preset-label,
-.group-label,
 .field-label,
 .section-heading,
 .logo,
@@ -111,7 +110,6 @@ summary {
 .flex-wrap   { flex-wrap: wrap; }
 .flex-1      { flex: 1; }
 .shrink-0    { flex-shrink: 0; }
-.ml-auto     { margin-left: auto; }
 .mr-auto     { margin-right: auto; }
 .nowrap      { white-space: nowrap; }
 
@@ -123,27 +121,12 @@ summary {
 .row-gap-md { row-gap: 10px; }
 .mt-sm { margin-top: 6px; }
 .mb-sm { margin-bottom: 6px; }
-.mb-md { margin-bottom: 8px; }
 .muted-10 { font-size: 10px; color: var(--muted); }
 
 /* Howto documentation: nested bullet lists */
 .list-square { margin-left: 20px; margin-top: 8px; list-style: square; }
 .list-circle { margin-left: 20px; margin-top: 5px; list-style: circle; }
 
-/* Section labels above control groups (e.g. "Timing & Rhythm", "Phrase & Notes").
-   Previously referenced in HTML but never actually defined - every usage
-   re-specified the full style inline. */
-.group-label {
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  border-left: 2px solid var(--border);
-  padding-left: 8px;
-}
-.group-label.live-text { color: var(--green); border-left-color: var(--green); }
-.group-label.pushed-right { margin-left: auto; margin-right: 30%; width: fit-content; }
 .panel-row {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -154,7 +137,6 @@ summary {
 /* Vertical / horizontal divider lines used between control groups */
 .v-sep   { width: 2px; height: 24px; background: var(--border); flex-shrink: 0; align-self: center; margin: 0 4px; }
 .v-sep-m { margin: 0 4px; }
-.h-sep   { flex: 1; height: 1px; background: var(--muted); opacity: 0.5; }
 
 /* Small uppercase field labels (used in anchor/arp side panels) */
 .field-label { font-family: monospace; font-size: 10px; color: var(--muted); }
@@ -169,7 +151,6 @@ summary {
 .hl-cyan    { color: var(--cyan); }
 .hl-anchor  { color: var(--anchor); }
 .hl-white   { color: #fff; }
-.hl-white-b { color: #fff; font-weight: bold; }
 
 /* Standalone select fields that sit outside .ctrl / .seed-bar / .anchor-controls
    but should still look like the standard form controls */
@@ -192,20 +173,9 @@ summary {
 /* Wrapper around a labeled set of .ctrl boxes (e.g. "Timing & Rhythm" section) */
 .controls-group { /* spacing now handled by .panel-row, see usage below */ }
 
-/* "—— Section Label ——" style divider between major page sections */
-.divider-row { margin: 20px 0 10px; }
-.divider-label { font-size: 9px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; }
-
 /* Modifier for a <summary> toggle that should stand out (amber, bold) instead
    of the default muted summary style */
 .summary-highlight { color: var(--amber); font-weight: bold; }
-
-/* .ctrl box that grows to fill space, with a 70px floor (evo iter/mutation/drift/grip sliders) */
-.ctrl-grow { min-width: 70px; flex: 1; }
-
-/* A .ctrl box stripped down to a plain flex layout container
-   (no panel background/border/padding) */
-.ctrl-bare { background: transparent; border: none; padding: 0; }
 
 /* Checkbox inside label/control grids (anchor-controls etc.) where the
    default 100% width from .ctrl-style selectors must not apply */
@@ -578,14 +548,6 @@ body.knob-dragging {
   flex-shrink: 0;
 }
 
-.seq-title {
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
 .stat-pills {
   display: flex;
   flex-wrap: wrap;
@@ -703,13 +665,6 @@ summary {
 summary::-webkit-details-marker { display: none; }
 summary::before { content: '+ '; }
 details[open] summary::before { content: '− '; }
-.extras-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-  margin-top: 6px;
-}
-
 /* scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
