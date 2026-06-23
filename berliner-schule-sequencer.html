@@ -817,19 +817,16 @@ details[open] summary::before { content: '− '; }
   white-space: nowrap;
 }
 
-/* New Preset Dropdown Style */
+/* Overrides color from .select-field, inherits all other properties */
 #presetSelect {
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
-  font-size: 11px;
-  background: var(--bg);
-  border: 1px solid var(--border2);
   color: var(--amber);
-  padding: 5px 8px;
-  border-radius: 2px;
-  cursor: pointer;
   min-width: 160px;
 }
-#presetSelect:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
+
+#presetSelect:focus {
+  outline: 1px solid var(--amber);
+  border-color: var(--amber);
+}
 
 </style>
 </head>
