@@ -212,22 +212,12 @@ summary {
   text-transform: uppercase;
 }
 .logo span { color: var(--muted); }
-/* ── Mode Tabs (Improved Tab Look - Matches Export Tabs) ── */
-.mode-tabs {
-  display: flex;
-  gap: 0; /* Remove gap to make them feel like a single connected bar */
-  background: var(--panel);
-  border-bottom: 1px solid var(--border); /* Single line for the whole bar */
-  border-radius: var(--r);
-  padding: 0;
-  overflow: hidden; /* Ensures border-radius is applied to the bar */
-  margin-left: 8px; /* Slight offset for visual breathing room in the header */
-}
 
+/* --- Mode Tabs Container --- */
 .mode-tabs {
   display: flex;
   gap: 0;
-  background: var(--panel);
+  background: transparent;
   border-bottom: 1px solid var(--border);
   border-radius: var(--r);
   padding: 0;
@@ -246,19 +236,19 @@ summary {
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
-  border-bottom: 2px solid transparent; /* Prevents layout jump */
+  border-bottom: 2px solid transparent;
   position: relative;
 }
 
 .mode-tab:hover:not(.active) {
   color: var(--text-bright);
-  background: rgba(255, 255, 255, 0.03); /* Extremely subtle hover */
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .mode-tab.active {
   color: var(--amber);
-  background: transparent; /* No background tint - keeps it clean */
-  border-bottom: 2px solid var(--amber); /* The primary visual indicator */
+  background: transparent !important;
+  border-bottom: 2px solid var(--amber);
 }
 
 /* ── Controls grid ── */
@@ -519,12 +509,11 @@ body.knob-dragging {
 }
 .anchor-controls select:focus { outline: 1px solid var(--anchor); }
 
-/* ── Export Tab System ── */
-
+/* --- Export Tabs Container --- */
 .export-tabs {
   display: flex;
   gap: 0;
-  background: var(--panel);
+  background: transparent;
   border-bottom: 1px solid var(--border);
   border-radius: var(--r);
   padding: 0;
@@ -542,19 +531,19 @@ body.knob-dragging {
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
-  border-bottom: 2px solid transparent; /* Prevents layout jump */
+  border-bottom: 2px solid transparent;
   position: relative;
 }
 
 .export-tab:hover:not(.active) {
   color: var(--text-bright);
-  background: rgba(255, 255, 255, 0.03); /* Extremely subtle hover */
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .export-tab.active {
   color: var(--amber);
-  background: transparent; /* No background tint - keeps it clean */
-  border-bottom: 2px solid var(--amber); /* The primary visual indicator */
+  background: transparent !important;
+  border-bottom: 2px solid var(--amber);
 }
 
 .export-panel {
@@ -668,16 +657,48 @@ body.knob-dragging {
 /* Mode & Export Tabs: Minimalist style */
 .mode-tabs, .export-tabs { display: flex; gap: 0; background: var(--panel); border-bottom: 1px solid var(--border); border-radius: var(--r); padding: 0; overflow: hidden; margin-left: 8px; }
 .mode-tab, .export-tab { font-family: 'SF Mono', monospace; font-size: 10px; padding: 6px 16px; border: none; background: transparent; color: var(--muted); cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; border-bottom: 2px solid transparent; position: relative; }
-.mode-tab.active, .export-tab.active { color: var(--amber); background: rgba(251, 191, 36, 0.08); border-bottom: 2px solid var(--amber); }
+/* --- Action Buttons (Unified Solid Style) --- */
+
+/* Mode & Export Tabs: Minimalist style */
+.mode-tabs, .export-tabs {
+  display: flex;
+  gap: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 0;
+  overflow: hidden;
+  margin-left: 8px;
+}
+
+.mode-tab, .export-tab {
+  font-family: 'SF Mono', monospace;
+  font-size: 10px;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  border-bottom: 2px solid transparent;
+  position: relative;
+}
+
+/* Force background to stay transparent for active tabs to override any global rules */
+.mode-tab.active, .export-tab.active {
+  color: var(--amber);
+  background: transparent !important;
+  border-bottom: 2px solid var(--amber);
+}
+
 .export-tab { font-size: 10px; padding: 8px 20px; }
 
 /* Utility/Refresh Buttons: Ghost style */
 .btn-refresh { border: 1px solid var(--cyan-dim) !important; color: var(--cyan) !important; background: transparent !important; }
 .btn-refresh:hover:not(:disabled) { border-color: var(--cyan) !important; background: rgba(14, 165, 233, 0.1) !important; }
 
-/* Main Action Buttons: Solid style (Unified) */
-
-/* Unified base styles for primary actions */
+/* Main Action Buttons: Solid style */
 .btn.primary, .btn.evo-btn {
   padding: 8px 18px;
   font-weight: 600;
@@ -688,7 +709,6 @@ body.knob-dragging {
   background: var(--cyan-dim);
 }
 
-/* Force .btn.evo-btn to be Blue (Cyan) instead of Amber */
 .btn.evo-btn {
   border-color: var(--cyan);
   color: var(--cyan);
@@ -697,7 +717,6 @@ body.knob-dragging {
 
 .btn.primary:hover:not(:disabled) { background: #0c4a6e; }
 
-/* Updated hover state for .btn.evo-btn to match .btn.primary */
 .btn.evo-btn:hover:not(:disabled) {
   background: #0c4a6e;
   border-color: var(--cyan);
