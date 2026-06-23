@@ -2696,11 +2696,6 @@ function generateEvolutionaryChain() {
       return copy;
     };
 
-    currentEvents = currentEvents.map((ev) => {
-      if (rng.chance(gripStrength)) return ev;
-      if (tones && rng.chance(effectiveMutationRate)) return {...ev, midi: mutateTone(ev)};
-      return ev;
-    });
     // 4. MUTATION & GRIP
     // Track which indices are actually mutable in this block to prevent blind overwrites
     const mutableIndices = [];
