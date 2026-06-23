@@ -245,12 +245,6 @@ summary {
   background: rgba(255, 255, 255, 0.03);
 }
 
-.mode-tab.active {
-  color: var(--amber);
-  background: transparent !important;
-  border-bottom: 2px solid var(--amber);
-}
-
 /* ── Controls grid ── */
 .controls {
   display: flex;
@@ -540,10 +534,10 @@ body.knob-dragging {
   background: rgba(255, 255, 255, 0.03);
 }
 
-.export-tab.active {
-  color: var(--amber);
+.mode-tab.active, .export-tab.active {
+  color: var(--amber) !important;
   background: transparent !important;
-  border-bottom: 2px solid var(--amber);
+  border-bottom: 2px solid var(--amber) !important;
 }
 
 .export-panel {
