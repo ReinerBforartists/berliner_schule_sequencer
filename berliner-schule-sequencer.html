@@ -212,30 +212,46 @@ summary {
   text-transform: uppercase;
 }
 .logo span { color: var(--muted); }
+/* ── Mode Tabs (Improved Tab Look - Matches Export Tabs) ── */
 .mode-tabs {
   display: flex;
-  gap: 2px;
+  gap: 0; /* Remove gap to make them feel like a single connected bar */
   background: var(--panel);
-  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); /* Single line for the whole bar */
   border-radius: var(--r);
-  padding: 2px;
+  padding: 0;
+  overflow: hidden; /* Ensures border-radius is applied to the bar */
+  margin-left: 8px; /* Slight offset for visual breathing room in the header */
 }
+
 .mode-tab {
   font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.08em;
-  padding: 5px 14px;
-  border-radius: 2px;
+  padding: 6px 16px; /* Adjusted for a sleeker look */
   border: none;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  /*
+     We add a transparent border-bottom by default to prevent the
+     layout from "jumping" when the active border appears.
+  */
+  border-bottom: 2px solid transparent;
+  position: relative;
 }
+
+.mode-tab:hover:not(.active) {
+  color: var(--text-bright);
+  background: rgba(255, 255, 255, 0.05); /* Subtle hover effect */
+}
+
 .mode-tab.active {
-  background: var(--raised);
   color: var(--amber);
-  border: 1px solid var(--border2);
+  background: rgba(251, 191, 36, 0.08); /* Very subtle amber tint */
+  border-bottom: 2px solid var(--amber); /* The visual selection indicator */
 }
 
 /* ── Controls grid ── */
@@ -497,30 +513,45 @@ body.knob-dragging {
 .anchor-controls select:focus { outline: 1px solid var(--anchor); }
 
 /* ── Export Tab System ── */
+/* ── Export Tab System (Improved Tab Look) ── */
 .export-tabs {
   display: flex;
-  gap: 2px;
+  gap: 0; /* Remove gap to make them feel like a single connected bar */
   background: var(--panel);
-  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); /* Single line for the whole bar */
   border-radius: var(--r);
-  padding: 2px;
+  padding: 0; /* Remove padding so tabs touch the bottom edge */
+  overflow: hidden; /* Ensures border-radius is applied to children if needed */
+  margin-bottom: 10px; /* Spacing below the tab bar */
 }
+
 .export-tab {
   font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
   font-size: 10px;
-  padding: 4px 12px;
-  border-radius: 2px;
+  padding: 8px 20px; /* Increased padding for better hit-area and breathing room */
   border: none;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   text-transform: uppercase;
+  /*
+     We add a transparent border-bottom by default to prevent
+     the layout from "jumping" when the active border appears.
+  */
+  border-bottom: 2px solid transparent;
+  position: relative;
 }
+
+.export-tab:hover:not(.active) {
+  color: var(--text-bright);
+  background: rgba(255, 255, 255, 0.05); /* Subtle hover effect */
+}
+
 .export-tab.active {
-  background: var(--raised);
   color: var(--amber);
-  border: 1px solid var(--border2);
+  background: rgba(251, 191, 36, 0.05); /* Very subtle amber tint */
+  border-bottom: 2px solid var(--amber); /* The requested visual indicator */
 }
 .export-panel {
   display: none; /* Hidden by default */
