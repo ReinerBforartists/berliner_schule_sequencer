@@ -654,45 +654,37 @@ body.knob-dragging {
 
 /* ── Action Buttons (Unified Solid Style) ── */
 
-/* Mode & Export Tabs: Minimalist style */
-.mode-tabs, .export-tabs { display: flex; gap: 0; background: var(--panel); border-bottom: 1px solid var(--border); border-radius: var(--r); padding: 0; overflow: hidden; margin-left: 8px; }
-.mode-tab, .export-tab { font-family: 'SF Mono', monospace; font-size: 10px; padding: 6px 16px; border: none; background: transparent; color: var(--muted); cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; border-bottom: 2px solid transparent; position: relative; }
-/* --- Action Buttons (Unified Solid Style) --- */
-
-/* Mode & Export Tabs: Minimalist style */
-.mode-tabs, .export-tabs {
-  display: flex;
-  gap: 0;
-  background: transparent;
-  border-bottom: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 0;
-  overflow: hidden;
-  margin-left: 8px;
-}
-
-.mode-tab, .export-tab {
-  font-family: 'SF Mono', monospace;
-  font-size: 10px;
-  padding: 6px 16px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  border-bottom: 2px solid transparent;
-  position: relative;
-}
-
-/* Force background to stay transparent for active tabs to override any global rules */
+/* This fix ensures tabs remain transparent and only the border/text changes */
 .mode-tab.active, .export-tab.active {
-  color: var(--amber);
+  color: var(--amber) !important;
   background: transparent !important;
-  border-bottom: 2px solid var(--amber);
+  border-bottom: 2px solid var(--amber) !important;
 }
 
-.export-tab { font-size: 10px; padding: 8px 20px; }
+.btn.primary, .btn.evo-btn {
+  padding: 8px 18px;
+  font-weight: 600;
+  min-width: 160px;
+  justify-content: center;
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+.btn.evo-btn {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+.btn.primary:hover:not(:disabled), .btn.evo-btn:hover:not(:disabled) {
+  background: #0c4a6e;
+}
+
+.btn.stop-btn {
+  border-color: var(--red);
+  color: var(--red);
+}
 
 /* Utility/Refresh Buttons: Ghost style */
 .btn-refresh { border: 1px solid var(--cyan-dim) !important; color: var(--cyan) !important; background: transparent !important; }
@@ -840,25 +832,47 @@ details[open] summary::before { content: '− '; }
 #presetSelect:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
 
 /* the size of the values font. Force Sans-Serif for values to remove the dotted zero, while keeping size override */
+/* --- FINAL CLEANUP: THE LAST WORD --- */
+/* We place these at the end to ensure they are the final authority
+   for any remaining duplicates from the middle of the file. */
+
+/* Correct Value style (Sans-Serif, correct size) */
 .val {
-  font-family: 'Inter', 'Roboto', 'SF Pro Text', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 10px !important;
   font-weight: 500;
-  font-variant-numeric: lining-nums;
-  font-feature-settings: "zero" 0;
-}
-/* the size of the label font */
-.ctrl-label {
-  font-size: 10px; /* Slightly smaller than base to create contrast with .val */
+  color: var(--amber);
+  display: block;
+  margin-top: 4px;
+  text-align: center;
 }
 
-.seed-label, .preset-label {
-  font-size: 10px;
+/* Correct Label style */
+.ctrl-label {
+  font-size: 10px !important;
 }
-/* Remove borders only from individual control boxes - no effect on panel-row or knobs */
+
+/* Correct Controller Box (Ensures borders are visible) */
 .ctrl {
-  border: none !important;
-  box-shadow: none !important;
+  border: 1px solid var(--border) !important;
+  background: var(--panel) !important;
+}
+
+/* Standardizing all button variations defined in the duplicates */
+.btn-refresh {
+  border: 1px solid var(--cyan-dim) !important;
+  color: var(--cyan) !important;
+  background: transparent !important;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  border-color: var(--cyan) !important;
+  background: rgba(14, 165, 233, 0.1) !important;
+}
+
+.btn.primary, .btn.evo-btn {
+  min-width: 160px !important;
+  justify-content: center !important;
 }
 
 </style>
