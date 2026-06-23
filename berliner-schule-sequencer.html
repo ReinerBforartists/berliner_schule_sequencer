@@ -3009,10 +3009,6 @@ async function playSequence() {
   document.getElementById('statusArea').classList.add('playing');
   setStatus('playing…', true);
 
-  const bpm           = +document.getElementById('bpm').value;
-  const stepsPerBeat  = +document.getElementById('stepsPerBeat').value;
-  const stepDur       = 60 / bpm / stepsPerBeat;
-
   let nextStepTime = ctx.currentTime + 0.02;
   let i = 0;
 
