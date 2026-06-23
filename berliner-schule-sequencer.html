@@ -831,50 +831,6 @@ details[open] summary::before { content: '− '; }
 }
 #presetSelect:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
 
-/* the size of the values font. Force Sans-Serif for values to remove the dotted zero, while keeping size override */
-/* --- FINAL CLEANUP: THE LAST WORD --- */
-/* We place these at the end to ensure they are the final authority
-   for any remaining duplicates from the middle of the file. */
-
-/* Correct Value style (Sans-Serif, correct size) */
-.val {
-  font-family: 'Inter', sans-serif !important;
-  font-size: 10px !important;
-  font-weight: 500;
-  color: var(--amber);
-  display: block;
-  margin-top: 4px;
-  text-align: center;
-}
-
-/* Correct Label style */
-.ctrl-label {
-  font-size: 10px !important;
-}
-
-/* Correct Controller Box (Ensures borders are visible) */
-.ctrl {
-  border: 1px solid var(--border) !important;
-  background: var(--panel) !important;
-}
-
-/* Standardizing all button variations defined in the duplicates */
-.btn-refresh {
-  border: 1px solid var(--cyan-dim) !important;
-  color: var(--cyan) !important;
-  background: transparent !important;
-}
-
-.btn-refresh:hover:not(:disabled) {
-  border-color: var(--cyan) !important;
-  background: rgba(14, 165, 233, 0.1) !important;
-}
-
-.btn.primary, .btn.evo-btn {
-  min-width: 160px !important;
-  justify-content: center !important;
-}
-
 </style>
 </head>
 <body>
