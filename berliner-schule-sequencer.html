@@ -3588,7 +3588,6 @@ function applySchulzePreset() {
   document.getElementById('scale').value = 'dorian';
 }
 
-document.getElementById('genBtn').addEventListener('click', generateSequence);
 document.getElementById('playBtn').addEventListener('click',()=>playSequence().catch(e=>console.error(e)));
 document.getElementById('stopBtn').addEventListener('click',stopPlayback);
 document.getElementById('exportBtn').addEventListener('click',() => exportMidi());
