@@ -3058,7 +3058,6 @@ async function playSequence() {
   const stepsPerBeat  = +document.getElementById('stepsPerBeat').value;
   const stepDur       = 60 / bpm / stepsPerBeat;
 
-  let lastFreq = null;
   let nextStepTime = ctx.currentTime + 0.02;
   let i = 0;
 
