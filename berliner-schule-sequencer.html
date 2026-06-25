@@ -71,7 +71,6 @@ body {
   font-feature-settings: "zero" 0;
 }
 
-
 body,
 .mono,
 .ctrl-label,
@@ -2107,15 +2106,7 @@ let playing=false;
 let playToken=0;
 let audioCtx=null;
 let currentMode='classic';
-function dystopicMode() {
-  return parseInt(document.getElementById('chaos')?.value || 0) > 0
-      || parseInt(document.getElementById('evoChaos')?.value || 0) > 0;
-}
 
-/**
- * The "Block Factory": Orchestrates the repetition of a base phrase and applies
- * mode-specific mutations for every repeat to create organic variation.
- */
 /**
  * The "Block Factory": Orchestrates the repetition of a base phrase and applies
  * mode-specific mutations for every repeat to create organic variation.
@@ -2161,6 +2152,11 @@ function createFullBlock(rng, startEvents, params, repeats, mode, anchorMidi, an
  * Orchestrates the creation of the sequence based on current UI settings.
  * Enforces strict logical constraints to prevent algorithmic collapse.
  */
+/**
+ * Main generation entry point.
+ * Orchestrates the creation of the sequence based on current UI settings.
+ * Enforces strict logical constraints to prevent algorithmic collapse.
+ */
 function generateSequence() {
   const mode = currentMode;
   const scaleKey = document.getElementById('scale').value;
@@ -2201,12 +2197,14 @@ function generateSequence() {
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
 
-  // --- DYSTOPIC OVERRIDES ---
+  // --- DYSTOPIC OVERRIDES (Main Sequencer only) ---
   const chaosAmount = parseFloat(document.getElementById('chaos').value || 0) / 100;
   let effectivePaletteSize = paletteSize;
   let effectiveToneRange = toneRange;
   let effectiveMaxInterval = maxInterval;
-  if (dystopicMode()) {
+
+  // Only apply overrides if the MAIN chaos slider is active
+  if (parseInt(document.getElementById('chaos')?.value || 0) > 0) {
     effectivePaletteSize = Math.min(12, paletteSize + Math.round(chaosAmount * 6));
     effectiveToneRange = Math.min(24, toneRange + Math.round(chaosAmount * 12));
     effectiveMaxInterval = Math.min(11, maxInterval + Math.round(chaosAmount * 6));
@@ -2217,7 +2215,8 @@ function generateSequence() {
       : null;
 
   // Chromatic contamination: inject foreign semitones into palette
-  if (dystopicMode() && palette && chaosAmount > 0) {
+  // Only apply if MAIN chaos slider is active
+  if (parseInt(document.getElementById('chaos')?.value || 0) > 0 && palette && chaosAmount > 0) {
     const contaminants = Math.round(chaosAmount * 4);
     for (let i = 0; i < contaminants; i++) {
       const foreignNote = root + rng.int(1, 11); // non-root chromatic notes
@@ -2323,10 +2322,6 @@ function refreshEvolutionData() {
  * View: Only handles the drawing of the existing buffer onto the canvas.
  * This is safe to call during window resize/zoom.
  */
-/**
- * View: Only handles the drawing of the existing buffer onto the canvas.
- * This is safe to call during window resize/zoom.
- */
 function renderEvolutionPreview() {
   const canvas = document.getElementById('evoPreviewCanvas');
   const info = document.getElementById('evoPreviewInfo');
@@ -2339,7 +2334,7 @@ function renderEvolutionPreview() {
 
   const chain = currentEvoChain;
 
-  // --- Sizing (DPR-correct, matching the main sequencer canvas) ---
+  // --- Sizing (DPR-correct) ---
   const cssWidth = canvas.parentElement.clientWidth || canvas.clientWidth || 600;
   const cssHeight = 140;
   const dpr = window.devicePixelRatio || 1;
@@ -2359,10 +2354,6 @@ function renderEvolutionPreview() {
   ctx.fillRect(0, 0, cssWidth, cssHeight);
 
   // --- VIEW CONFIGURATION ---
-  // Same discrete-row approach as the main sequencer pianoroll: a fixed
-  // semitone view range, rounded up to full octaves and centered on the
-  // chain's note range, instead of stretching notes continuously across
-  // whatever min/max happen to occur.
   const notes = chain.filter(s => s && s.noteStart && !s.rest && typeof s.midi === 'number');
   let viewCenter = 60;
   let viewRange = 24;
@@ -2371,15 +2362,15 @@ function renderEvolutionPreview() {
     const minN = Math.min(...midis);
     const maxN = Math.max(...midis);
     viewCenter = (minN + maxN) / 2;
-    const span = (maxN - minN) + 2; // small padding so notes don't touch the edge
-    viewRange = Math.max(24, Math.ceil(span / 12) * 12); // round up to full octaves
+    const span = (maxN - minN) + 2;
+    viewRange = Math.max(24, Math.ceil(span / 12) * 12);
   }
   const keyHeight = cssHeight / viewRange;
   const halfRange = viewRange / 2;
 
   drawPianoKeys(document.getElementById('evoPianoKeys'), viewCenter, viewRange, parseInt(document.getElementById('root').value));
 
-  // 1. Horizontal zebra stripes (one per semitone row), matching the main pianoroll
+  // 1. Horizontal zebra stripes
   for (let k = 0; k < viewRange; k++) {
     ctx.fillStyle = (k % 2 === 0) ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)';
     ctx.fillRect(0, k * keyHeight, cssWidth, keyHeight);
@@ -2402,17 +2393,16 @@ function renderEvolutionPreview() {
     ctx.stroke();
   }
 
-  // 3. Notes — drawn on discrete semitone rows, same GAP/sizing logic as
-  // the main sequencer, so a note's height matches its piano-key row.
+  // 3. Notes
   const GAP = 2;
   const swingFraction = (+document.getElementById('swing')?.value || 0) / 100;
-
-  // Minimum rendered dimensions so notes stay visible even with many steps
-  // or a wide pitch range: at least 2px tall, at least 1.5px wide.
   const MIN_NOTE_H = 2;
   const MIN_NOTE_W = 1.5;
 
-  ctx.fillStyle = dystopicMode() ? '#84cc16' : '#00ccff';
+  // COLOR LOGIC: Only use green if EVO chaos slider is active
+  const isEvoChaosActive = parseInt(document.getElementById('evoChaos')?.value || 0) > 0;
+  ctx.fillStyle = isEvoChaosActive ? '#84cc16' : '#00ccff';
+
   for (let i = 0; i < chain.length; i++) {
     const s = chain[i];
     if (!s || !s.noteStart || s.rest || typeof s.midi !== 'number') continue;
@@ -2420,8 +2410,6 @@ function renderEvolutionPreview() {
     const noteY = (halfRange - (s.midi - viewCenter)) * keyHeight;
     if (noteY < 0 || noteY > cssHeight) continue;
 
-    // Mirror the playback engine's swing timing: odd-numbered steps are
-    // delayed by half a step times the swing amount.
     const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
     const xPos = i * pxPerStep + swingOffset;
     const blockWidth = Math.max(MIN_NOTE_W, (s.holdSteps || 1) * pxPerStep - GAP);
@@ -2430,7 +2418,7 @@ function renderEvolutionPreview() {
     ctx.fillRect(xPos, noteY, blockWidth, noteH);
   }
 
-  // 4. Orange repeat/block markers on top
+  // 4. Orange repeat markers
   ctx.fillStyle = accentColor;
   for (let b = 0; b < iterations; b++) {
     const x = Math.round(b * blockLen * pxPerStep);
@@ -2446,6 +2434,7 @@ function renderEvolutionPreview() {
     info.textContent = `${iterations} blocks · ${totalSteps} steps${lo !== null ? ` · pitch range ${midiToName(lo)}–${midiToName(hi)}` : ''}${seedNote}`;
   }
 }
+
 
 // Debounced auto-refresh of the evolution preview
 let evoPreviewTimer = null;
@@ -2852,6 +2841,7 @@ function ensureSeqCanvasSize(canvas) {
  * sequence, view, or canvas size actually changes — NOT on every playback
  * step.
  */
+
 function renderSequenceBackground() {
   if (!sequence || sequence.length === 0) return null;
 
@@ -2913,7 +2903,7 @@ function renderSequenceBackground() {
     ctx.stroke();
   }
 
-  // 2b. Orange repeat markers on top (matching Evolution piano roll style)
+  // 2b. Orange repeat markers on top
   if (phraseLenForGrid > 0) {
     const css = getComputedStyle(document.documentElement);
     const accentColor = (css.getPropertyValue('--amber') || '#FFB000').trim();
@@ -2929,10 +2919,13 @@ function renderSequenceBackground() {
   const GAP = 2;
   const MIN_NOTE_H = 2;
   const MIN_NOTE_W = 1.5;
+
+  // COLOR LOGIC: Only use green if MAIN chaos slider is active
+  const isMainChaosActive = parseInt(document.getElementById('chaos')?.value || 0) > 0;
+  ctx.fillStyle = isMainChaosActive ? '#84cc16' : '#00ccff';
+
   for (let i = 0; i < totalSteps; i++) {
     const step = sequence[i];
-    // Only draw at the start of a note; tied continuation steps share the
-    // same block via holdSteps below, so they must not draw their own block.
     if (step.midi === undefined || step.tie) continue;
     if (!step.noteStart && !step.isAnchor) continue;
 
@@ -2941,14 +2934,11 @@ function renderSequenceBackground() {
 
     if (noteY < 0 || noteY > rect.height) continue;
 
-    // Mirror the playback engine's swing timing: odd-numbered steps are
-    // delayed by half a step times the swing amount.
     const swingOffset = (i % 2 === 1) ? pxPerStep * swingFraction * 0.5 : 0;
     const xPos = i * pxPerStep + swingOffset;
     const blockWidth = Math.max(MIN_NOTE_W, (step.holdSteps || 1) * pxPerStep - GAP);
     const noteH = Math.max(MIN_NOTE_H, keyHeight - 2);
 
-    ctx.fillStyle = dystopicMode() ? '#84cc16' : '#00ccff';
     ctx.fillRect(xPos, noteY, blockWidth, noteH);
   }
 
