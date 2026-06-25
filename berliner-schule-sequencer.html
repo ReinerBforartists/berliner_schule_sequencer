@@ -3461,7 +3461,11 @@ const evoSliderConfigs = [
 
 evoSliderConfigs.forEach(s => {
   document.getElementById(s.id)?.addEventListener('input', (e) => {
-    fastUpdateText(s.valId, e.target.value, s.isPct);
+    const val = +e.target.value;
+    // Show "Off" instead of "0 %" when value is 0 for specific sliders
+    const isOffable = s.id === 'evoChaos' || s.id === 'octaveDriftEvo';
+    const displayText = isOffable && val === 0 ? 'Off' : (s.isPct ? val + ' %' : val);
+    fastUpdateText(s.valId, displayText, false);
   });
 });
 
