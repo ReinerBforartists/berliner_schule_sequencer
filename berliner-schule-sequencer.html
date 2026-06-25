@@ -987,8 +987,7 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label">Max Len <span class="val" id="maxNoteLenVal">2</span></div>
       <input type="range" id="maxNoteLen" min="1" max="32" value="2">
     </div>
-
-    <div class="v-sep v-sep-m"></div>
+    <div class="v-sep v-sep-m" id="sepArpMode"></div>
 
     <div class="ctrl" id="densityCtrl">
       <div class="ctrl-label">Density <span class="val" id="densityVal">72%</span></div>
@@ -3519,6 +3518,11 @@ function applyModeUI() {
   // Mode specific panels
   document.getElementById('anchorPanel').classList.toggle('visible', isOffbeat);
   document.getElementById('arpPanel').classList.toggle('visible', isArp);
+
+  const sepArp = document.getElementById('sepArpMode');
+  if (sepArp) {
+    sepArp.classList.toggle('hidden', isArp);
+  }
 }
 
 const PRESETS = {
