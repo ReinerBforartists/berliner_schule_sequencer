@@ -1,7 +1,7 @@
 <!--
   =============================================================================
   PROJECT: Berliner Schule Sequencer (BSS)
-  VERSION: 0.9.2
+  VERSION: 0.9.3
   AUTHOR: Reiner Prokein
   COPYRIGHT: (c) 2026 Reiner Prokein
   LICENSE: MIT License
@@ -827,7 +827,7 @@ details[open] summary::before { content: '− '; }
   <!-- Header -->
   <div class="header">
     <div class="flex-center gap-xl">
-      <div class="logo mono">BSS<span>/</span>0.9.2</div>
+      <div class="logo mono">BSS<span>/</span>0.9.3</div>
       <div class="mode-tabs">
         <button class="mode-tab active" data-mode="classic">Classic</button>
         <button class="mode-tab" data-mode="schulze">Klaus Schulze</button>
@@ -946,6 +946,12 @@ details[open] summary::before { content: '− '; }
         <option value="mixolydian">Mixolydian</option>
         <option value="minorPent">Minor Pentatonic</option>
         <option value="majorPent">Major Pentatonic</option>
+        <optgroup label="— Dystopic —">
+          <option value="locrian">Locrian</option>
+          <option value="wholeTone">Whole Tone</option>
+          <option value="halfWhole">Half-Whole Dim.</option>
+          <option value="chromatic">Chromatic</option>
+        </optgroup>
       </select>
     </div>
     <div class="ctrl">
@@ -1001,7 +1007,12 @@ details[open] summary::before { content: '− '; }
     <!-- Group 3: Variation -->
     <div class="ctrl">
       <div class="ctrl-label">Variation <span class="val" id="varVal">25%</span></div>
-      <input type="range" id="variation" min="0" max="60" value="25">
+      <input type="range" id="variation" min="0" max="100" value="25">
+    </div>
+
+    <div class="ctrl">
+      <div class="ctrl-label">Chaos <span class="val" id="chaosVal">Off</span></div>
+      <input type="range" id="chaos" min="0" max="100" value="0">
     </div>
 
   </div>
@@ -1156,8 +1167,13 @@ details[open] summary::before { content: '− '; }
 
         <!-- Octave Drift -->
         <div class="ctrl">
-          <div class="ctrl-label">Octave Drift <span class="val" id="driftValEvo">0%</span></div>
-          <input type="range" id="octaveDriftEvo" min="0" max="80" value="0">
+          <div class="ctrl-label">Oct Drift <span class="val" id="driftValEvo">Off</span></div>
+          <input type="range" id="octaveDriftEvo" min="0" max="100" value="0">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-label">Chaos <span class="val" id="evoChaosVal">Off</span></div>
+          <input type="range" id="evoChaos" min="0" max="100" value="0">
         </div>
 
         <!-- Visual Separator -->
@@ -1544,6 +1560,10 @@ const SCALES = {
   mixolydian: [0,2,4,5,7,9,10],
   minorPent:  [0,3,5,7,10],
   majorPent:  [0,2,4,7,9],
+  locrian:    [0,1,3,5,6,8,10],
+  wholeTone:  [0,2,4,6,8,10],
+  halfWhole:  [0,1,3,4,6,7,9,10],
+  chromatic:  [0,1,2,3,4,5,6,7,8,9,10,11],
 };
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const SCHULZE_INTERVALS = [3,4,5,7,-3,-4,-5];
@@ -2192,9 +2212,26 @@ function generateSequence() {
   const noteCount  = parseInt(document.getElementById('noteCount').value) || 2;
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
+
+  // --- CHAOS ---
+  const chaosAmount = parseFloat(document.getElementById('chaos').value || 0) / 100;
+  const effectivePaletteSize = chaosAmount > 0 ? Math.min(12, paletteSize + Math.round(chaosAmount * 6)) : paletteSize;
+  const effectiveToneRange   = chaosAmount > 0 ? Math.min(24, toneRange   + Math.round(chaosAmount * 12)) : toneRange;
+  const effectiveMaxInterval = chaosAmount > 0 ? Math.min(11, maxInterval + Math.round(chaosAmount * 6)) : maxInterval;
+
   let palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
-      ? buildPalette(rng, scale, paletteSize, root, toneRange)
+      ? buildPalette(rng, scale, effectivePaletteSize, root, effectiveToneRange)
       : null;
+
+  // Chromatic contamination: inject foreign semitones into palette
+  if (chaosAmount > 0 && palette) {
+    const contaminants = Math.round(chaosAmount * 4);
+    for (let i = 0; i < contaminants; i++) {
+      const foreignNote = root + rng.int(1, 11);
+      if (foreignNote >= 24 && foreignNote <= 84) palette.push(foreignNote);
+    }
+    palette = [...new Set(palette)].sort((a, b) => a - b);
+  }
 
   // Offbeat Anchor mode: the anchor note itself stays fixed at the picked
   // pitch; instead the melody palette is octave-shifted to sit above,
@@ -2208,7 +2245,7 @@ function generateSequence() {
     scale,
     root,
     phraseLen,
-    maxInterval,
+    maxInterval: effectiveMaxInterval,
     density,
     weights: getWeights(scale.length),
     noteCount,
@@ -2382,7 +2419,7 @@ function renderEvolutionPreview() {
   const MIN_NOTE_H = 2;
   const MIN_NOTE_W = 1.5;
 
-  ctx.fillStyle = '#00ccff';
+  ctx.fillStyle = (parseInt(document.getElementById('evoChaos')?.value || 0) > 0) ? '#84cc16' : '#00ccff';
   for (let i = 0; i < chain.length; i++) {
     const s = chain[i];
     if (!s || !s.noteStart || s.rest || typeof s.midi !== 'number') continue;
@@ -2493,9 +2530,26 @@ function generateEvolutionaryChain() {
 
   const paletteSize = parseInt(document.getElementById('paletteSize').value) || 3;
   const toneRange = parseInt(document.getElementById('toneRange').value) || 5;
+
+  // --- EVO CHAOS ---
+  const evoChaosAmount = parseFloat(document.getElementById('evoChaos')?.value || 0) / 100;
+  const evoEffectivePaletteSize = evoChaosAmount > 0 ? Math.min(12, paletteSize + Math.round(evoChaosAmount * 6)) : paletteSize;
+  const evoEffectiveToneRange   = evoChaosAmount > 0 ? Math.min(24, toneRange   + Math.round(evoChaosAmount * 12)) : toneRange;
+  const evoEffectiveMaxInterval = evoChaosAmount > 0 ? Math.min(11, +document.getElementById('maxInterval').value + Math.round(evoChaosAmount * 6)) : +document.getElementById('maxInterval').value;
+
   let palette = (mode === 'classic' || mode === 'schulze' || mode === 'motivic' || mode === 'offbeat')
-    ? buildPalette(rng, scale, paletteSize, root, toneRange)
+    ? buildPalette(rng, scale, evoEffectivePaletteSize, root, evoEffectiveToneRange)
     : null;
+
+  // Chromatic contamination
+  if (evoChaosAmount > 0 && palette) {
+    const contaminants = Math.round(evoChaosAmount * 4);
+    for (let i = 0; i < contaminants; i++) {
+      const foreignNote = root + rng.int(1, 11);
+      if (foreignNote >= 24 && foreignNote <= 84) palette.push(foreignNote);
+    }
+    palette = [...new Set(palette)].sort((a, b) => a - b);
+  }
 
   if (palette && palette.length < 2) {
     const fallback = Math.max(24, Math.min(84, root + (scale[1] !== undefined ? scale[1] : 2)));
@@ -2512,7 +2566,7 @@ function generateEvolutionaryChain() {
 
   const params = {
     scale, root, phraseLen,
-    maxInterval: +document.getElementById('maxInterval').value,
+    maxInterval: evoEffectiveMaxInterval,
     density: +document.getElementById('density').value / 100,
     weights: getWeights(scale.length),
     noteCount,
@@ -2544,8 +2598,10 @@ function generateEvolutionaryChain() {
         currentEvents.push({ start: idx, duration: s.holdSteps, midi: s.midi, degree: s.degree, octave: s.octave });
       }
     });
-    // Update palette to match the actual notes used in the full sequence
-    if (params.palette) {
+    // Update palette to match the actual notes used in the sequence —
+    // but only when Evo Chaos is off. With Chaos > 0 the extended/contaminated
+    // palette should stay so mutations can venture outside the starting notes.
+    if (params.palette && evoChaosAmount === 0) {
       const distinctTones = [...new Set(currentEvents.map(e => e.midi))].sort((a, b) => a - b);
       if (distinctTones.length >= 2) params.palette = distinctTones;
     }
@@ -2838,17 +2894,17 @@ function renderSequenceBackground() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   // --- VIEW CONFIGURATION ---
+  // Always derive view range from actual notes so Chaos/Arp notes outside
+  // a fixed window are never clipped.
+  const seqNotes = sequence.filter(s => s.midi !== undefined).map(s => s.midi);
   let viewRange = 24;
   let viewCenter = parseInt(document.getElementById('root').value) || 60;
 
-  if (currentMode === 'arp') {
-    viewRange = 36;
-    const notes = sequence.filter(s => s.midi !== undefined).map(s => s.midi);
-    if (notes.length > 0) {
-      const min = Math.min(...notes);
-      const max = Math.max(...notes);
-      viewCenter = (min + max) / 2;
-    }
+  if (seqNotes.length > 0) {
+    const minN = Math.min(...seqNotes);
+    const maxN = Math.max(...seqNotes);
+    viewCenter = (minN + maxN) / 2;
+    viewRange = Math.max(24, (maxN - minN) + 6); // 3-semitone padding top & bottom
   }
 
   const keyHeight = rect.height / viewRange;
@@ -2917,7 +2973,7 @@ function renderSequenceBackground() {
     const blockWidth = Math.max(MIN_NOTE_W, (step.holdSteps || 1) * pxPerStep - GAP);
     const noteH = Math.max(MIN_NOTE_H, keyHeight - 2);
 
-    ctx.fillStyle = '#00ccff';
+    ctx.fillStyle = (parseInt(document.getElementById('chaos')?.value || 0) > 0) ? '#84cc16' : '#00ccff';
     ctx.fillRect(xPos, noteY, blockWidth, noteH);
   }
 
@@ -3396,10 +3452,11 @@ Object.entries(pctSliders).forEach(([id,valId])=>{
 // C. Evolution Labels
 const evoSliderConfigs = [
   { id: 'evoIterations', valId: 'evoIterVal', isPct: false },
-  { id: 'evoMutation', valId: 'evoMutVal', isPct: true },
-  { id: 'evoDrift', valId: 'evoDriftVal', isPct: true },
-  { id: 'evoGrip', valId: 'evoGripVal', isPct: true },
-  { id: 'octaveDriftEvo', valId: 'driftValEvo', isPct: true }
+  { id: 'evoMutation',   valId: 'evoMutVal',  isPct: true  },
+  { id: 'evoDrift',      valId: 'evoDriftVal', isPct: true  },
+  { id: 'evoGrip',       valId: 'evoGripVal',  isPct: true  },
+  { id: 'octaveDriftEvo',valId: 'driftValEvo', isPct: true  },
+  { id: 'evoChaos',      valId: 'evoChaosVal', isPct: true  },
 ];
 
 evoSliderConfigs.forEach(s => {
@@ -3409,7 +3466,7 @@ evoSliderConfigs.forEach(s => {
 });
 
 // D. Trigger Generation on Release
-const genSliders=['phraseLen','repeats','maxInterval','density','noteCount','minNoteLen','maxNoteLen','variation','paletteSize','toneRange'];
+const genSliders=['phraseLen','repeats','maxInterval','density','noteCount','minNoteLen','maxNoteLen','variation','paletteSize','toneRange','chaos'];
 genSliders.forEach(id=>{
   document.getElementById(id)?.addEventListener('change', generateSequence);
 });
@@ -3723,8 +3780,13 @@ function initKnobs() {
 
       editInput.value = slider.value;
       if (valSpan) {
-        const isPct = slider.id === 'density' || slider.id === 'variation' || slider.id === 'swing' || slider.id === 'evoMutation' || slider.id === 'evoDrift' || slider.id === 'evoGrip' || slider.id === 'octaveDriftEvo';
-        valSpan.textContent = isPct ? slider.value + ' %' : slider.value;
+        const isPct = slider.id === 'density' || slider.id === 'variation' || slider.id === 'swing' || slider.id === 'evoMutation' || slider.id === 'evoDrift' || slider.id === 'evoGrip' || slider.id === 'octaveDriftEvo' || slider.id === 'chaos' || slider.id === 'evoChaos';
+        const isOffable = slider.id === 'chaos' || slider.id === 'swing' || slider.id === 'evoChaos' || slider.id === 'octaveDriftEvo';
+        if (isOffable && +slider.value === 0) {
+          valSpan.textContent = 'Off';
+        } else {
+          valSpan.textContent = isPct ? slider.value + ' %' : slider.value;
+        }
       }
     };
 
@@ -3871,7 +3933,7 @@ function triggerMainSequencerUpdate() {
 
 // 1. Explicit binding for all Evolution sliders
 const evoSliderIds = [
-  'evoIterations', 'evoMutation', 'evoDrift', 'evoGrip', 'octaveDriftEvo',
+  'evoIterations', 'evoMutation', 'evoDrift', 'evoGrip', 'octaveDriftEvo', 'evoChaos',
   'evoRootPalette', 'evoRootRange', 'evolutionCurve', 'evoMutationStyle', 'evoSeedMode', 'exportStretchEvo'
 ];
 
