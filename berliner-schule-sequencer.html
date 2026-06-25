@@ -1379,6 +1379,7 @@ details[open] summary::before { content: '− '; }
             <li><span class="hl-amber">Density:</span> <span class="hl-text">The probability (%) that a note occurs on any given step. Lower values create rests; higher values fill the phrase more densely.</span></li>
             <li><span class="hl-amber">Interval:</span> <span class="hl-text">Limits the maximum melodic "jump" between two consecutive notes (in scale steps). Low values keep the melody stepwise; higher values allow larger leaps.</span></li>
             <li><span class="hl-amber">Variation:</span> <span class="hl-text">The "organic" factor. At 0% every repeat is identical. Higher values mean each loop of the phrase introduces subtle changes — shifted notes, different durations — so the sequence breathes and evolves naturally over time.</span></li>
+            <li><span class="hl-amber">Chaos:</span> <span class="hl-text">Add back chaotic dystropy. This can break every constraint. For example place a note outside of the palette or range. The chaos feature works independent for sequencing and evolution.</span></li>
           </ul></p>
         </div>
 
@@ -1422,7 +1423,8 @@ details[open] summary::before { content: '− '; }
               <li><strong class="hl-amber">Mutation:</strong> The "chaos" factor per block. Higher % means more notes are changed with each step, leading to faster divergence from the original.</li>
               <li><strong class="hl-amber">Drift:</strong> Probability of a sudden octave transposition between blocks, adding vertical leaps to the evolution.</li>
               <li><strong class="hl-amber">Grip:</strong> How strongly the evolution is "pulled back" toward the original theme. High grip keeps the sequence close to the source; low grip allows it to wander freely.</li>
-              <li><strong class="hl-amber">Octave Drift:</strong> Adds a gentle random octave-shift component that accumulates gradually across blocks — distinct from the sudden jumps of Drift.</li>
+              <li><strong class="hl-amber">Oct Drift:</strong> Octave drift adds a gentle random octave-shift component that accumulates gradually across blocks — distinct from the sudden jumps of Drift.</li>
+              <li><span class="hl-amber">Chaos:</span> <span class="hl-text">Add back chaotic dystropy. This can break every constraint. For example place a note outside of the palette or range. The chaos feature works independent for sequencing and evolution.</span></li>
               <li><strong class="hl-amber">Evolution Curve:</strong> Shapes how mutation intensity changes over time. Linear keeps it constant; Ramp Up builds tension toward the end; Arch peaks in the middle; Valley dips then returns; Ease In/Out softens the transitions.</li>
               <li><strong class="hl-amber">Mutation Style:</strong>
                 <ul style="margin-left: 15px; list-style: none; padding-left: 0;">
