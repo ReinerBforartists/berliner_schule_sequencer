@@ -3948,7 +3948,6 @@ evoSliderIds.forEach(id => {
     clearTimeout(window._evoPreviewTimer);
     window._evoPreviewTimer = setTimeout(triggerEvoPreviewUpdate, 150);
   });
-  el.addEventListener('change', triggerEvoPreviewUpdate);
 });
 
 // 2. Root Mode & Interval Dropdowns (needs explicit UI toggle + data refresh)
