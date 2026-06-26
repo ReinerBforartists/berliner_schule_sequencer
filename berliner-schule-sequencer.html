@@ -2220,7 +2220,7 @@ function generateSequence() {
 
   // Chromatic contamination: inject foreign semitones into palette
   if (chaosAmount > 0 && palette) {
-    const contaminants = Math.round(Math.pow(chaosAmount, 0.5) * 6);
+    const contaminants = Math.round(chaosAmount * 6);
     for (let i = 0; i < contaminants; i++) {
       const foreignNote = root + rng.int(-6, 6);
       if (foreignNote >= 24 && foreignNote <= 84) palette.push(foreignNote);
@@ -2538,7 +2538,7 @@ function generateEvolutionaryChain() {
 
   // Chromatic contamination
   if (evoChaosAmount > 0 && palette) {
-    const contaminants = Math.round(Math.pow(chaosAmount, 0.5) * 6);
+    const contaminants = Math.round(evoChaosAmount * 6);
     for (let i = 0; i < contaminants; i++) {
       const foreignNote = root + rng.int(-6, 6);
       if (foreignNote >= 24 && foreignNote <= 84) palette.push(foreignNote);
