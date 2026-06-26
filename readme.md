@@ -2,7 +2,6 @@
 
 An algorithmic MIDI sequencer that runs directly in the browser. It generates melodic patterns inspired by the **Berliner Schule** style of electronic music, balancing repetition with subtle organic evolution.
 
-
 ## 📸 Preview
 
 | Interface | Howto |
@@ -16,52 +15,57 @@ The tool is designed as a sequence generator. While it includes a basic internal
 The tool uses a Pseudo-Random Number Generator (PRNG) to create sequences based on musical constraints. Users can either generate random patterns or use fixed seeds to recreate specific results.
 
 ### Composition Modes
-- **Classic**: A "Random Walk" within the selected scale, creating fluid and grounded melodies.
-- **Klaus Schulze**: Focuses on sparse, long-held notes and drones for a meditative atmosphere.
-- **Offbeat Anchor**: Locks specific steps (usually offbeats) to a fixed pedal point while the rest of the melody varies.
-- **Arpeggiator**: Cycles through chord tones; these can be mutated over time to evolve the rhythmic pattern.
-- **Motivic**: Generates a 4-note "DNA motif" and applies classical transformations (Inversion, Retrograde).
+- **Classic**: A random walk within the selected scale, creating fluid and grounded melodies.
+- **Klaus Schulze**: Focuses on sparse, long-held notes and drones for a meditative atmosphere. Note count is set explicitly rather than by density.
+- **Offbeat Anchor**: Locks specific steps to a fixed pedal point while the rest of the melody varies. The anchor pattern, position (on- or offbeat), and melody range relative to the anchor are all configurable.
+- **Arpeggiator**: Cycles through chord tones in ascending, descending, ping-pong, or random order across 1–3 octaves. Supports triads, seventh chords, and extensions.
+- **Motivic**: Generates a short "DNA motif" and applies classical transformations (inversion, retrograde, transposition) across repeats.
 
 ### Harmonic Palette (Scales)
-The mood of the sequence is determined by the selected scale:
-- **Dorian**: Sophisticated, slightly melancholic but open.
-- **Phrygian**: Dark, tense, and exotic; typical for "dark cosmic" sounds.
-- **Aeolian (Natural Minor)**: Classic sad or dramatic tone.
-- **Mixolydian**: Brighter, more dominant and open.
-- **Minor/Major Pentatonic**: Simplified scales that always sound harmonious and fluid.
+Six standard scales (Dorian, Phrygian, Aeolian, Mixolydian, Minor/Major Pentatonic) plus four dystopic modes (Locrian, Whole Tone, Half-Whole Diminished, Chromatic).
+
+### Presets
+A selection of ready-made presets referencing classic Berliner Schule albums and sounds for quick starting points.
+
+### Parameters
+- **Palette & Range**: Define which notes are available — Palette sets the number of scale tones in the active pool; Range sets the pitch corridor around the root.
+- **Density**: Probability that a note occurs on any given step.
+- **Interval**: Maximum melodic jump between consecutive notes (in scale steps).
+- **Variation**: How much each repeat of the phrase differs from the original — adds organic, non-robotic movement.
+- **Chaos**: Injects chromatic foreign tones into the palette and widens the pitch and interval constraints. Works independently for the main sequencer and the evolution export. Can break scale constraints intentionally.
 
 ### Evolutionary Export (🧬)
-Beyond standard MIDI loops, the sequencer features an evolutionary chain generator. This mimics the drift of vintage modular systems by mutating a sequence over several blocks:
-- **Mutation**: Controls how much each block differs from the previous one.
-- **Drift**: Adds probability for sudden octave jumps.
-- **Grip**: Determines how strongly the evolution adheres to the original theme.
-- **Root Shift**: Allows for harmonic progressions (e.g., Cycle of Fifths, Modal shifts) between blocks.
+Beyond standard MIDI loops, the sequencer features an evolutionary chain generator that creates long-form compositions by mutating a sequence across multiple blocks:
+
+- **Iterations**: Number of mutation blocks (1–64).
+- **Mutation**: How many notes change per block — controls speed of divergence from the original.
+- **Drift**: Probability of a sudden octave jump between blocks.
+- **Oct Drift**: Gradual octave drift that accumulates across blocks, distinct from the sudden jumps of Drift.
+- **Grip**: How strongly the evolution is pulled back toward the original theme.
+- **Chaos**: Same chromatic contamination as the main sequencer, applied independently to the evolution chain.
+- **Evolution Curve**: Shapes mutation intensity over time — Linear, Ramp Up, Arch, Valley, Ease In/Out.
+- **Mutation Style**: Palette Walk (adjacent steps), Palette Random (any tone), or Mix.
+- **Root Mode**: Controls whether and how the tonal centre shifts across blocks. Includes static, free/random, interval-based (Thirds, 4ths/5ths, Cycle of Fifths), Berliner Schule/Ambient (Modal, Circulating Fifths, Slow Oscillation), and Pop/Rock/Standards presets (50s, Andalusian, Jazz Standard, Pachelbel, etc.).
+- **Evo Seed Mode**: Fixed (reproducible) or Random (fresh chain on each refresh).
+
+A live preview canvas shows the full evolutionary arc before export.
 
 ## Installation & Usage
 
-No installation is required.
+No installation required.
 1. Download or clone the repository.
 2. Open `berliner-schule-sequencer.html` in any modern web browser.
 
 ## Operation Guide
 
-### Parameter Behavior
-- **Live Parameters (Green Labels)**: These affect the playback engine in real-time (e.g., BPM, Swing). Changes are audible immediately.
-- **Generative Parameters (Amber Labels)**: These define the blueprint of the sequence. Changing these values triggers an automatic regeneration of the pattern upon releasing the slider or changing the selection. The "↻ Generate" button can also be used to manually trigger a new seed.
-
-### Key Settings
-- **Timing & Rhythm**: Adjust BPM, Swing, and Steps per Beat (resolution).
-- **Phrase & Notes**:
-    - `Scale & Root`: Defines the harmonic palette.
-    - `Steps`: Length of one musical idea before it repeats.
-    - `Density`: Probability of a note occurring on any given step.
-    - `Interval`: Limits the "jump" between consecutive notes to control melodic smoothness.
-- **Variation**: Controls how much each repeat of a phrase differs from the original, preventing robotic repetition.
+### Parameter Behaviour
+- **Live Parameters (Green Labels)**: Affect playback in real-time (BPM, Swing, Steps per Beat). Changes are audible immediately.
+- **Generative Parameters (Amber Labels)**: Define the blueprint of the sequence. Changing these triggers automatic regeneration on slider release or selection change. The **↻ Generate** button manually triggers a new pattern with the current seed.
 
 ### Visual Legend
 - **Blue cell**: Standard generated note.
 - **Pink cell**: Anchor note (fixed pitch).
-- **Dark/empty cell**: A rest.
+- **Dark / empty cell**: A rest.
 - **Semi-transparent blue**: A tie (held note).
 - **Blue height bar**: Relative pitch indicator.
 
