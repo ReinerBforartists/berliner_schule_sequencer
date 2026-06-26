@@ -2222,7 +2222,7 @@ function generateSequence() {
   if (chaosAmount > 0 && palette) {
     const contaminants = Math.round(chaosAmount * 4);
     for (let i = 0; i < contaminants; i++) {
-      const foreignNote = root + rng.int(1, 11);
+      const foreignNote = root + rng.int(-6, 6);
       if (foreignNote >= 24 && foreignNote <= 84) palette.push(foreignNote);
     }
     palette = [...new Set(palette)].sort((a, b) => a - b);
@@ -2540,7 +2540,7 @@ function generateEvolutionaryChain() {
   if (evoChaosAmount > 0 && palette) {
     const contaminants = Math.round(evoChaosAmount * 4);
     for (let i = 0; i < contaminants; i++) {
-      const foreignNote = root + rng.int(1, 11);
+      const foreignNote = root + rng.int(-6, 6);
       if (foreignNote >= 24 && foreignNote <= 84) palette.push(foreignNote);
     }
     palette = [...new Set(palette)].sort((a, b) => a - b);
