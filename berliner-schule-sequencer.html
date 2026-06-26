@@ -3464,12 +3464,6 @@ evoSliderConfigs.forEach(s => {
   });
 });
 
-// D. Trigger Generation on Release
-const genSliders=['phraseLen','repeats','maxInterval','density','noteCount','minNoteLen','maxNoteLen','variation','paletteSize','toneRange','chaos'];
-genSliders.forEach(id=>{
-  document.getElementById(id)?.addEventListener('change', generateSequence);
-});
-
 // Swing is a "live" timing parameter (no regeneration needed) - just redraw
 // the piano rolls so the visual offset stays in sync while dragging.
 document.getElementById('swing')?.addEventListener('input', () => {
@@ -3963,7 +3957,8 @@ document.getElementById('genBtn')?.addEventListener('click', triggerMainSequence
 
 const sequencerControls = [
   'scale', 'root', 'density', 'variation', 'minNoteLen', 'maxNoteLen',
-  'noteCount', 'phraseLen', 'repeats', 'bpm', 'swing', 'stepsPerBeat', 'maxInterval'
+  'noteCount', 'phraseLen', 'repeats', 'bpm', 'swing', 'stepsPerBeat', 'maxInterval',
+  'paletteSize', 'toneRange', 'chaos'
 ];
 
 sequencerControls.forEach(id => {
