@@ -1398,6 +1398,7 @@ details[open] summary::before { content: '− '; }
             <li><span class="hl-amber">↻ Refresh Sequence:</span> <span class="hl-text">Rebuilds the sequence from the current parameters. Must be clicked after changing any generative (non-live) parameter to hear the result.</span></li>
             <li><span class="hl-amber">VOL:</span> <span class="hl-text">Controls only the internal monitoring synth volume. Does not affect your external MIDI hardware.</span></li>
             <li><span class="hl-amber">Seed System:</span> <span class="hl-text">If <span style="color:#fff; font-weight:bold;">Fixed</span>, the same seed always produces the exact same sequence — useful for reproducibility. If <span style="color:#fff; font-weight:bold;">Random</span>, a new seed is chosen on every Refresh, guaranteeing a different result each time.</span></li>
+            <li><span class="hl-amber">Snapshot Timeline:</span> <span class="hl-text">Every time a parameter changes and a new sequence is generated, the current state is automatically saved as a numbered snapshot. Up to 10 snapshots are kept; the oldest is dropped when a new one arrives. <strong>Left-click</strong> any snapshot to instantly restore that state. <strong>Right-click</strong> to pin a snapshot (📌) — pinned snapshots are never automatically dropped, giving you a safe anchor to return to while exploring. Right-click again to unpin.</span></li>
           </ul>
         </div>
 
