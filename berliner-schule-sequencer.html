@@ -819,6 +819,64 @@ details[open] summary::before { content: '− '; }
 }
 #presetSelect:focus { outline: 1px solid var(--amber); border-color: var(--amber); }
 
+/* ── Snapshot Bar ── */
+.snapshot-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+.snapshot-bar-label {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.snapshot-slots {
+  display: flex;
+  gap: 5px;
+  flex-wrap: nowrap;
+  flex: 1;
+}
+.snapshot-slot {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, 'DejaVu Sans Mono', monospace;
+  font-size: 9px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--dim);
+  cursor: default;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s;
+  user-select: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.snapshot-slot.filled {
+  border-color: var(--border2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.snapshot-slot.filled:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.snapshot-slot.current {
+  border-color: var(--cyan) !important;
+  color: var(--cyan) !important;
+}
+
 </style>
 </head>
 <body>
@@ -907,6 +965,12 @@ details[open] summary::before { content: '− '; }
       <span id="statusText">ready</span>
     </div>
   </div> <!-- End of Row 1 / transport -->
+
+  <!-- Snapshot Bar -->
+  <div class="snapshot-bar" id="snapshotBar">
+    <span class="snapshot-bar-label">Snapshots</span>
+    <div class="snapshot-slots" id="snapshotSlots"></div>
+  </div>
 
 <!-- CONTROLS: three semantic groups in one row -->
 <div class="controls-group panel-row">
@@ -3894,9 +3958,166 @@ function initKnobs() {
   });
 }
 
+// ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// SNAPSHOT SYSTEM
+// Stores up to MAX_SNAPSHOTS states in RAM. Higher number = newer snapshot.
+// Snapshots are created AFTER a generation completes, never before.
+// ──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const MAX_SNAPSHOTS = 10;
+
+// All control IDs whose values are part of a snapshot
+const SNAPSHOT_CONTROL_IDS = [
+  // Main sequencer knobs & selects
+  'scale', 'root', 'density', 'variation', 'minNoteLen', 'maxNoteLen',
+  'noteCount', 'phraseLen', 'repeats', 'bpm', 'swing', 'stepsPerBeat',
+  'maxInterval', 'paletteSize', 'toneRange', 'chaos',
+  // Seed
+  'seedValue', 'seedMode',
+  // Anchor / offbeat
+  'anchorPattern', 'anchorMelodyPos',
+  // Arp
+  'arpChord', 'arpPattern', 'arpOctaves',
+  // Evolution
+  'evoIterations', 'evoMutation', 'evoDrift', 'evoGrip', 'octaveDriftEvo', 'evoChaos',
+  'evolutionCurve', 'evoMutationStyle', 'evoSeedMode',
+  'evoRootMode', 'evoRootInterval', 'evoRootPalette', 'evoRootRange',
+  'exportStretch', 'exportStretchEvo',
+];
+
+// Checkbox IDs
+const SNAPSHOT_CHECKBOX_IDS = ['anchorOnbeat'];
+
+// Ring buffer — index 0 = oldest, index (length-1) = newest
+let snapshots = [];
+let currentSnapshotIdx = -1; // which slot is currently active (highlighted cyan)
+let _snapshotSuppressUntil = 0; // epoch ms — captureSnapshot is a no-op before this time
+let _snapshotCounter = 0; // global ever-increasing number, shown on each slot
+
+/**
+ * Capture all control values from the DOM into a snapshot object.
+ * Called AFTER generateSequence() has run.
+ */
+function captureSnapshot() {
+  if (Date.now() < _snapshotSuppressUntil) return;
+
+  const values = {};
+  SNAPSHOT_CONTROL_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) values[id] = el.value;
+  });
+  SNAPSHOT_CHECKBOX_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) values[id] = el.checked;
+  });
+  values.__mode = currentMode;
+
+  const now = new Date();
+  const ts = now.getHours().toString().padStart(2,'0') + ':'
+           + now.getMinutes().toString().padStart(2,'0') + ':'
+           + now.getSeconds().toString().padStart(2,'0');
+
+  const snap = { values, ts, num: ++_snapshotCounter };
+
+  snapshots.push(snap);
+  if (snapshots.length > MAX_SNAPSHOTS) {
+    snapshots.shift();
+    // Adjust the active index since everything shifted left by one
+    if (currentSnapshotIdx > 0) currentSnapshotIdx--;
+  } else {
+    currentSnapshotIdx = snapshots.length - 1;
+  }
+
+  renderSnapshotBar();
+}
+
+/**
+ * Restore a snapshot by its index in the snapshots[] array.
+ * Writes all values back to the DOM, then regenerates — without creating a new snapshot.
+ */
+function restoreSnapshot(idx) {
+  if (idx < 0 || idx >= snapshots.length) return;
+  const snap = snapshots[idx];
+
+  // Suppress captureSnapshot for 1 second — covers all async timers (debounce etc.)
+  _snapshotSuppressUntil = Date.now() + 1000;
+
+  // Kill any pending debounce timers
+  clearTimeout(window._evoPreviewTimer);
+
+  // Restore mode first so applyModeUI() shows the right controls
+  if (snap.values.__mode && snap.values.__mode !== currentMode) {
+    currentMode = snap.values.__mode;
+    document.querySelectorAll('.mode-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.mode === currentMode);
+    });
+    applyModeUI();
+  }
+
+  // Restore all control values silently
+  SNAPSHOT_CONTROL_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && snap.values[id] !== undefined) el.value = snap.values[id];
+  });
+  SNAPSHOT_CHECKBOX_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && snap.values[id] !== undefined) el.checked = snap.values[id];
+  });
+
+  // Update all knob visuals via input events (safe — captureSnapshot is suppressed by timestamp)
+  SNAPSHOT_CONTROL_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.type === 'range') el.dispatchEvent(new Event('input'));
+  });
+
+  currentSnapshotIdx = idx;
+
+  // Regenerate
+  generateSequence();
+  refreshEvolutionData();
+  renderEvolutionPreview();
+
+  renderSnapshotBar();
+}
+
+/**
+ * Render the 5 snapshot slots in the bar.
+ * Slots are numbered: higher = newer. Empty slots show placeholder.
+ */
+function renderSnapshotBar() {
+  const container = document.getElementById('snapshotSlots');
+  if (!container) return;
+  container.innerHTML = '';
+
+  for (let slot = 0; slot < MAX_SNAPSHOTS; slot++) {
+    // Map slot 0..4 to snapshot positions so slot 4 = newest
+    // Fill from left: slot 0 = oldest available (snapshots[0]), etc.
+    const snapIdx = slot; // direct index into snapshots[]
+    const snap = snapshots[snapIdx];
+    const globalNum = snapIdx + 1; // display number: 1=oldest, 5=newest
+
+    const btn = document.createElement('button');
+    btn.className = 'snapshot-slot';
+
+    if (snap) {
+      btn.classList.add('filled');
+      if (snapIdx === currentSnapshotIdx) btn.classList.add('current');
+      btn.textContent = `${snap.num}  ${snap.ts}`;
+      btn.title = `Snapshot ${snap.num} — ${snap.ts}\nClick to restore`;
+      btn.addEventListener('click', () => restoreSnapshot(snapIdx));
+    } else {
+      btn.textContent = `—`;
+      btn.title = 'No snapshot yet';
+    }
+
+    container.appendChild(btn);
+  }
+}
+
 // init
 applyModeUI();
 generateSequence();
+captureSnapshot(); // Capture the initial state as snapshot #1
 // Initialize the rotary knobs visuals
 initKnobs();
 
@@ -3922,11 +4143,13 @@ document.querySelector('.export-tab[data-target="evoPanel"]')?.addEventListener(
 function triggerEvoPreviewUpdate() {
   refreshEvolutionData();
   renderEvolutionPreview();
+  captureSnapshot();
 }
 
 function triggerMainSequencerUpdate() {
   generateSequence();
   triggerEvoPreviewUpdate(); // Synchronizes evolution preview alongside main sequencer
+  // Note: captureSnapshot() is called inside triggerEvoPreviewUpdate()
 }
 
 // 1. Explicit binding for all Evolution sliders
