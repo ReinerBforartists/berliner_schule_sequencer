@@ -1627,7 +1627,6 @@ const SCALES = {
   chromatic:  [0,1,2,3,4,5,6,7,8,9,10,11],
 };
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-const SCHULZE_INTERVALS = [3,4,5,7,-3,-4,-5];
 
 function midiToName(m) {
   return NOTE_NAMES[m % 12] + (Math.floor(m/12)-1);
@@ -2164,7 +2163,6 @@ let sequence=[];
 // Cache of the static (non-cursor) pianoroll content so highlightStep()
 // doesn't have to redraw the entire grid + all note blocks on every step.
 let seqBgCanvas = null;
-let seqBgKey = '';
 let currentEvoChain = []; // Stores the result of the last evolution generation for instant export
 let playing=false;
 let playToken=0;
@@ -2351,9 +2349,9 @@ function generateSequence() {
 }
 
 // Holds the seed used for the last preview render, so that clicking
-// "EXPORT EVOLUTION" right after a preview reproduces exactly that result
-// even when "Evo Seed: Random" is selected.
+// "EXPORT EVOLUTION" right after a preview reproduces exactly that result.
 let evoForcedSeed = null;
+let evoDebounceTimer = null;
 
 // =========================================
 // EVOLUTION & MUTATION SYSTEM
@@ -2394,10 +2392,13 @@ function renderEvolutionPreview() {
     refreshEvolutionData();
   }
 
-  const chain = currentEvoChain;
+  // If the panel is hidden, clientWidth is 0 — resizing the canvas to 1px
+  // destroys its contents and corrupts subsequent renders. Skip drawing entirely;
+  // the Tab-click listener will call us again once the panel is visible.
+  const cssWidth = canvas.parentElement.clientWidth;
+  if (cssWidth === 0) return;
 
-  // --- Sizing (DPR-correct, matching the main sequencer canvas) ---
-  const cssWidth = canvas.parentElement.clientWidth || canvas.clientWidth || 600;
+  const chain = currentEvoChain;
   const cssHeight = 140;
   const dpr = window.devicePixelRatio || 1;
   canvas.width = Math.max(1, Math.round(cssWidth * dpr));
@@ -2504,18 +2505,6 @@ function renderEvolutionPreview() {
   }
 }
 
-// Debounced auto-refresh of the evolution preview
-let evoPreviewTimer = null;
-// Debounced update: Both refreshes the data AND redraws the canvas
-function scheduleEvoPreview() {
-  const evoPanel = document.getElementById('evoPanel');
-  if (!evoPanel || !evoPanel.classList.contains('active')) return;
-  clearTimeout(evoPreviewTimer);
-  evoPreviewTimer = setTimeout(() => {
-    refreshEvolutionData(); // 1. Recalculate the music
-    renderEvolutionPreview(); // 2. Draw it
-  }, 200);
-}
 
 /**
  * Generates a set of allowed root notes within a specific range
@@ -3293,11 +3282,6 @@ function buildSmf(tracks) {
   return out;
 }
 
-function stepStartTick(i, baseStepTicks, swing) {
-  const swingOffset = i % 2 === 1 ? Math.round(baseStepTicks * swing * 0.5) : 0;
-  return i * baseStepTicks + swingOffset;
-}
-
 /**
  * Exports the current or a provided sequence as a MIDI file.
  * Detects whether to use 'exportStretch' (Standard)
@@ -4045,7 +4029,7 @@ function restoreSnapshot(idx) {
   _snapshotSuppressUntil = Date.now() + 1000;
 
   // Kill any pending debounce timers
-  clearTimeout(window._evoPreviewTimer);
+  clearTimeout(evoDebounceTimer);
 
   // Restore mode first so applyModeUI() shows the right controls
   if (snap.values.__mode && snap.values.__mode !== currentMode) {
@@ -4165,8 +4149,8 @@ evoSliderIds.forEach(id => {
   const el = document.getElementById(id);
   if (!el) return;
   el.addEventListener('input', () => {
-    clearTimeout(window._evoPreviewTimer);
-    window._evoPreviewTimer = setTimeout(triggerEvoPreviewUpdate, 150);
+    clearTimeout(evoDebounceTimer);
+    evoDebounceTimer = setTimeout(triggerEvoPreviewUpdate, 150);
   });
 });
 
