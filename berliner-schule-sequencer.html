@@ -1554,7 +1554,7 @@ function fastUpdateText(id, value, isPercent = false) {
   requestAnimationFrame(() => {
     const el = document.getElementById(id);
     if (el) {
-      el.textContent = isPercent ? value + ' %' : value;
+      el.textContent = isPercent ? value + '%' : value;
     }
   });
 }
@@ -3453,7 +3453,7 @@ const sliderMap={
   maxInterval:'intervalVal', stepsPerBeat:'spbVal', noteCount:'noteCountVal',
   minNoteLen:'minLenVal', maxNoteLen:'maxNoteLenVal', paletteSize:'paletteVal', toneRange:'rangeVal',
 };
-const pctSliders={density:'densityVal',variation:'varVal',swing:'swingVal'};
+const pctSliders={density:'densityVal',variation:'varVal'};
 
 // A. Pure Label Updates (No Logic)
 Object.entries(sliderMap).forEach(([id,valId])=>{
@@ -3465,6 +3465,17 @@ Object.entries(sliderMap).forEach(([id,valId])=>{
 Object.entries(pctSliders).forEach(([id,valId])=>{
   document.getElementById(id)?.addEventListener('input',(e)=>{
     fastUpdateText(valId, e.target.value, true);
+  });
+});
+
+// Offable sliders: show "Off" at 0, otherwise show percentage
+[
+  { id: 'swing', valId: 'swingVal' },
+  { id: 'chaos', valId: 'chaosVal' },
+].forEach(s => {
+  document.getElementById(s.id)?.addEventListener('input', (e) => {
+    const val = +e.target.value;
+    fastUpdateText(s.valId, val === 0 ? 'Off' : val + '%', false);
   });
 });
 
@@ -3495,9 +3506,8 @@ const evoSliderConfigs = [
 evoSliderConfigs.forEach(s => {
   document.getElementById(s.id)?.addEventListener('input', (e) => {
     const val = +e.target.value;
-    // Show "Off" instead of "0 %" when value is 0 for specific sliders
     const isOffable = s.id === 'evoChaos' || s.id === 'octaveDriftEvo';
-    const displayText = isOffable && val === 0 ? 'Off' : (s.isPct ? val + ' %' : val);
+    const displayText = isOffable && val === 0 ? 'Off' : (s.isPct ? val + '%' : val);
     fastUpdateText(s.valId, displayText, false);
   });
 });
@@ -3821,7 +3831,7 @@ function initKnobs() {
         if (isOffable && +slider.value === 0) {
           valSpan.textContent = 'Off';
         } else {
-          valSpan.textContent = isPct ? slider.value + ' %' : slider.value;
+          valSpan.textContent = isPct ? slider.value + '%' : slider.value;
         }
       }
     };
