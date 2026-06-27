@@ -4176,6 +4176,9 @@ document.getElementById('evoSeedRollBtn')?.addEventListener('click', () => {
   triggerEvoPreviewUpdate();
 });
 
+// Manuelles Eintippen eines Evo-Seeds löst ebenfalls Regenerierung + Snapshot aus
+document.getElementById('evoSeedValue')?.addEventListener('change', triggerEvoPreviewUpdate);
+
 // 2. Root Mode & Interval Dropdowns (needs explicit UI toggle + data refresh)
 document.getElementById('evoRootMode')?.addEventListener('change', (e) => {
   updateEvoRootUI(); // Toggles constraint sliders visibility
@@ -4189,6 +4192,9 @@ document.getElementById('seedRollBtn')?.addEventListener('click', () => {
   document.getElementById('seedValue').value = Math.floor(Math.random() * 9999999);
   triggerMainSequencerUpdate();
 });
+
+// Manuelles Eintippen eines Sequenzer-Seeds löst ebenfalls Regenerierung + Snapshot aus
+document.getElementById('seedValue')?.addEventListener('change', triggerMainSequencerUpdate);
 
 const sequencerControls = [
   'scale', 'root', 'density', 'variation', 'minNoteLen', 'maxNoteLen',
