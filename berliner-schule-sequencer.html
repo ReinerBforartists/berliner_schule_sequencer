@@ -4127,7 +4127,7 @@ function renderSnapshotBar() {
       if (snapIdx === currentSnapshotIdx) btn.classList.add('current');
       if (snap.pinned) btn.classList.add('pinned');
       btn.innerHTML = `${snap.num}&nbsp;&nbsp;${snap.ts}<span class="snap-pin">📌</span>`;
-      btn.title = `Snapshot ${snap.num} — ${snap.ts}\nLinks: restore · Rechts: ${snap.pinned ? 'unpin' : 'pin'}`;
+      btn.title = '';
       btn.addEventListener('click', () => restoreSnapshot(snapIdx));
       btn.addEventListener('contextmenu', (e) => {
         e.preventDefault();
