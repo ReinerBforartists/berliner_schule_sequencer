@@ -876,6 +876,16 @@ details[open] summary::before { content: '− '; }
   border-color: var(--cyan) !important;
   color: var(--cyan) !important;
 }
+.snap-pin {
+  margin-left: 4px;
+  visibility: hidden;
+}
+.snapshot-slot.pinned .snap-pin {
+  visibility: visible;
+}
+.snapshot-slot.filled:not(.pinned) .snap-pin {
+  display: inline;
+}
 
 </style>
 </head>
@@ -4020,13 +4030,25 @@ function captureSnapshot() {
   const snap = { values, ts, num: ++_snapshotCounter };
 
   snapshots.push(snap);
+
+  // Evict oldest unpinned snapshot if over limit
   if (snapshots.length > MAX_SNAPSHOTS) {
-    snapshots.shift();
-    // Adjust the active index since everything shifted left by one
-    if (currentSnapshotIdx > 0) currentSnapshotIdx--;
-  } else {
-    currentSnapshotIdx = snapshots.length - 1;
+    const evictIdx = snapshots.findIndex(s => !s.pinned);
+    if (evictIdx !== -1) {
+      snapshots.splice(evictIdx, 1);
+      if (currentSnapshotIdx > evictIdx) currentSnapshotIdx--;
+      else if (currentSnapshotIdx === evictIdx) currentSnapshotIdx = snapshots.length - 1;
+    }
+    // If all are pinned, just drop the push (no room)
+    else {
+      snapshots.pop();
+      currentSnapshotIdx = snapshots.length - 1;
+      renderSnapshotBar();
+      return;
+    }
   }
+
+  currentSnapshotIdx = snapshots.length - 1;
 
   renderSnapshotBar();
 }
@@ -4102,9 +4124,15 @@ function renderSnapshotBar() {
     if (snap) {
       btn.classList.add('filled');
       if (snapIdx === currentSnapshotIdx) btn.classList.add('current');
-      btn.textContent = `${snap.num}  ${snap.ts}`;
-      btn.title = `Snapshot ${snap.num} — ${snap.ts}\nClick to restore`;
+      if (snap.pinned) btn.classList.add('pinned');
+      btn.innerHTML = `${snap.num}&nbsp;&nbsp;${snap.ts}<span class="snap-pin">📌</span>`;
+      btn.title = `Snapshot ${snap.num} — ${snap.ts}\nLinks: restore · Rechts: ${snap.pinned ? 'unpin' : 'pin'}`;
       btn.addEventListener('click', () => restoreSnapshot(snapIdx));
+      btn.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        snap.pinned = !snap.pinned;
+        renderSnapshotBar();
+      });
     } else {
       btn.textContent = `—`;
       btn.title = 'No snapshot yet';
