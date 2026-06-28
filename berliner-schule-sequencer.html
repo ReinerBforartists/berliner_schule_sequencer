@@ -927,7 +927,7 @@ details[open] summary::before { content: '− '; }
     <div class="v-sep v-sep-m"></div>
 
     <!-- Group 2a: Tonalität -->
-    <div class="ctrl w2">
+    <div class="ctrl w2" id="scaleCtrl">
       <div class="ctrl-label">Scale</div>
       <select id="scale">
         <option value="dorian">Dorian</option>
@@ -944,7 +944,7 @@ details[open] summary::before { content: '− '; }
         </optgroup>
       </select>
     </div>
-    <div class="ctrl">
+    <div class="ctrl" id="rootCtrl">
       <div class="ctrl-label">Root Note</div>
       <select id="root">
         <option value="48">C3</option>
@@ -3487,6 +3487,10 @@ function applyModeUI() {
   document.getElementById('densityCtrl').classList.toggle('hidden', isSchulze);
   document.getElementById('minNoteLenCtrl').classList.toggle('hidden', isSchulze || isArp);
   document.getElementById('maxNoteLenCtrl').classList.toggle('hidden', isSchulze || isArp);
+
+  // Scale is irrelevant in Arp mode (chord intervals define all pitches)
+  // Root stays visible — it sets the chord root
+  document.getElementById('scaleCtrl').classList.toggle('hidden', isArp);
 
   // Schulze specific control
   document.getElementById('noteCountCtrl').classList.toggle('hidden', !isSchulze);
