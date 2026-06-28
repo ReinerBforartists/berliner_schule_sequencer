@@ -1559,6 +1559,9 @@ function midiToName(m) {
 
 /**
  * Calculates weights for scale degrees to favor tonic, dominant, and subdominant.
+ * Used as a fallback in mutatePhrase() when no palette is available (legacy path).
+ * Note: The phrase builders (buildPhrase, buildMotivicPhrase etc.) do NOT use
+ * these weights directly — they select notes from the pre-built palette instead.
  */
 function getWeights(len) {
   const w = new Array(len).fill(1);
@@ -2088,6 +2091,7 @@ let sequence=[];
 // Cache of the static (non-cursor) pianoroll content so highlightStep()
 // doesn't have to redraw the entire grid + all note blocks on every step.
 let seqBgCanvas = null;
+let seqBgSeqRef = null; // Tracks which sequence the cached background was built from
 let currentEvoChain = []; // Stores the result of the last evolution generation for instant export
 let playing=false;
 let playToken=0;
@@ -2423,10 +2427,9 @@ function renderEvolutionPreview() {
 
   if (info) {
     const totalSteps = chain.length;
-    const seedNote = '';
     const lo = notes.length ? Math.min(...notes.map(s => s.midi)) : null;
     const hi = notes.length ? Math.max(...notes.map(s => s.midi)) : null;
-    info.textContent = `${iterations} blocks · ${totalSteps} steps${lo !== null ? ` · pitch range ${midiToName(lo)}–${midiToName(hi)}` : ''}${seedNote}`;
+    info.textContent = `${iterations} blocks · ${totalSteps} steps${lo !== null ? ` · pitch range ${midiToName(lo)}–${midiToName(hi)}` : ''}`;
   }
 }
 
@@ -3575,7 +3578,7 @@ function applyPreset(name) {
   document.getElementById('root').value = p.root;
 
   // Finalize by generating the sequence with new parameters in the CURRENT mode
-  generateSequence();
+  triggerMainSequencerUpdate();
 }
 
 /**
