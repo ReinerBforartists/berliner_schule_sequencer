@@ -12,7 +12,7 @@ An algorithmic MIDI sequencer that runs directly in the browser. It generates me
 
 The tool is designed as a sequence generator. While it includes a basic internal synth for monitoring and previewing patterns, its primary purpose is to generate MIDI data. The actual sound design and final music production are intended to take place within a **Digital Audio Workstation (DAW)** or with external hardware via the MIDI export function.
 
-The tool uses a Pseudo-Random Number Generator (PRNG) to create sequences based on musical constraints. Users can either generate random patterns or use fixed seeds to recreate specific results.
+The tool uses a Pseudo-Random Number Generator (PRNG) to create sequences based on musical constraints. Sequences are determined by a numeric seed — the same seed with the same parameters always produces the same result. A dedicated **↻ Refresh Seed** button rolls a new random seed and regenerates immediately.
 
 ### Composition Modes
 - **Classic**: A random walk within the selected scale, creating fluid and grounded melodies.
@@ -46,9 +46,9 @@ Beyond standard MIDI loops, the sequencer features an evolutionary chain generat
 - **Evolution Curve**: Shapes mutation intensity over time — Linear, Ramp Up, Arch, Valley, Ease In/Out.
 - **Mutation Style**: Palette Walk (adjacent steps), Palette Random (any tone), or Mix.
 - **Root Mode**: Controls whether and how the tonal centre shifts across blocks. Includes static, free/random, interval-based (Thirds, 4ths/5ths, Cycle of Fifths), Berliner Schule/Ambient (Modal, Circulating Fifths, Slow Oscillation), and Pop/Rock/Standards presets (50s, Andalusian, Jazz Standard, Pachelbel, etc.).
-- **Evo Seed Mode**: Fixed (reproducible) or Random (fresh chain on each refresh).
+- **Evo Seed**: An independent numeric seed for the evolution chain, with its own **↻ Refresh Seed** button. Completely decoupled from the main sequencer seed — both can be locked or randomised freely without affecting each other.
 
-A live preview canvas shows the full evolutionary arc before export.
+A live piano-roll preview canvas shows the full evolutionary arc before export.
 
 ## Installation & Usage
 
@@ -60,15 +60,19 @@ No installation required.
 
 ### Parameter Behaviour
 - **Live Parameters (Green Labels)**: Affect playback in real-time (BPM, Swing, Steps per Beat). Changes are audible immediately.
-- **Generative Parameters (Amber Labels)**: Define the blueprint of the sequence. Changing these triggers automatic regeneration on slider release or selection change. The **↻ Generate** button manually triggers a new pattern with the current seed.
+- **Generative Parameters (Amber Labels)**: Define the blueprint of the sequence. Changing these triggers automatic regeneration on slider release or selection change.
 
 ### Visual Legend
-- **Blue cell**: Standard generated note.
-- **Pink cell**: Anchor note (fixed pitch).
-- **Dark / empty cell**: A rest.
-- **Semi-transparent blue**: A tie (held note).
-- **Blue height bar**: Relative pitch indicator.
+The sequence is displayed as a **piano roll**: pitch maps to vertical position, duration to horizontal width.
+
+- **Blue bar**: Standard generated note.
+- **Green bar**: Note generated under Chaos influence (outside normal palette/range).
+- **Pink bar**: Anchor note (fixed pitch, Offbeat Anchor mode).
+- **Empty space**: A rest.
+- **Vertical grid lines**: Phrase and repeat boundaries (thicker lines = repeat boundaries).
+- **Stat pills** (sequencer header): Active root, scale, note count, anchor count, and pitch range.
+- **Evolution preview canvas**: Full evolutionary arc before export. The info line shows block count, total steps, and pitch range of the entire composition.
 
 ## License
-Berliner Schule Seqencer is free and open source.
+Berliner Schule Sequencer is free and open source.  
 MIT License © 2026 Reiner Prokein

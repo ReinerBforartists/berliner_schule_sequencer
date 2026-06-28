@@ -1314,7 +1314,8 @@ details[open] summary::before { content: '− '; }
             <li><span class="hl-amber">Play / Stop:</span> <span class="hl-text">Basic transport. <span style="color:#fff; font-weight:bold;">Spacebar</span> toggles playback.</span></li>
             <li><span class="hl-amber">↻ Refresh Sequence:</span> <span class="hl-text">Rebuilds the sequence from the current parameters. Must be clicked after changing any generative (non-live) parameter to hear the result.</span></li>
             <li><span class="hl-amber">VOL:</span> <span class="hl-text">Controls only the internal monitoring synth volume. Does not affect your external MIDI hardware.</span></li>
-            <li><span class="hl-amber">Seed System:</span> <span class="hl-text">If <span style="color:#fff; font-weight:bold;">Fixed</span>, the same seed always produces the exact same sequence — useful for reproducibility. If <span style="color:#fff; font-weight:bold;">Random</span>, a new seed is chosen on every Refresh, guaranteeing a different result each time.</span></li>
+            <li><span class="hl-amber">Seed (Sequencer):</span> <span class="hl-text">Controls the PRNG for the main sequence. Type any number to lock it — the same seed with the same parameters always produces the exact same sequence. Click <span style="color:#fff; font-weight:bold;">↻ Refresh Seed</span> to roll a new random seed and instantly regenerate.</span></li>
+            <li><span class="hl-amber">Seed (Evolution):</span> <span class="hl-text">A separate, independent seed for the Evolution Export chain. Changing the evolution seed does not affect the main sequencer, and vice versa — both can be locked or randomised freely without coupling.</span></li>
           </ul>
         </div>
 
@@ -1435,7 +1436,7 @@ details[open] summary::before { content: '− '; }
               </li>
               <li><strong class="hl-amber">Every N Blocks:</strong> Visible for all non-static Root Modes. Sets how many blocks pass between each root change — 1, 2, 4, or 8 blocks.</li>
               <li><strong class="hl-amber">Root Palette / Root Range:</strong> Only visible in Free (Random) Root Mode. Palette limits how many different pitches can be chosen as root; Range limits the total semitone spread around the starting root.</li>
-              <li><strong class="hl-amber">Evo Seed Mode:</strong> "Fixed" locks the evolution chain to the current seed for reproducibility; "Random" generates a fresh chain on every Refresh Evolution click.</li>
+              <li><strong class="hl-amber">Evo Seed:</strong> A numeric seed field with its own <span style="color:#fff; font-weight:bold;">↻ Refresh Seed</span> button, independent from the main sequencer seed. Lock it to any number for reproducible evolutions, or roll a new value to explore fresh chains without disturbing the sequencer.</li>
               <li><strong class="hl-amber">Steps per Bar (Evo):</strong> Same as the standard MIDI export — aligns the evolution MIDI file's grid to your DAW's bar length.</li>
             </ul>
           </div>
