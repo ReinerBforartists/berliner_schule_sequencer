@@ -2037,8 +2037,11 @@ function buildArpPhrase(rng, {phraseLen, density, maxNoteLen, chaosAmount = 0}, 
       const foreignNote = (baseOct * 12 + arpRoot) + rng.int(-chaosAmount * 12, chaosAmount * 12);
       if (foreignNote >= 24 && foreignNote <= 84) tones.push(foreignNote);
     }
-    tones = [...new Set(tones)].sort((a, b) => a - b);
   }
+
+  // Always sort by pitch so extension intervals (9ths, 11ths, 13ths) land
+  // in the correct ascending position rather than jumping back to root octave
+  tones = [...new Set(tones)].sort((a, b) => a - b);
 
   let ordered;
   if (arpPattern === 'down') {
