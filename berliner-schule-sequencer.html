@@ -1036,6 +1036,9 @@ details[open] summary::before { content: '− '; }
     <div class="anchor-controls">
       <label class="field-label">CHORD</label>
       <select id="arpChord">
+        <optgroup label="Harmonic Base">
+          <option value="scale">Use Active Scale</option>
+        </optgroup>
         <optgroup label="Triads">
           <option value="maj">Major</option>
           <option value="min">Minor</option>
@@ -2018,11 +2021,19 @@ const CHORD_TYPES = {
   dom13:   [0,4,7,10,14,17,21],
 };
 
-function buildArpPhrase(rng, {phraseLen, density, maxNoteLen, chaosAmount = 0}, arpRoot, arpChord, arpPattern, arpOctaves) {
-  const intervals = CHORD_TYPES[arpChord] || [0,4,7];
+/**
+ * Builds an arpeggiated phrase based on chord intervals or the active scale.
+ * When arpChord is 'scale', it uses the provided scaleKey to generate intervals.
+ */
+function buildArpPhrase(rng, {phraseLen, density, maxNoteLen, chaosAmount = 0, scaleKey = null}, arpRoot, arpChord, arpPattern, arpOctaves) {
+  // Determine intervals: use active scale if requested, otherwise fallback to chord types
+  let intervals = arpChord === 'scale' && scaleKey && SCALES[scaleKey] ? SCALES[scaleKey] : (CHORD_TYPES[arpChord] || [0, 4, 7]);
+
   const octaves = parseInt(arpOctaves);
   const baseOct = 4; // Starting octave C4
   let tones = [];
+
+  // Build chord/scale tones across octaves
   for (let o = 0; o < octaves; o++) {
     for (const iv of intervals) {
       const midi = (baseOct + o) * 12 + arpRoot + iv;
@@ -2030,7 +2041,7 @@ function buildArpPhrase(rng, {phraseLen, density, maxNoteLen, chaosAmount = 0}, 
     }
   }
 
-  // Chaos: inject chromatic foreign tones outside the chord, widen octave spread
+  // Chaos: inject chromatic foreign tones outside the chord/scale, widen octave spread
   if (chaosAmount > 0) {
     const contaminants = Math.round(chaosAmount * 6);
     for (let i = 0; i < contaminants; i++) {
@@ -2266,7 +2277,8 @@ function generateSequence() {
     } else if (mode === 'offbeat') {
       currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart }, effectiveAnchorMidi, anchorPattern, anchorOnbeat);
     } else if (mode === 'arp') {
-      currentEvents = buildArpPhrase(rng, { phraseLen, density, maxNoteLen, chaosAmount }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
+      // Pass the active scaleKey to buildArpPhrase so it can be used when 'scale' is selected
+      currentEvents = buildArpPhrase(rng, { phraseLen, density, maxNoteLen, chaosAmount, scaleKey }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
     } else if (mode === 'motivic') {
       currentEvents = buildMotivicPhrase(rng, { ...params, octaveStart });
     } else {
