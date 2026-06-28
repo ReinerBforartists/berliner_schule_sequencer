@@ -2462,19 +2462,8 @@ function buildRootPalette(rng, root, size, range) {
 
 /**
  * Generates a long evolutionary chain of phrases for MIDI export.
- * Octave Drift is now fully functional and integrated into the mutation cycle.
- * ROOT_SHIFTS moved outside the loop to prevent re-declaration and ensure correct harmonic progression.
- * Return statement moved outside the loop to complete the full evolution chain.
- */
-/**
- * Generates a long evolutionary chain of phrases for MIDI export.
- * Now uses the FULL current sequence (including all repeats) as the seed DNA,
- * ensuring that the evolution starts from the exact state of the sequencer.
- */
-/**
- * Generates a long evolutionary chain of phrases for MIDI export.
- * The first block is guaranteed to be an exact copy of the current sequence.
- * Evolution (mutation, root shifts, etc.) starts from the second block onwards.
+ * Now includes chaos injection into the arpeggiator palette during evolution
+ * so that chaotic notes can persist and propagate through the chain.
  */
 function generateEvolutionaryChain() {
   const mode = currentMode;
@@ -2575,8 +2564,7 @@ function generateEvolutionaryChain() {
       }
     });
     // Update palette to match the actual notes used in the sequence —
-    // but only when Evo Chaos is off. With Chaos > 0 the extended/contaminated
-    // palette should stay so mutations can venture outside the starting notes.
+    // but only when Chaos is off to prevent palette drift issues.
     if (params.palette && evoChaosAmount === 0) {
       const distinctTones = [...new Set(currentEvents.map(e => e.midi))].sort((a, b) => a - b);
       if (distinctTones.length >= 2) params.palette = distinctTones;
@@ -2590,7 +2578,7 @@ function generateEvolutionaryChain() {
     } else if (mode === 'offbeat') {
       currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart: 0 }, effectiveAnchorMidi, anchorPattern, anchorOnbeat);
     } else if (mode === 'arp') {
-      currentEvents = buildArpPhrase(rng, { phraseLen, density: params.density, maxNoteLen }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
+      currentEvents = buildArpPhrase(rng, { phraseLen, density: params.density, maxNoteLen, chaosAmount: evoChaosAmount }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
     } else if (mode === 'motivic') {
       currentEvents = buildMotivicPhrase(rng, { ...params, octaveStart: 0 });
     } else {
@@ -2669,8 +2657,8 @@ function generateEvolutionaryChain() {
     // 2. ARPEGGIO PALETTE UPDATE
     let arpTones = null;
     if (mode === 'arp') {
-      const intervals = CHORD_TYPES[arpParams.chord] || [0, 4, 7];
-      const octaves = parseInt(arpParams.octaves) || 2;
+      const intervals = CHORD_TYPES[arpChord] || [0,4,7];
+      const octaves = parseInt(arpOctaves) || 2;
       const baseOct = 4;
       arpTones = [];
       for (let o = 0; o < octaves; o++) {
@@ -2680,6 +2668,16 @@ function generateEvolutionaryChain() {
         }
       }
       arpTones = [...new Set(arpTones)].sort((a, b) => a - b);
+
+      // --- CHAOS: Inject contaminants into the evolution's arp palette ---
+      if (evoChaosAmount > 0) {
+        const contaminants = Math.round(evoChaosAmount * 6);
+        for (let c = 0; c < contaminants; c++) {
+          const foreignNote = (baseOct * 12 + arpParams.root) + rng.int(-evoChaosAmount * 12, evoChaosAmount * 12);
+          if (foreignNote >= 24 && foreignNote <= 127) arpTones.push(foreignNote);
+        }
+        arpTones = [...new Set(arpTones)].sort((a, b) => a - b);
+      }
     }
 
     const tones = mode === 'arp' ? arpTones : (params.palette && params.palette.length > 0 ? params.palette : null);
