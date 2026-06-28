@@ -2018,16 +2018,26 @@ const CHORD_TYPES = {
   dom13:   [0,4,7,10,14,17,21],
 };
 
-function buildArpPhrase(rng, {phraseLen, density, maxNoteLen}, arpRoot, arpChord, arpPattern, arpOctaves) {
+function buildArpPhrase(rng, {phraseLen, density, maxNoteLen, chaosAmount = 0}, arpRoot, arpChord, arpPattern, arpOctaves) {
   const intervals = CHORD_TYPES[arpChord] || [0,4,7];
   const octaves = parseInt(arpOctaves);
   const baseOct = 4; // Starting octave C4
-  const tones = [];
+  let tones = [];
   for (let o = 0; o < octaves; o++) {
     for (const iv of intervals) {
       const midi = (baseOct + o) * 12 + arpRoot + iv;
       if (midi <= 127) tones.push(midi);
     }
+  }
+
+  // Chaos: inject chromatic foreign tones outside the chord, widen octave spread
+  if (chaosAmount > 0) {
+    const contaminants = Math.round(chaosAmount * 6);
+    for (let i = 0; i < contaminants; i++) {
+      const foreignNote = (baseOct * 12 + arpRoot) + rng.int(-chaosAmount * 12, chaosAmount * 12);
+      if (foreignNote >= 24 && foreignNote <= 84) tones.push(foreignNote);
+    }
+    tones = [...new Set(tones)].sort((a, b) => a - b);
   }
 
   let ordered;
@@ -2072,7 +2082,7 @@ function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpP
     if (rng.chance(removeChance)) {
       copy.splice(idx, 1);
     } else {
-      const fresh = buildArpPhrase(rng, {...params, phraseLen: params.phraseLen}, arpRoot, arpChord, arpPattern, arpOctaves);
+      const fresh = buildArpPhrase(rng, {...params, phraseLen: params.phraseLen, chaosAmount: params.chaosAmount || 0}, arpRoot, arpChord, arpPattern, arpOctaves);
       if (fresh.length > 0) {
         const ev = fresh[rng.int(0, fresh.length - 1)];
         copy[idx] = {...ev, start: copy[idx].start};
@@ -2236,7 +2246,8 @@ function generateSequence() {
     noteCount,
     minNoteLen,
     maxNoteLen,
-    palette
+    palette,
+    chaosAmount
   };
 
   let octaveStart = 0;
@@ -2255,7 +2266,7 @@ function generateSequence() {
     } else if (mode === 'offbeat') {
       currentEvents = buildOffbeatPhrase(rng, { ...params, octaveStart }, effectiveAnchorMidi, anchorPattern, anchorOnbeat);
     } else if (mode === 'arp') {
-      currentEvents = buildArpPhrase(rng, { phraseLen, density, maxNoteLen }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
+      currentEvents = buildArpPhrase(rng, { phraseLen, density, maxNoteLen, chaosAmount }, arpParams.root, arpParams.chord, arpParams.pattern, arpParams.octaves);
     } else if (mode === 'motivic') {
       currentEvents = buildMotivicPhrase(rng, { ...params, octaveStart });
     } else {
