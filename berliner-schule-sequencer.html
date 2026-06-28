@@ -983,7 +983,7 @@ details[open] summary::before { content: '− '; }
       <div class="ctrl-label">Density <span class="val" id="densityVal">72%</span></div>
       <input type="range" id="density" min="1" max="100" value="72">
     </div>
-    <div class="ctrl">
+    <div class="ctrl" id="intervalCtrl">
       <div class="ctrl-label">Interval <span class="val" id="intervalVal">3</span></div>
       <input type="range" id="maxInterval" min="1" max="5" value="3">
     </div>
@@ -2644,6 +2644,10 @@ function generateEvolutionaryChain() {
       const shift = targetRoot - currentRoot;
       currentRoot = targetRoot;
       params.root = currentRoot;
+      // In Arp mode, keep arpParams.root in sync so the chord follows the root shift
+      if (mode === 'arp') {
+        arpParams.root = currentRoot % 12;
+      }
       // Shift the palette and current events linearly
       if (params.palette) {
         params.palette = params.palette.map(p => clampMidi(p + shift));
@@ -3032,7 +3036,10 @@ function highlightStep(idx) {
 
 function updatePills() {
   const rootEl = document.getElementById('root').selectedOptions[0].text;
-  const scaleEl = document.getElementById('scale').selectedOptions[0].text.split(' ')[0];
+  const isArp = currentMode === 'arp';
+  const modeLabel = isArp
+    ? document.getElementById('arpChord').selectedOptions[0].text
+    : document.getElementById('scale').selectedOptions[0].text.split(' ')[0];
   const notes = sequence.filter(isNoteStep);
   const anchors = sequence.filter(s => s.isAnchor);
   let lo = 127, hi = 0;
@@ -3041,7 +3048,7 @@ function updatePills() {
   const pills = document.getElementById('statPills');
   const p = (...t) => `<span class="pill">${t.join('')}</span>`;
   pills.innerHTML = [
-    p(rootEl, ' ', scaleEl),
+    p(rootEl, ' ', modeLabel),
     p('Notes: ', notes.length, '/', sequence.length),
     anchors.length ? p('Anchors: ', anchors.length) : '',
     lo <= 127 ? p('↓ ', midiToName(lo)) : '',
@@ -3491,6 +3498,8 @@ function applyModeUI() {
   // Scale is irrelevant in Arp mode (chord intervals define all pitches)
   // Root stays visible — it sets the chord root
   document.getElementById('scaleCtrl').classList.toggle('hidden', isArp);
+  // Interval is irrelevant in Arp mode (buildArpPhrase ignores maxInterval)
+  document.getElementById('intervalCtrl').classList.toggle('hidden', isArp);
 
   // Schulze specific control
   document.getElementById('noteCountCtrl').classList.toggle('hidden', !isSchulze);
