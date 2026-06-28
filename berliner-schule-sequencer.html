@@ -270,7 +270,7 @@ summary {
   appearance: none;
   -webkit-appearance: none;
 }
-/* --- Updated Control Layout for Rotary Knobs --- */
+/* ── Rotary Knob Layout ── */
 .ctrl {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -333,8 +333,7 @@ body.knob-dragging {
   touch-action: none;
 }
 
-/* Visual representation of the Knob */
-/* --- NEW DESIGNED KNOBS CSS --- */
+/* ── Knob Visual ── */
 .knob-visual {
   width: 36px;
   height: 36px;
@@ -425,7 +424,6 @@ body.knob-dragging {
   pointer-events: auto;
   cursor: pointer;
 
-  /* --- HIT-BOX EXTENSION --- */
   text-align: center;
   min-width: 40px;
   margin-left: auto;
@@ -1821,7 +1819,7 @@ function mutatePhrase(rng, events, variation, params) {
   const n = Math.max(1, Math.floor(copy.length * variation));
   const structuralChance = Math.min(0.4, variation * 0.8);
 
-  // FIX: No notes removed if density is 100%
+  // Notes are never removed when density is 100%
   const removeChance = (params.density >= 1.0) ? 0 : structuralChance / 2;
   const addChance = structuralChance / 2;
 
@@ -1977,7 +1975,7 @@ function mutateOffbeatPhrase(rng, events, variation, params, anchorMidi, anchorP
     const ev = copy[idx];
     if (ev.isAnchor) continue;
 
-    // FIX: Use variation instead of 0.3 and prevent removal if density is 100%
+    // Removal probability scales with variation; disabled at full density
     const removeChance = (params.density >= 1.0) ? 0 : (variation * 0.3);
     if (rng.chance(removeChance)) {
       copy.splice(idx, 1);
@@ -2069,7 +2067,7 @@ function mutateArpPhrase(rng, events, variation, params, arpRoot, arpChord, arpP
     if (copy.length === 0) break;
     const idx = rng.int(0, copy.length - 1);
 
-    // FIX: Use variation instead of 0.25 and prevent removal if density is 100%
+    // Removal probability scales with variation; disabled at full density
     const removeChance = (params.density >= 1.0) ? 0 : (variation * 0.25);
     if (rng.chance(removeChance)) {
       copy.splice(idx, 1);
@@ -3016,7 +3014,7 @@ function highlightStep(idx) {
   ctx.lineTo(x, rect.height);
   ctx.stroke();
 
-  // Glow-Effect
+  // Glow pass
   ctx.shadowBlur = 10;
   ctx.shadowColor = cursorColor;
   ctx.stroke();
@@ -3537,9 +3535,6 @@ function applyPreset(name) {
   const p = PRESETS[name];
   if (!p) return;
 
-  // REMOVED: Mode switching logic is gone.
-  // The preset will now apply its values to whatever mode is currently active.
-
   // Helper to set value and trigger 'input' event for UI updates (like labels)
   const set = (id, v) => {
     const el = document.getElementById(id);
@@ -3873,7 +3868,7 @@ function initKnobs() {
 
 // init
 applyModeUI();
-// Zufällige Startseeds setzen
+// Randomise starting seeds
 document.getElementById('seedValue').value = Math.floor(Math.random() * 9999999);
 document.getElementById('evoSeedValue').value = Math.floor(Math.random() * 9999999);
 generateSequence();
@@ -3885,11 +3880,9 @@ document.querySelector('.export-tab[data-target="evoPanel"]')?.addEventListener(
   setTimeout(renderEvolutionPreview, 0);
 });
 
-// ──────────────────────────────────────────────────────────────────────────────────────────────────────
-// ROBUST EVENT BINDING & PIANO-ROLL REFRESH SYSTEM
-// Replaces flaky event delegation and tab-dependent blocking.
-// Ensures real-time updates for both Main Sequencer and Evolution Preview.
-// ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// =========================================
+// EVENT BINDING
+// =========================================
 
 function triggerEvoPreviewUpdate() {
   refreshEvolutionData();
@@ -3898,7 +3891,7 @@ function triggerEvoPreviewUpdate() {
 
 function triggerMainSequencerUpdate() {
   generateSequence();
-  triggerEvoPreviewUpdate(); // Synchronizes evolution preview alongside main sequencer
+  triggerEvoPreviewUpdate();
 }
 
 // 1. Explicit binding for all Evolution sliders
@@ -3916,13 +3909,13 @@ evoSliderIds.forEach(id => {
   });
 });
 
-// Evo Seed Roll Button: würfelt neuen Seed, schreibt ihn ins Feld, regeneriert
+// Evo Seed Roll: randomise seed and regenerate
 document.getElementById('evoSeedRollBtn')?.addEventListener('click', () => {
   document.getElementById('evoSeedValue').value = Math.floor(Math.random() * 9999999);
   triggerEvoPreviewUpdate();
 });
 
-// Manuelles Eintippen eines Evo-Seeds löst ebenfalls Regenerierung + Snapshot aus
+// Evo Seed: manual input also triggers regeneration
 document.getElementById('evoSeedValue')?.addEventListener('change', triggerEvoPreviewUpdate);
 
 // 2. Root Mode & Interval Dropdowns (needs explicit UI toggle + data refresh)
@@ -3933,13 +3926,13 @@ document.getElementById('evoRootMode')?.addEventListener('change', (e) => {
 
 document.getElementById('evoRootInterval')?.addEventListener('change', triggerEvoPreviewUpdate);
 
-// Sequencer Seed Roll: neuen Seed würfeln + regenerieren
+// Sequencer Seed Roll: randomise seed and regenerate
 document.getElementById('seedRollBtn')?.addEventListener('click', () => {
   document.getElementById('seedValue').value = Math.floor(Math.random() * 9999999);
   triggerMainSequencerUpdate();
 });
 
-// Manuelles Eintippen eines Sequenzer-Seeds löst ebenfalls Regenerierung + Snapshot aus
+// Sequencer Seed: manual input also triggers regeneration
 document.getElementById('seedValue')?.addEventListener('change', triggerMainSequencerUpdate);
 
 const sequencerControls = [
