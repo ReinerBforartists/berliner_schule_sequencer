@@ -1153,15 +1153,15 @@ details[open] summary::before { content: '− '; }
           <input type="range" id="evoDrift" min="0" max="100" value="5">
         </div>
 
-        <div class="ctrl">
-          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
-          <input type="range" id="evoGrip" min="0" max="100" value="50">
-        </div>
-
         <!-- Octave Drift -->
         <div class="ctrl">
           <div class="ctrl-label">Oct Drift <span class="val" id="driftValEvo">Off</span></div>
           <input type="range" id="octaveDriftEvo" min="0" max="100" value="0">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-label">Grip <span class="val" id="evoGripVal">50%</span></div>
+          <input type="range" id="evoGrip" min="0" max="100" value="50">
         </div>
 
         <div class="ctrl">
@@ -1411,9 +1411,9 @@ details[open] summary::before { content: '− '; }
             <ul class="list-circle" style="margin-top: 8px;">
               <li><strong class="hl-amber">Iterations:</strong> Number of mutation blocks in the evolutionary chain (1 – 64). More blocks = longer composition.</li>
               <li><strong class="hl-amber">Mutation:</strong> The "chaos" factor per block. Higher % means more notes are changed with each step, leading to faster divergence from the original.</li>
-              <li><strong class="hl-amber">Drift:</strong> Probability of a sudden octave transposition between blocks, adding vertical leaps to the evolution.</li>
+              <li><strong class="hl-amber">Drift:</strong> Probability of a gentle drift each block — notes step to the next tone within the current scale and accumulate gradually across the evolution. Based on whichever Scale and Root are set at export time.</li>
+              <li><strong class="hl-amber">Oct Drift:</strong> Probability of a sudden, full-octave transposition between blocks, adding hard vertical leaps to the evolution.</li>
               <li><strong class="hl-amber">Grip:</strong> How strongly the evolution is "pulled back" toward the original theme. High grip keeps the sequence close to the source; low grip allows it to wander freely.</li>
-              <li><strong class="hl-amber">Oct Drift:</strong> Octave drift adds a gentle random octave-shift component that accumulates gradually across blocks — distinct from the sudden jumps of Drift.</li>
               <li><span class="hl-amber">Chaos:</span> <span class="hl-text">Add back chaotic dystropy. This can break every constraint. For example place a note outside of the palette or range. The chaos feature works independent for sequencing and evolution.</span></li>
               <li><strong class="hl-amber">Evolution Curve:</strong> Shapes how mutation intensity changes over time. Linear keeps it constant; Ramp Up builds tension toward the end; Arch peaks in the middle; Valley dips then returns; Ease In/Out softens the transitions.</li>
               <li><strong class="hl-amber">Mutation Style:</strong>
@@ -2618,8 +2618,24 @@ function generateEvolutionaryChain() {
     return tones.reduce((a, b) => Math.abs(b - midi) < Math.abs(a - midi) ? b : a);
   };
 
+  // Builds every instance of the given scale's pitch classes across the
+  // full usable MIDI range, sorted ascending. Used so Drift can step
+  // note-by-note through the actual scale instead of in raw semitones.
+  const buildScaleTones = (scaleIntervals, rootMidi) => {
+    const pcs = [...new Set(scaleIntervals.map(iv => ((rootMidi + iv) % 12 + 12) % 12))];
+    const tones = [];
+    for (let m = 0; m <= 127; m++) {
+      if (pcs.includes(m % 12)) tones.push(m);
+    }
+    return tones;
+  };
+
   const curve = document.getElementById('evolutionCurve').value;
   const mutationStyle = document.getElementById('evoMutationStyle')?.value || 'walk';
+
+  // Accumulates the gentle, gradual scale-step drift driven by "Drift".
+  // Distinct from the sudden, full-octave leaps driven by "Oct Drift" below.
+  let driftAccumulator = 0;
 
   // MAIN LOOP starts from 1 because Block 0 is already the original sequence
   for (let i = 1; i < iterations; i++) {
@@ -2691,9 +2707,46 @@ function generateEvolutionaryChain() {
     const curveMult = getCurveMultiplier(curve, i, iterations);
     const effectiveMutationRate = mutationRate * curveMult;
 
-    // 3. OCTAVE DRIFT
-    const rawDriftValue = +document.getElementById('octaveDriftEvo')?.value || 0;
-    const octaveDriftProbability = Math.max(0, Math.min(1, rawDriftValue / 100));
+    // DRIFT — gentle drift that steps note-by-note through the current
+    // scale and accumulates gradually across blocks ("Drift" / evoDrift).
+    const DRIFT_MAX_STEPS = scale.length; // roughly one octave of scale motion
+
+    if (driftProb > 0.01 && rng.chance(driftProb)) {
+      const scaleTones = buildScaleTones(scale, currentRoot);
+      const stepFor = (midi, dir) => {
+        let idx = 0, minDist = Infinity;
+        for (let k = 0; k < scaleTones.length; k++) {
+          const d = Math.abs(scaleTones[k] - midi);
+          if (d < minDist) { minDist = d; idx = k; }
+        }
+        const newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= scaleTones.length) return null;
+        return scaleTones[newIdx];
+      };
+
+      const refTones = (mode === 'arp' && arpTones) ? arpTones : (params.palette || []);
+      const allValues = [...refTones, ...currentEvents.map(e => e.midi)];
+      const upResults   = allValues.map(m => stepFor(m, 1));
+      const downResults = allValues.map(m => stepFor(m, -1));
+      const canGoUp   = allValues.length > 0 && upResults.every(v => v !== null && v <= 84) && driftAccumulator + 1 <= DRIFT_MAX_STEPS;
+      const canGoDown = allValues.length > 0 && downResults.every(v => v !== null && v >= 24) && driftAccumulator - 1 >= -DRIFT_MAX_STEPS;
+      let dir = null;
+      if (canGoUp && canGoDown) dir = rng.chance(0.5) ? 1 : -1;
+      else if (canGoUp) dir = 1;
+      else if (canGoDown) dir = -1;
+
+      if (dir !== null) {
+        driftAccumulator += dir;
+        currentEvents = currentEvents.map(e => ({...e, midi: stepFor(e.midi, dir)}));
+        if (mode === 'arp' && arpTones) arpTones.forEach((t, idx) => arpTones[idx] = stepFor(t, dir));
+        else if (params.palette) params.palette.forEach((t, idx) => params.palette[idx] = stepFor(t, dir));
+      }
+    }
+
+    // OCT DRIFT — sudden, full-octave transposition between blocks
+    // ("Oct Drift" / octaveDriftEvo).
+    const rawOctDriftValue = +document.getElementById('octaveDriftEvo')?.value || 0;
+    const octaveDriftProbability = Math.max(0, Math.min(1, rawOctDriftValue / 100));
 
     if (octaveDriftProbability > 0.01 && rng.chance(octaveDriftProbability)) {
       const refTones = (mode === 'arp' && arpTones) ? arpTones : (params.palette || []);
